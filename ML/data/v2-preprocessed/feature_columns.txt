@@ -1,0 +1,11 @@
+strata
+semester
+ip_semester
+ipk_total
+sks_semester
+rasio_sks_lulus
+sks_tidak_lulus
+rata_sks_gagal_per_sem
+ip_trend
+ip_std
+rasio_progress

@@ -92,8 +92,11 @@ def generate_data_sintetis(
         cfg          = STRATA_CONFIG[strata]
         target_sks   = cfg["target_sks"]
         max_semester = cfg["max_semester"]
-
-        ability_score = rng.uniform(0.4, 0.9)
+        
+        ability_score_mean = rng.uniform(0.65, 0.75)  # variasi rata-rata kemampuan antar mahasiswa
+        ability_score_std = rng.uniform(0.10, 0.15)  # variasi kemampuan antar mahasiswa
+        ability_score = rng.normal(loc=ability_score_mean, scale=ability_score_std)  # rata-rata 0.70, std dev 0.12
+        ability_score = float(np.clip(ability_score, 0.4, 0.9))
 
         semester        = 1
         total_sks       = 0
@@ -109,6 +112,7 @@ def generate_data_sintetis(
             if semester == 1:
                 sks_semester = int(rng.integers(18, 23))   # 18–22 inklusif
             else:
+                # TODO: perlu diskusi lebih lanjut untuk menentukan distribusi SKS semester berikutnya
                 ip_prev = ip_history[-1]
                 if ip_prev >= 3.0:
                     sks_semester = int(rng.integers(21, 25))  # 21–24
