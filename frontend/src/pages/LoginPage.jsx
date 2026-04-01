@@ -1,0 +1,116 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { C } from '../constants/theme';
+import { authAPI } from '../services/api';
+
+const LoginPage = ({ onLogin }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = async () => {
+    if (!email || !password) { setError("Email dan password harus diisi"); return; }
+    setLoading(true); setError("");
+    try {
+      const res = await authAPI.login(email, password);
+      localStorage.setItem('areass_token', res.token);
+      localStorage.setItem('areass_user', JSON.stringify(res.user));
+      onLogin(res.user);
+      if (res.user.role === 'mahasiswa') navigate('/dashboard');
+      else if (res.user.role === 'dosen_wali') navigate('/dashboard-dosen');
+      else navigate('/dashboard-kaprodi');
+    } catch (err) {
+      setError(err.message || 'Login gagal');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: C.white, borderRadius: 20, padding: "48px 40px", width: 480, boxShadow: "0 8px 32px rgba(0,0,0,0.1)" }}>
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <div style={{ fontSize: 18, color: C.textDark, marginBottom: 4 }}>Selamat Datang di</div>
+          <div>
+            <div style={{ fontSize: 36, fontWeight: 800, color: C.primary, letterSpacing: 2 }}>AREASS</div>
+            <div style={{ fontSize: 12, color: C.textGray, fontWeight: 600, letterSpacing: 1, marginTop: 4 }}>Academic Risk Estimation and Adaptive Scheduling System</div>
+          </div>
+        </div>
+
+        <button style={{ width: "100%", background: C.accent, color: C.white, border: "none", borderRadius: 10, padding: "14px", fontSize: 15, fontWeight: 600, cursor: "pointer", marginBottom: 20 }}>
+          Login dengan Akun SSO ITB
+        </button>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+          <div style={{ flex: 1, height: 1, background: "#E0E0E0" }} />
+          <span style={{ color: C.textGray, fontSize: 13 }}>OR</span>
+          <div style={{ flex: 1, height: 1, background: "#E0E0E0" }} />
+        </div>
+
+        {[
+          { label: "Email", val: email, set: setEmail, type: "text", placeholder: "xxxxxxxx@mahasiswa.itb.ac.id", icon: "✉️" },
+        ].map((f, i) => (
+          <div key={i} style={{ background: C.bg, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+            <span>{f.icon}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, color: C.textGray }}>{f.label}</div>
+              <input value={f.val} onChange={e => f.set(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                placeholder={f.placeholder} type={f.type}
+                style={{ border: "none", background: "transparent", width: "100%", fontSize: 14, outline: "none" }} />
+            </div>
+          </div>
+        ))}
+
+        <div style={{ background: C.bg, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+          <span>🔑</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: C.textGray }}>Password</div>
+            <input type={showPass ? "text" : "password"} value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              placeholder="••••••••••"
+              style={{ border: "none", background: "transparent", width: "100%", fontSize: 14, outline: "none" }} />
+          </div>
+          <span onClick={() => setShowPass(!showPass)} style={{ cursor: "pointer", fontSize: 16 }}>
+            {showPass ? "🙈" : "👁️"}
+          </span>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
+          <span style={{ fontSize: 13, color: C.textGray }}>Ingat saya</span>
+          <span style={{ color: C.primary, fontSize: 13, cursor: "pointer" }}>Lupa Password?</span>
+        </div>
+
+        {error && (
+          <div style={{ color: C.red, fontSize: 12, marginBottom: 12, textAlign: "center", background: "#FFE8EC", padding: "8px 12px", borderRadius: 8 }}>
+            {error}
+          </div>
+        )}
+
+        <button onClick={handleLogin} disabled={loading} style={{
+          width: "100%", background: loading ? "#9099E8" : C.primary, color: C.white,
+          border: "none", borderRadius: 10, padding: "14px", fontSize: 15,
+          fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", marginBottom: 20
+        }}>
+          {loading ? "Memproses..." : "Login"}
+        </button>
+
+        <div style={{ textAlign: "center", fontSize: 13, color: C.textGray }}>
+          Kamu tidak memiliki akun?{" "}
+          <span style={{ color: C.primary, cursor: "pointer", fontWeight: 600 }}>Register</span>
+        </div>
+
+        <div style={{ marginTop: 20, padding: 12, background: C.primaryLight, borderRadius: 8, fontSize: 12, color: C.primary }}>
+          <strong>Demo:</strong> 23525789@mahasiswa.itb.ac.id / password<br />
+          Dosen: dosenwali@itb.ac.id / password &nbsp;|&nbsp; Kaprodi: kaprodi@itb.ac.id / password
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginPage;
