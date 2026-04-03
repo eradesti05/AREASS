@@ -1,0 +1,12 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod     # pakai Dockerfile khusus prod (nginx static)
+    networks:
+      - areass-net
+      - proxy
+
+networks:
+  proxy:
+    external: true
