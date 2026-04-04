@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { C } from "../constants/theme";
 import NotificationCenter from "./NotificationCenter";
+import { Search, Settings, Bell } from "lucide-react";
 
 const Navbar = ({ user, onLogout, currentPath }) => {
   const navigate = useNavigate();
@@ -49,7 +50,16 @@ const Navbar = ({ user, onLogout, currentPath }) => {
           }}
           onClick={() => navigate(navItems[0].path)}
         >
-          <span style={{ fontSize: 22 }}>🗂️</span>
+          <img
+            src="/LogoAREASS.png"
+            alt="AREASS Logo"
+            style={{
+              width: 40,
+              height: 40,
+              objectFit: "contain",
+              paddingRight: 40,
+            }}
+          />
           <div>
             <span
               style={{
@@ -58,9 +68,7 @@ const Navbar = ({ user, onLogout, currentPath }) => {
                 fontSize: 20,
                 letterSpacing: 1,
               }}
-            >
-              AREASS
-            </span>
+            ></span>
             <div
               style={{
                 fontSize: 8,
@@ -69,9 +77,7 @@ const Navbar = ({ user, onLogout, currentPath }) => {
                 letterSpacing: 0.5,
                 lineHeight: 1,
               }}
-            >
-              Academic Risk Estimation and Adaptive Scheduling System
-            </div>
+            ></div>
           </div>
         </div>
         <div style={{ display: "flex", gap: 4 }}>
@@ -113,10 +119,15 @@ const Navbar = ({ user, onLogout, currentPath }) => {
             fontSize: 14,
           }}
         >
-          <span>🔍</span> Search for something
+          <span>
+            <Search size={20} color="#718EBF" />
+          </span>{" "}
+          Search for something
         </div>
-        <span style={{ fontSize: 20, cursor: "pointer" }}>⚙️</span>
-        <NotificationCenter />
+        <span style={{ fontSize: 20, cursor: "pointer" }}>
+          <Settings size={20} color="#718EBF" />
+        </span>
+        <Bell size={20} color="#718EBF" />
         <div
           onClick={onLogout}
           style={{

@@ -65,19 +65,20 @@ const LoginPage = ({ onLogin }) => {
         }}
       >
         <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <div style={{ fontSize: 18, color: C.textDark, marginBottom: 4 }}>
+          <div style={{ fontSize: 25, color: C.textDark, marginBottom: 4 }}>
             Selamat Datang di
           </div>
           <div>
-            <div
-              style={{
-                fontSize: 36,
-                fontWeight: 800,
-                color: C.primary,
-                letterSpacing: 2,
-              }}
-            >
-              AREASS
+            <div>
+              <img
+                src="/LogoAREASS.png"
+                alt="AREASS Logo"
+                style={{
+                  width: 180,
+                  height: 180,
+                  objectFit: "contain",
+                }}
+              />
             </div>
             <div
               style={{

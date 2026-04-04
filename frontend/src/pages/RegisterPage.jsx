@@ -103,6 +103,7 @@ const RegisterPage = () => {
         style={{
           background: C.white,
           borderRadius: 20,
+          margin: "70px",
           padding: "48px 40px",
           width: 480,
           boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
@@ -110,18 +111,19 @@ const RegisterPage = () => {
       >
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <div style={{ fontSize: 18, color: C.textDark, marginBottom: 4 }}>
+          <div style={{ fontSize: 25, color: C.textDark, marginBottom: 4 }}>
             Register
           </div>
-          <div
-            style={{
-              fontSize: 36,
-              fontWeight: 800,
-              color: C.primary,
-              letterSpacing: 2,
-            }}
-          >
-            AREASS
+          <div>
+            <img
+              src="/LogoAREASS.png"
+              alt="AREASS Logo"
+              style={{
+                width: 180,
+                height: 180,
+                objectFit: "contain",
+              }}
+            />
           </div>
           <div
             style={{

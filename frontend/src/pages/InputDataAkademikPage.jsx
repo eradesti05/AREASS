@@ -31,6 +31,7 @@ export default function InputDataAkademikPage() {
         semester: i + 1,
         ip: "",
         sks: "",
+        sksLulus: "",
       }));
       setDataSemester(rows);
     }
@@ -93,8 +94,8 @@ export default function InputDataAkademikPage() {
           ipSemester: parseFloat(row.ip) || 0,
           ipkTotal: parseFloat(ipk),
           sksPerSemester: parseInt(row.sks) || 0,
+          jumlahSksLulus: parseInt(row.sksLulus) || 0,
           totalSks: parseInt(sks),
-          jumlahSksLulus: parseInt(jumlahSksLulus),
           jumlahMkDiulang: sksTidakLulus,
         };
         const res = await fetch("http://localhost:5000/api/akademik", {
@@ -458,6 +459,7 @@ export default function InputDataAkademikPage() {
               <span style={S.tableHeaderSem}>Semester</span>
               <span style={S.tableHeaderCol}>IP Semester</span>
               <span style={S.tableHeaderCol}>SKS Per Semester</span>
+              <span style={S.tableHeaderCol}>SKS Lulus Per Semester</span>
             </div>
             {dataSemester.map((row, index) => (
               <div key={index} style={S.tableRow}>
@@ -485,6 +487,18 @@ export default function InputDataAkademikPage() {
                   onChange={(e) => {
                     if (e.target.value === "" || /^\d+$/.test(e.target.value))
                       updateDataSemester(index, "sks", e.target.value);
+                  }}
+                  style={S.tableInput}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="contoh: 20"
+                  value={row.sksLulus}
+                  onChange={(e) => {
+                    if (e.target.value === "" || /^\d+$/.test(e.target.value))
+                      updateDataSemester(index, "sksLulus", e.target.value);
                   }}
                   style={S.tableInput}
                 />
