@@ -306,7 +306,51 @@ app.post('/api/akademik', auth, role('mahasiswa'), async (req, res) => {
     if (existing) return res.status(400).json({ message: `Data semester ${req.body.semesterKe} sudah ada` });
 
     const data = await Akademik.create({ mahasiswaId: req.user.id, nim: req.user.nim, ...req.body });
-    res.status(201).json({ message: 'Data akademik disimpan', data });
+    
+    // After saving, try to get prediction from ML API
+    let prediksi = null;
+    try {
+      const allAkademik = await Akademik.find({ mahasiswaId: req.user.id });
+      const mlPayload = {
+        student_id: req.user.id,
+        ipk_total: req.body.ipkTotal,
+        history: allAkademik.map(row => ({
+          strata: row.strata,
+          semester: row.semesterKe,
+          ip_semester: row.ipSemester,
+          sks_semester: row.sksPerSemester,
+          total_sks: row.totalSks,
+          sks_lulus: row.jumlahSksLulus,
+        })),
+      };
+
+      const mlRes = await fetch('https://areass.versa.my.id/ml/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mlPayload),
+      });
+
+      if (mlRes.ok) {
+        prediksi = await mlRes.json();
+        // Update akademik data dengan hasil prediksi
+        await Akademik.updateMany(
+          { mahasiswaId: req.user.id },
+          { 
+            hasilPrediksi: prediksi.prediction,
+            skorConfidence: prediksi.probability ? prediksi.probability.hasilPrediksi_lulus_tepat_waktu || 0.5 : 0.5
+          }
+        );
+      }
+    } catch (mlErr) {
+      console.error('ML Prediction Error:', mlErr.message);
+      // Don't block - prediction is optional
+    }
+
+    res.status(201).json({ 
+      message: 'Data akademik disimpan', 
+      data,
+      prediksi: prediksi || null
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -88,7 +88,11 @@ export default function InputDataAkademikPage() {
     setLoading(true);
     setMessage(null);
     const token = localStorage.getItem("areass_token");
+    const user = JSON.parse(localStorage.getItem("areass_user"));
+    let latestPrediksi = null;
+    
     try {
+      // Process each semester, skip if already exists
       for (const row of dataSemester) {
         const payload = {
           strata,
@@ -110,25 +114,36 @@ export default function InputDataAkademikPage() {
         });
         const data = await res.json();
         if (!res.ok) {
-          setMessage({
-            type: "error",
-            text: data.message || "Gagal menyimpan data",
-          });
-          setLoading(false);
-          return;
+          // Skip if semester already exists, continue to next semester
+          if (data.message?.includes("sudah ada")) {
+            console.log(`Semester ${row.semester} sudah ada, skip...`);
+            continue;
+          } else {
+            setMessage({
+              type: "error",
+              text: data.message || "Gagal menyimpan data",
+            });
+            setLoading(false);
+            return;
+          }
+        }
+        // Save the latest prediction from backend
+        if (data.prediksi) {
+          latestPrediksi = data.prediksi;
+          localStorage.setItem(`prediksi_${user._id}`, JSON.stringify(data.prediksi));
         }
       }
-      setMessage({ type: "success", text: "Data akademik berhasil disimpan!" });
+      
+      setMessage({ type: "success", text: "Data akademik berhasil disimpan! Segera diarahkan ke dashboard..." });
 
-      // Set akademik completed flag and redirect to dashboard
+      // Set akademik completed flag
       const userData = JSON.parse(localStorage.getItem("areass_user"));
       if (userData?._id) {
         localStorage.setItem(`akademik_completed_${userData._id}`, "true");
       }
 
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1500);
+      // Redirect immediately to dashboard (Backend handle prediksi)
+      navigate("/dashboard");
     } catch (err) {
       setMessage({ type: "error", text: "Gagal terhubung ke server" });
     } finally {
