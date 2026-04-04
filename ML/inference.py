@@ -76,7 +76,7 @@ def preprocess_for_inference(
             strata          : str  — "S1" | "S2" | "S3"
             semester        : int  — nomor semester (1-based)
             ip_semester     : float
-            ipk_total       : float — IPK kumulatif SKS-weighted
+            ipk_total       : float — IPK kumulatif SKS-weighted # optional, bisa dihitung di sini jika tidak disediakan
             sks_semester    : int
             total_sks       : int
             sks_lulus       : int
@@ -126,6 +126,11 @@ def preprocess_for_inference(
 
     strata = df["strata"].iloc[0]
 
+    df["sks_tidak_lulus"] = df["sks_semester"] - df["sks_lulus"]  # inferensi sks_tidak_lulus sebelum cumsum
+    # ubah total_sks, sks_lulus, sks_tidak_lulus jadi kumulatif per semester untuk menghitung fitur temporal dengan benar
+    df[["total_sks", "sks_lulus", "sks_tidak_lulus"]] = df[["total_sks", "sks_lulus", "sks_tidak_lulus"]].cumsum()
+
+    df = _compute_ipk(df)  # hitung ipk_total dari ip_semester dan sks_semester
     # Feature engineering — sama persis dengan pipeline training,
     # tapi hanya untuk satu mahasiswa
     df = _engineer_features_single(df, strata)
@@ -160,8 +165,8 @@ def _validate_and_parse(history: list[dict]) -> pd.DataFrame:
     """
 
     required_fields = [
-        "strata", "semester", "ip_semester", "ipk_total",
-        "sks_semester", "total_sks", "sks_lulus", "sks_tidak_lulus",
+        "strata", "semester", "ip_semester",
+        "sks_semester", "total_sks", "sks_lulus",
     ]
 
     for i, entry in enumerate(history):
@@ -183,16 +188,40 @@ def _validate_and_parse(history: list[dict]) -> pd.DataFrame:
     # Validasi range IP
     if (df["ip_semester"] < 0).any() or (df["ip_semester"] > 4).any():
         raise ValueError("ip_semester harus dalam rentang [0, 4]")
-    if (df["ipk_total"] < 0).any() or (df["ipk_total"] > 4).any():
-        raise ValueError("ipk_total harus dalam rentang [0, 4]")
+    # if (df["ipk_total"] < 0).any() or (df["ipk_total"] > 4).any():
+    #     raise ValueError("ipk_total harus dalam rentang [0, 4]")
 
     # Validasi SKS tidak negatif
-    for col in ["sks_semester", "sks_lulus", "sks_tidak_lulus"]:
+    for col in ["sks_semester", "sks_lulus"]:
         if (df[col] < 0).any():
             raise ValueError(f"Nilai negatif tidak valid pada field '{col}'")
 
     return df
 
+
+# ---------------------------------------------------------------
+# Helper: menghitung IPK kumulatif per semester dari IP semester dan SKS semester
+# ---------------------------------------------------------------
+
+def _compute_ipk(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Hitung ipk_total per semester dari ip_semester dan sks_semester.
+    Menggantikan kebutuhan input ipk_total dari user.
+    """
+    df = df.copy()
+    ip_vals  = df["ip_semester"].values
+    sks_vals = df["sks_semester"].values
+
+    ipk_list = []
+    for i in range(len(ip_vals)):
+        ipk = (
+            sum(ip_vals[j] * sks_vals[j] for j in range(i + 1))
+            / sum(sks_vals[j] for j in range(i + 1))
+        )
+        ipk_list.append(round(float(ipk), 3))
+
+    df["ipk_total"] = ipk_list
+    return df
 
 # ----------------------------------------------------------------
 # Helper: feature engineering untuk satu mahasiswa

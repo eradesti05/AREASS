@@ -7,6 +7,16 @@ services:
       - areass-net
       - proxy
 
+  backend:
+    networks:
+      - areass-net
+      - proxy
+
+  ml:
+    networks:
+      - areass-net
+      - proxy 
+
 networks:
   proxy:
     external: true

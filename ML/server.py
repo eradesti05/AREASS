@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional, Literal
 from contextlib import asynccontextmanager
 import joblib
@@ -7,7 +7,7 @@ import joblib
 from inference import preprocess_for_inference, load_scaler, LABEL_DECODING
 
 
-ModelName = Literal["bagging", "boosting", "stacking", "voting"]
+ModelName = Literal["bagging-dt", "bagging-svm", "bagging-lrm", "boosting", "stacking", "voting"]
 DEFAULT_MODEL = "voting"  # ganti sesuai hasil evaluasi nanti
 
 @asynccontextmanager
@@ -15,9 +15,11 @@ async def lifespan(app: FastAPI):
     # Load artefak sekali saat startup
     app.state.scaler = load_scaler("artifacts/scaler.pkl")
     app.state.models  = {
-        "bagging": joblib.load("artifacts/bagging_model.pkl"),
+        "bagging-dt": joblib.load("artifacts/bagging_model_dt.pkl"),
+        "bagging-svm": joblib.load("artifacts/bagging_model_svm.pkl"),
+        "bagging-lrm": joblib.load("artifacts/bagging_model_lrm.pkl"),
         "boosting": joblib.load("artifacts/boosting_model.pkl"),
-        # "stacking": joblib.load("artifacts/stacking_model.pkl"), #TODO
+        "stacking": joblib.load("artifacts/stacking_model.pkl"),
         "voting": joblib.load("artifacts/voting_model.pkl")
     }
     yield
@@ -34,14 +36,22 @@ class SemesterEntry(BaseModel):
     strata:          Literal["S1", "S2", "S3"]
     semester:        int   = Field(ge=1)
     ip_semester:     float = Field(ge=0.0, le=4.0)
-    ipk_total:       float = Field(ge=0.0, le=4.0)
     sks_semester:    int   = Field(ge=1)
     total_sks:       int   = Field(ge=0)
     sks_lulus:       int   = Field(ge=0)
-    sks_tidak_lulus: int   = Field(ge=0)
+
+    @model_validator(mode="after")
+    def sks_lulus_tidak_melebihi_semester(self):
+        if self.sks_lulus > self.sks_semester:
+            raise ValueError(
+                f"sks_lulus ({self.sks_lulus}) tidak boleh melebihi "
+                f"sks_semester ({self.sks_semester})"
+            )
+        return self
 
 class PredictRequest(BaseModel):
     student_id: str
+    ipk_total:  float = Field(ge=0.0, le=4.0)
     history:    list[SemesterEntry] = Field(min_length=1)
 
     @field_validator("history")
@@ -73,15 +83,23 @@ async def health_check():
 async def predict(request: PredictRequest, model_name: ModelName = DEFAULT_MODEL) -> PredictResponse:
     """
     Payload yang diharapkan:
+    ```
     {
         "student_id": "abc123",
+        "ipk_total": 2.012,
         "history": [
-            {"strata": "S1", "semester": 1, "ip_semester": 2.5,
-             "ipk_total": 2.5, "sks_semester": 20, "total_sks": 20,
-             "sks_lulus": 18, "sks_tidak_lulus": 2},
+            {
+                "strata": "S2",
+                "semester": 1,
+                "ip_semester": 2.259,
+                "sks_semester": 21,
+                "total_sks": 21,
+                "sks_lulus": 18
+            },
             ...
         ]
     }
+    ```
     """
     X = preprocess_for_inference(
         history=[entry.model_dump() for entry in request.history],
