@@ -119,13 +119,13 @@ export default function InputDataAkademikPage() {
         }
       }
       setMessage({ type: "success", text: "Data akademik berhasil disimpan!" });
-      
+
       // Set akademik completed flag and redirect to dashboard
       const userData = JSON.parse(localStorage.getItem("areass_user"));
       if (userData?._id) {
         localStorage.setItem(`akademik_completed_${userData._id}`, "true");
       }
-      
+
       setTimeout(() => {
         navigate("/dashboard");
       }, 1500);
@@ -502,18 +502,7 @@ export default function InputDataAkademikPage() {
                   }}
                   style={S.tableInput}
                 />
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="contoh: 20"
-                  value={row.sksLulus}
-                  onChange={(e) => {
-                    if (e.target.value === "" || /^\d+$/.test(e.target.value))
-                      updateDataSemester(index, "sksLulus", e.target.value);
-                  }}
-                  style={S.tableInput}
-                />
+                {/* JUMLAH SKS LULUS */}
               </div>
             ))}
           </div>
