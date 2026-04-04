@@ -670,10 +670,20 @@ export default function InputDataAkademikPage({ user }) {
               <h2 style={S.modalTitle}>Data Berhasil Dibuat</h2>
               <button
                 onClick={() => {
+                  console.log("Modal OK clicked, user:", user);
                   if (user?._id) {
-                    localStorage.setItem(`akademik_completed_${user._id}`, "true");
+                    const flagKey = `akademik_completed_${user._id}`;
+                    localStorage.setItem(flagKey, "true");
+                    console.log(`Flag set: ${flagKey} = ${localStorage.getItem(flagKey)}`);
+                    
+                    // Delay sedikit untuk ensure flag tersimpan, kemudian navigate
+                    setTimeout(() => {
+                      console.log("Navigating to /dashboard");
+                      navigate("/dashboard", { replace: true });
+                    }, 100);
+                  } else {
+                    console.error("User ID tidak ditemukan!");
                   }
-                  navigate("/dashboard", { replace: true });
                 }}
                 style={S.modalBtn}
               >
