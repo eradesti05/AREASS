@@ -502,7 +502,18 @@ export default function InputDataAkademikPage() {
                   }}
                   style={S.tableInput}
                 />
-                {/* JUMLAH SKS LULUS */}
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="contoh: 20"
+                  value={row.sksLulus}
+                  onChange={(e) => {
+                    if (e.target.value === "" || /^\d+$/.test(e.target.value))
+                      updateDataSemester(index, "sksLulus", e.target.value);
+                  }}
+                  style={S.tableInput}
+                />
               </div>
             ))}
           </div>

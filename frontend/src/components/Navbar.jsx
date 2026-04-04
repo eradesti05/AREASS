@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { C } from "../constants/theme";
 import NotificationCenter from "./NotificationCenter";
-// import { Search, Settings, Bell } from "lucide-react";
+import { Search, Settings, Bell } from "lucide-react";
 
 const Navbar = ({ user, onLogout, currentPath }) => {
   const navigate = useNavigate();
