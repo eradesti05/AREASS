@@ -5,16 +5,25 @@ import { Search, Settings, Bell } from "lucide-react";
 
 const Navbar = ({ user, onLogout, currentPath }) => {
   const navigate = useNavigate();
+  
+  // Check if akademik is completed for mahasiswa
+  const akademikCompleted = user?.role === "mahasiswa" 
+    ? localStorage.getItem(`akademik_completed_${user._id}`)
+    : true;
 
   const navItems =
     user?.role === "mahasiswa"
-      ? [
-          { path: "/dashboard", label: "Dashboard" },
-          { path: "/tasks", label: "Task Management" },
-          { path: "/analytics", label: "Analitik" },
-          { path: "/profile", label: "Profil" },
-          { path: "/akademik/input", label: "Input Data Akademik" },
-        ]
+      ? akademikCompleted
+        ? [
+            { path: "/dashboard", label: "Dashboard" },
+            { path: "/tasks", label: "Task Management" },
+            { path: "/analytics", label: "Analitik" },
+            { path: "/profile", label: "Profil" },
+            { path: "/akademik/input", label: "Input Data Akademik" },
+          ]
+        : [
+            { path: "/akademik/input", label: "Input Data Akademik" },
+          ]
       : user?.role === "dosen_wali"
         ? [
             { path: "/dashboard-dosen", label: "Dashboard" },

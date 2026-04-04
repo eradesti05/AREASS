@@ -115,7 +115,11 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           path="/dashboard"
           element={
             user?.role === "mahasiswa" ? (
-              <DashboardMahasiswa user={user} />
+              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
+                <Navigate to="/akademik/input" replace />
+              ) : (
+                <DashboardMahasiswa user={user} />
+              )
             ) : (
               <Navigate to="/login" />
             )
@@ -125,7 +129,11 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           path="/tasks"
           element={
             user?.role === "mahasiswa" ? (
-              <TaskManagement tasks={tasks} setTasks={setTasks} />
+              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
+                <Navigate to="/akademik/input" replace />
+              ) : (
+                <TaskManagement tasks={tasks} setTasks={setTasks} />
+              )
             ) : (
               <Navigate to="/login" />
             )
@@ -135,7 +143,11 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           path="/tasks/create"
           element={
             user?.role === "mahasiswa" ? (
-              <CreateTask setTasks={setTasks} />
+              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
+                <Navigate to="/akademik/input" replace />
+              ) : (
+                <CreateTask setTasks={setTasks} />
+              )
             ) : (
               <Navigate to="/login" />
             )
@@ -145,7 +157,11 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           path="/tasks/edit/:id"
           element={
             user?.role === "mahasiswa" ? (
-              <EditTask />
+              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
+                <Navigate to="/akademik/input" replace />
+              ) : (
+                <EditTask />
+              )
             ) : (
               <Navigate to="/login" />
             )
@@ -155,7 +171,11 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           path="/analytics"
           element={
             user?.role === "mahasiswa" ? (
-              <AnalyticsPage />
+              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
+                <Navigate to="/akademik/input" replace />
+              ) : (
+                <AnalyticsPage />
+              )
             ) : (
               <Navigate to="/login" />
             )
@@ -184,7 +204,17 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
         <Route
           path="/profile"
           element={
-            user ? <ProfilePage user={user} /> : <Navigate to="/login" />
+            user?.role === "mahasiswa" ? (
+              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
+                <Navigate to="/akademik/input" replace />
+              ) : (
+                <ProfilePage user={user} />
+              )
+            ) : user ? (
+              <ProfilePage user={user} />
+            ) : (
+              <Navigate to="/login" />
+            )
           }
         />
         <Route
