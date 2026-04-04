@@ -673,7 +673,7 @@ export default function InputDataAkademikPage({ user }) {
                   if (user?._id) {
                     localStorage.setItem(`akademik_completed_${user._id}`, "true");
                   }
-                  window.location.href = "/dashboard";
+                  navigate("/dashboard", { replace: true });
                 }}
                 style={S.modalBtn}
               >
