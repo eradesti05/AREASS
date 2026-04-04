@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { akademikAPI } from "../services/api";
 
 export default function InputDataAkademikPage({ user }) {
   const navigate = useNavigate();
@@ -105,33 +106,28 @@ export default function InputDataAkademikPage({ user }) {
           totalSks: parseInt(sks),
           jumlahMkDiulang: sksTidakLulus,
         };
-        const res = await fetch("http://localhost:5000/api/akademik", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        if (!res.ok) {
+        
+        try {
+          const data = await akademikAPI.create(payload);
+          
+          // Save the latest prediction from backend
+          if (data.prediksi) {
+            latestPrediksi = data.prediksi;
+            localStorage.setItem(`prediksi_${user._id}`, JSON.stringify(data.prediksi));
+          }
+        } catch (error) {
           // Skip if semester already exists, continue to next semester
-          if (data.message?.includes("sudah ada")) {
+          if (error.message?.includes("sudah ada")) {
             console.log(`Semester ${row.semester} sudah ada, skip...`);
             continue;
           } else {
             setMessage({
               type: "error",
-              text: data.message || "Gagal menyimpan data",
+              text: error.message || "Gagal menyimpan data",
             });
             setLoading(false);
             return;
           }
-        }
-        // Save the latest prediction from backend
-        if (data.prediksi) {
-          latestPrediksi = data.prediksi;
-          localStorage.setItem(`prediksi_${user._id}`, JSON.stringify(data.prediksi));
         }
       }
       
