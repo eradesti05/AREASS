@@ -28,6 +28,9 @@ const TaskManagement = () => {
   const [categories, setCategories] = useState([]);
   const [filterCategory, setFilterCategory] = useState('');
   const [filterDeadline, setFilterDeadline] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
 
   const columns = ["Backlog", "On Progress", "Done"];
   const colColors = { "Backlog": "#000000", "On Progress": "#FF9800", "Done": "#4CAF50" };
@@ -81,6 +84,25 @@ const TaskManagement = () => {
       setTasks(prev => prev.filter(t => t._id !== taskId));
     } catch (err) {
       alert('Gagal hapus task: ' + err.message);
+    }
+  };
+
+  const handleDeleteClick = (taskId) => {
+    setTaskToDelete(taskId);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!taskToDelete) return;
+    try {
+      await taskAPI.delete(taskToDelete);
+      setTasks(prev => prev.filter(t => t._id !== taskToDelete));
+      setShowDeleteConfirm(false);
+      setShowDeleteSuccess(true);
+      setTimeout(() => setShowDeleteSuccess(false), 2000);
+    } catch (err) {
+      alert('Gagal hapus task: ' + err.message);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -271,7 +293,7 @@ const TaskManagement = () => {
                           </button>
                           <select
                             onChange={e => {
-                              if (e.target.value === "delete") deleteTask(task._id);
+                              if (e.target.value === "delete") handleDeleteClick(task._id);
                               else moveTask(task._id, e.target.value);
                             }}
                             value=""
@@ -324,6 +346,81 @@ const TaskManagement = () => {
           );
         })}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.5)", display: "flex",
+          alignItems: "center", justifyContent: "center", zIndex: 1000
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 20, padding: "40px 32px",
+            maxWidth: 400, width: "90%", boxShadow: "0 10px 40px rgba(0, 0, 0, 0.2)"
+          }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+              <div style={{
+                width: 80, height: 80, borderRadius: "50%",
+                background: "#FFE8E8", display: "flex",
+                alignItems: "center", justifyContent: "center",
+                fontSize: 40, color: "#FF4757", fontWeight: 700
+              }}>?</div>
+              <h2 style={{ fontSize: 24, fontWeight: 700, color: "#1F2937", margin: 0, textAlign: "center" }}>Apakah Anda Yakin?</h2>
+              <p style={{ fontSize: 14, color: "#6B7280", margin: "0 0 20px 0", textAlign: "center" }}>Data yang dihapus tidak dapat dikembalikan.</p>
+              <div style={{ display: "flex", gap: 12, width: "100%" }}>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  style={{
+                    flex: 1, padding: "12px 20px",
+                    background: "#E5E7EB", color: "#374151",
+                    border: "none", borderRadius: 12,
+                    fontSize: 15, fontWeight: 600,
+                    cursor: "pointer"
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  style={{
+                    flex: 1, padding: "12px 20px",
+                    background: "#FF4757", color: "#fff",
+                    border: "none", borderRadius: 12,
+                    fontSize: 15, fontWeight: 600,
+                    cursor: "pointer"
+                  }}
+                >
+                  Hapus
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Success Modal */}
+      {showDeleteSuccess && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.5)", display: "flex",
+          alignItems: "center", justifyContent: "center", zIndex: 1000
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 20, padding: "40px 32px",
+            maxWidth: 400, width: "90%", boxShadow: "0 10px 40px rgba(0, 0, 0, 0.2)"
+          }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+              <div style={{
+                width: 80, height: 80, borderRadius: "50%",
+                background: "#E0F7F4", display: "flex",
+                alignItems: "center", justifyContent: "center",
+                fontSize: 40, color: "#14B8A6", fontWeight: 700
+              }}>✓</div>
+              <h2 style={{ fontSize: 24, fontWeight: 700, color: "#1F2937", margin: 0 }}>Data Berhasil Dihapus</h2>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

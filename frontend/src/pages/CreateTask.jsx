@@ -11,6 +11,7 @@ const CreateTask = () => {
   const [error, setError] = useState('');
   const [openDropdown, setOpenDropdown] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -65,10 +66,11 @@ const CreateTask = () => {
         estimasiPengerjaan: estimasiNum
       };
       await taskAPI.create(payload);
-      navigate("/tasks");
+      // Show success modal instead of direct redirect
+      setShowSuccessModal(true);
+      setLoading(false);
     } catch (err) {
       setError(err.message || 'Gagal membuat task');
-    } finally {
       setLoading(false);
     }
   };
@@ -184,6 +186,42 @@ const CreateTask = () => {
           }}>{loading ? "Menyimpan..." : "Add Task"}</button>
         </div>
       </Card>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.5)", display: "flex",
+          alignItems: "center", justifyContent: "center", zIndex: 1000
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 20, padding: "40px 32px",
+            maxWidth: 400, width: "90%", boxShadow: "0 10px 40px rgba(0, 0, 0, 0.2)"
+          }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+              <div style={{
+                width: 80, height: 80, borderRadius: "50%",
+                background: "#E0F7F4", display: "flex",
+                alignItems: "center", justifyContent: "center",
+                fontSize: 40, color: "#14B8A6", fontWeight: 700
+              }}>✓</div>
+              <h2 style={{ fontSize: 24, fontWeight: 700, color: "#1F2937", margin: 0 }}>Data Berhasil Dibuat</h2>
+              <button
+                onClick={() => navigate("/tasks")}
+                style={{
+                  width: "100%", padding: "14px 20px",
+                  background: "#14B8A6", color: "#fff",
+                  border: "none", borderRadius: 12,
+                  fontSize: 16, fontWeight: 600,
+                  cursor: "pointer", marginTop: 8
+                }}
+              >
+                Oke
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
