@@ -6,9 +6,12 @@ import { Search, Settings, Bell } from "lucide-react";
 const Navbar = ({ user, onLogout, currentPath }) => {
   const navigate = useNavigate();
   
+  // Handle both _id (MongoDB) dan id (backend response)
+  const userId = user?._id || user?.id;
+  
   // Check if akademik is completed for mahasiswa
   const akademikCompleted = user?.role === "mahasiswa" 
-    ? localStorage.getItem(`akademik_completed_${user._id}`)
+    ? localStorage.getItem(`akademik_completed_${userId}`)
     : true;
 
   const navItems =

@@ -670,9 +670,34 @@ export default function InputDataAkademikPage({ user }) {
               <h2 style={S.modalTitle}>Data Berhasil Dibuat</h2>
               <button
                 onClick={() => {
-                  console.log("Modal OK clicked, user:", user);
-                  if (user?._id) {
-                    const flagKey = `akademik_completed_${user._id}`;
+                  console.log("Modal OK clicked");
+                  
+                  // Coba ambil user dari localStorage dulu
+                  let userToUse = null;
+                  try {
+                    const storedUserStr = localStorage.getItem("areass_user");
+                    console.log("Raw stored user string:", storedUserStr);
+                    if (storedUserStr) {
+                      userToUse = JSON.parse(storedUserStr);
+                      console.log("Parsed stored user:", userToUse);
+                    }
+                  } catch (e) {
+                    console.error("Error parsing localStorage user:", e);
+                  }
+                  
+                  // Fallback ke prop user jika localStorage kosong
+                  if (!userToUse && user) {
+                    console.log("Using prop user as fallback:", user);
+                    userToUse = user;
+                  }
+                  
+                  console.log("Final user to use:", userToUse);
+                  
+                  // Handle both _id (MongoDB) dan id (backend response)
+                  const userId = userToUse?._id || userToUse?.id;
+                  
+                  if (userId) {
+                    const flagKey = `akademik_completed_${userId}`;
                     localStorage.setItem(flagKey, "true");
                     console.log(`Flag set: ${flagKey} = ${localStorage.getItem(flagKey)}`);
                     
@@ -682,7 +707,8 @@ export default function InputDataAkademikPage({ user }) {
                       window.location.href = "/dashboard";
                     }, 200);
                   } else {
-                    console.error("User ID tidak ditemukan!");
+                    console.error("User ID TIDAK DITEMUKAN - user object:", userToUse, "props user:", user);
+                    alert("Error: User tidak ditemukan. Silakan login kembali.");
                   }
                 }}
                 style={S.modalBtn}
