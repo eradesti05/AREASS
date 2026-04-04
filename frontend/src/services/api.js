@@ -1,9 +1,12 @@
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const getBaseUrl = () => {
+  return process.env.REACT_APP_API_URL || "http://localhost:5000";
+};
 
 // ─── HELPER ───────────────────────────────────────────────────────────────────
 const getToken = () => localStorage.getItem("areass_token");
 
 const request = async (method, endpoint, body = null) => {
+  const baseUrl = getBaseUrl();
   const headers = { "Content-Type": "application/json" };
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -11,7 +14,7 @@ const request = async (method, endpoint, body = null) => {
   const config = { method, headers };
   if (body) config.body = JSON.stringify(body);
 
-  const res = await fetch(`${BASE_URL}${endpoint}`, config);
+  const res = await fetch(`${baseUrl}/api${endpoint}`, config);
   const data = await res.json();
 
   if (!res.ok) throw new Error(data.message || "Request gagal");
@@ -20,9 +23,10 @@ const request = async (method, endpoint, body = null) => {
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 export const authAPI = {
-  login: (email, password) =>
-    request("POST", "/auth/login", { email, password }),
-  register: (data) => request("POST", "/auth/register", data),
+  login: (email, password, userType) =>
+    request("POST", "/auth/login", { email, password, userType }),
+  register: (data, userType) => 
+    request("POST", "/auth/register", { ...data, userType }),
   getMe: () => request("GET", "/auth/me"),
   updateProfile: (data) => request("PUT", "/auth/profile", data),
 };

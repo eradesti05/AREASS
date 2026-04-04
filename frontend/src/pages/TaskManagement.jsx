@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { C } from '../constants/theme';
@@ -30,6 +31,11 @@ const TaskManagement = () => {
 
   const columns = ["Backlog", "On Progress", "Done"];
   const colColors = { "Backlog": "#000000", "On Progress": "#FF9800", "Done": "#4CAF50" };
+
+  // Style helpers
+  const cardBoxShadow = "0 2px 12px rgba(0,0,0,0.08)";
+  const cardHoverShadow = "0 4px 18px rgba(0,0,0,0.13)";
+  const transition = "all 0.18s cubic-bezier(.4,0,.2,1)";
 
   useEffect(() => {
     fetchCategories();
@@ -103,33 +109,37 @@ const TaskManagement = () => {
   );
 
   return (
-    <div style={{ padding: 32 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <div style={{ fontSize: 22, fontWeight: 700, color: C.textDark }}>Papan Kanban</div>
+    <div style={{ padding: 32, background: C.bg, minHeight: '100vh' }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ fontSize: 24, fontWeight: 800, color: C.textDark, letterSpacing: 0.5 }}>Papan Kanban</div>
         <button onClick={() => navigate("/tasks/create")} style={{
           background: C.primary, color: "#fff", border: "none",
-          borderRadius: 10, padding: "10px 20px", fontWeight: 600, cursor: "pointer", fontSize: 14
-        }}>+ Buat Tugas</button>
+          borderRadius: 12, padding: "12px 28px", fontWeight: 700, cursor: "pointer", fontSize: 15,
+          boxShadow: cardBoxShadow, transition
+        }}
+        onMouseOver={e => e.currentTarget.style.background = C.primaryDark}
+        onMouseOut={e => e.currentTarget.style.background = C.primary}
+        >+ Buat Tugas</button>
       </div>
 
       {/* Info rule-based */}
-      <div style={{ background: C.primaryLight, borderRadius: 8, padding: "8px 16px", marginBottom: 20, fontSize: 12, color: C.primary }}>
+      <div style={{ background: C.primaryLight, borderRadius: 10, padding: "10px 20px", marginBottom: 24, fontSize: 13, color: C.primary, fontWeight: 600 }}>
         ⚡ <strong>Rule-Based Scheduling aktif</strong> — Task diurutkan otomatis berdasarkan urgensi deadline, tingkat kesulitan, dan estimasi pengerjaan
       </div>
 
       {/* Filters */}
-      <div style={{ background: C.white, borderRadius: 12, padding: 16, marginBottom: 20, boxShadow: "0 1px 6px rgba(0,0,0,0.05)", display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+      <div style={{ background: C.white, borderRadius: 14, padding: 18, marginBottom: 28, boxShadow: cardBoxShadow, display: 'flex', gap: 20, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: C.textGray, marginBottom: 4, display: 'block' }}>
+          <label style={{ fontSize: 13, fontWeight: 700, color: C.textGray, marginBottom: 6, display: 'block' }}>
             📁 Filter Kategori
           </label>
           <select 
             value={filterCategory} 
             onChange={e => setFilterCategory(e.target.value)}
             style={{
-              border: "1.5px solid #E0E4F0", borderRadius: 8, padding: "8px 12px",
-              fontSize: 13, color: C.textDark, background: C.white, cursor: 'pointer',
-              minWidth: 180
+              border: "1.5px solid #E0E4F0", borderRadius: 10, padding: "10px 14px",
+              fontSize: 14, color: C.textDark, background: C.white, cursor: 'pointer',
+              minWidth: 180, transition
             }}
           >
             <option value="">Semua Kategori</option>
@@ -140,7 +150,7 @@ const TaskManagement = () => {
         </div>
 
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: C.textGray, marginBottom: 4, display: 'block' }}>
+          <label style={{ fontSize: 13, fontWeight: 700, color: C.textGray, marginBottom: 6, display: 'block' }}>
             📅 Filter Deadline
           </label>
           <input 
@@ -148,8 +158,8 @@ const TaskManagement = () => {
             value={filterDeadline}
             onChange={e => setFilterDeadline(e.target.value)}
             style={{
-              border: "1.5px solid #E0E4F0", borderRadius: 8, padding: "8px 12px",
-              fontSize: 13, color: C.textDark, background: C.white, cursor: 'pointer'
+              border: "1.5px solid #E0E4F0", borderRadius: 10, padding: "10px 14px",
+              fontSize: 14, color: C.textDark, background: C.white, cursor: 'pointer', transition
             }}
           />
         </div>
@@ -161,44 +171,50 @@ const TaskManagement = () => {
               setFilterDeadline('');
             }}
             style={{
-              background: 'transparent', color: C.primary, border: `1px solid ${C.primary}`,
-              borderRadius: 8, padding: "8px 16px", fontWeight: 600, cursor: 'pointer',
-              fontSize: 12
+              background: 'transparent', color: C.primary, border: `1.5px solid ${C.primary}`,
+              borderRadius: 10, padding: "10px 18px", fontWeight: 700, cursor: 'pointer',
+              fontSize: 13, transition
             }}
+            onMouseOver={e => e.currentTarget.style.background = C.primaryLight}
+            onMouseOut={e => e.currentTarget.style.background = 'transparent'}
           >
             ✕ Clear Filter
           </button>
         )}
       </div>
 
-      {error && <div style={{ color: C.red, marginBottom: 16, fontSize: 13 }}>{error}</div>}
+      {error && <div style={{ color: C.red, marginBottom: 18, fontSize: 14, fontWeight: 600 }}>{error}</div>}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 28 }}>
         {columns.map(col => {
           // Filter tasks by status and apply filters
           const colTasks = filteredTasks.filter(t => t.status === col);
           return (
-            <div key={col} style={{ background: C.white, borderRadius: 16, padding: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: colColors[col] }} />
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>{col}</span>
-                  <span style={{ background: C.bg, borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.textGray }}>
+            <div key={col} style={{ background: C.white, borderRadius: 18, padding: 22, boxShadow: cardBoxShadow, transition, minHeight: 420 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: colColors[col] }} />
+                  <span style={{ fontWeight: 800, fontSize: 15 }}>{col}</span>
+                  <span style={{ background: C.bg, borderRadius: "50%", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.textGray }}>
                     {colTasks.length}
                   </span>
                 </div>
                 {col === "Backlog" && (
                   <button onClick={() => navigate("/tasks/create")} style={{
                     background: C.primaryLight, color: C.primary, border: "none",
-                    borderRadius: "50%", width: 26, height: 26, cursor: "pointer", fontSize: 16, fontWeight: 700
-                  }}>+</button>
+                    borderRadius: "50%", width: 30, height: 30, cursor: "pointer", fontSize: 18, fontWeight: 800,
+                    boxShadow: cardBoxShadow, transition
+                  }}
+                  onMouseOver={e => e.currentTarget.style.background = "rgba(26, 35, 200, 0.15)"}
+                  onMouseOut={e => e.currentTarget.style.background = C.primaryLight}
+                  >+</button>
                 )}
               </div>
-              <div style={{ height: 3, borderRadius: 2, background: colColors[col], marginBottom: 16 }} />
+              <div style={{ height: 3, borderRadius: 2, background: colColors[col], marginBottom: 18 }} />
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {colTasks.length === 0 && (
-                  <div style={{ textAlign: "center", color: C.textGray, fontSize: 13, padding: "20px 0" }}>
+                  <div style={{ textAlign: "center", color: C.textGray, fontSize: 14, padding: "28px 0" }}>
                     Tidak ada task
                   </div>
                 )}
@@ -208,37 +224,48 @@ const TaskManagement = () => {
                   const isOverdue = sisaHari < 0 && task.status !== 'Done';
 
                   return (
-                    <div key={task._id} style={{
-                      background: isOverdue ? '#FFF0F0' : C.bg,
-                      borderRadius: 12, padding: 14,
-                      boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-                      border: isOverdue ? `1px solid ${C.red}` : 'none',
-                      position: 'relative'
-                    }}>
+                    <div key={task._id}
+                      style={{
+                        background: isOverdue ? '#FFF0F0' : C.bg,
+                        borderRadius: 14, padding: 18,
+                        boxShadow: cardBoxShadow,
+                        border: isOverdue ? `1.5px solid ${C.red}` : 'none',
+                        position: 'relative',
+                        transition,
+                        cursor: 'pointer',
+                      }}
+                      onMouseOver={e => e.currentTarget.style.boxShadow = cardHoverShadow}
+                      onMouseOut={e => e.currentTarget.style.boxShadow = cardBoxShadow}
+                    >
                       {/* Nomor urut prioritas */}
                       {col !== 'Done' && (
                         <div style={{
-                          position: 'absolute', top: -8, left: -8,
-                          width: 20, height: 20, borderRadius: '50%',
+                          position: 'absolute', top: -10, left: -10,
+                          width: 24, height: 24, borderRadius: '50%',
                           background: C.primary, color: '#fff',
-                          fontSize: 10, fontWeight: 700,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          fontSize: 12, fontWeight: 800,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          boxShadow: cardBoxShadow
                         }}>{idx + 1}</div>
                       )}
 
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           <StatusBadge status={task.tingkatKesulitan} />
                           {task.priorityLabel && <PriorityBadge label={task.priorityLabel} />}
                         </div>
-                        <div style={{ display: 'flex', gap: 4 }}>
+                        <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                           <button
-                            onClick={() => navigate(`/tasks/edit/${task._id}`)}
+                            onClick={e => { e.stopPropagation(); navigate(`/tasks/edit/${task._id}`); }}
                             style={{
                               background: "transparent", border: "none", cursor: "pointer",
-                              fontSize: 16, color: C.textGray, padding: 4
+                              padding: 6, borderRadius: 8, transition,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              color: C.textGray, fontSize: 16
                             }}
                             title="Edit task"
+                            onMouseOver={e => e.currentTarget.style.background = "rgba(26, 35, 200, 0.1)"}
+                            onMouseOut={e => e.currentTarget.style.background = 'transparent'}
                           >
                             ✏️
                           </button>
@@ -248,9 +275,18 @@ const TaskManagement = () => {
                               else moveTask(task._id, e.target.value);
                             }}
                             value=""
-                            style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: 16, color: C.textGray }}
+                            style={{
+                              border: "none", background: "transparent", cursor: "pointer", fontSize: 16,
+                              color: C.textGray, borderRadius: 8, transition,
+                              padding: 6, appearance: 'none',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              width: 32
+                            }}
+                            title="Aksi task"
+                            onMouseOver={e => e.currentTarget.style.background = "rgba(26, 35, 200, 0.1)"}
+                            onMouseOut={e => e.currentTarget.style.background = 'transparent'}
                           >
-                            <option value="" disabled>⋯</option>
+                            <option value="" disabled style={{display:'none'}}>⋮</option>
                             {columns.filter(c => c !== col).map(c => (
                               <option key={c} value={c}>Pindah ke {c}</option>
                             ))}
@@ -259,26 +295,26 @@ const TaskManagement = () => {
                         </div>
                       </div>
 
-                      <div style={{ fontWeight: 700, fontSize: 14, color: C.textDark, marginBottom: 4 }}>{task.namaTugas}</div>
-                      <div style={{ fontSize: 12, color: C.textGray, marginBottom: 8 }}>{task.kategoriTask}</div>
+                      <div style={{ fontWeight: 800, fontSize: 15, color: C.textDark, marginBottom: 6 }}>{task.namaTugas}</div>
+                      <div style={{ fontSize: 13, color: C.textGray, marginBottom: 10 }}>{task.kategoriTask}</div>
 
-                      <div style={{ fontSize: 11, color: isOverdue ? C.red : C.textGray }}>
+                      <div style={{ fontSize: 12, color: isOverdue ? C.red : C.textGray, fontWeight: 500 }}>
                         📅 {new Date(task.deadline).toLocaleDateString('id-ID')} · ⏱️ {task.estimasiPengerjaan}
-                        {isOverdue && <span style={{ marginLeft: 4, fontWeight: 700 }}>⚠️ Terlambat!</span>}
+                        {isOverdue && <span style={{ marginLeft: 6, fontWeight: 800 }}>⚠️ Terlambat!</span>}
                         {!isOverdue && sisaHari <= 3 && task.status !== 'Done' && (
-                          <span style={{ marginLeft: 4, color: C.red, fontWeight: 700 }}>⚠️ {sisaHari} hari lagi</span>
+                          <span style={{ marginLeft: 6, color: C.red, fontWeight: 800 }}>⚠️ {sisaHari} hari lagi</span>
                         )}
                       </div>
 
                       {/* Priority score */}
                       {task.priorityScore > 0 && col !== 'Done' && (
-                        <div style={{ marginTop: 6, fontSize: 10, color: C.textGray }}>
+                        <div style={{ marginTop: 8, fontSize: 11, color: C.textGray }}>
                           Skor prioritas: <strong style={{ color: C.primary }}>{task.priorityScore}</strong>
                         </div>
                       )}
 
                       {task.status === "Done" && (
-                        <div style={{ marginTop: 8 }}><StatusBadge status="Selesai" /></div>
+                        <div style={{ marginTop: 10 }}><StatusBadge status="Selesai" /></div>
                       )}
                     </div>
                   );

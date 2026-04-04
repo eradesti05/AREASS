@@ -32,22 +32,32 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
   const handleLogin = (u) => {
     setUser(u);
 
-    if (u.role === "mahasiswa") navigate("/dashboard");
-    else if (u.role === "dosen_wali") navigate("/dashboard-dosen");
+    // For mahasiswa, check if academic data is completed
+    if (u.role === "mahasiswa") {
+      const akademikCompleted = localStorage.getItem(`akademik_completed_${u._id}`);
+      if (akademikCompleted) {
+        navigate("/dashboard");
+      } else {
+        // First time login - redirect to complete academic data
+        navigate("/akademik/input");
+      }
+    }
+    else if (u.role === "dosen_wali" || u.role === "dosen") navigate("/dashboard-dosen");
     else if (u.role === "kaprodi") navigate("/dashboard-kaprodi");
   };
 
   const handleLogout = () => {
     setUser(null);
-    navigate("/login");
+    navigate("/mahasiswa/login");
   };
 
   if (
     !user &&
     location.pathname !== "/login" &&
-    location.pathname !== "/register"
+    location.pathname !== "/register" &&
+    !location.pathname.match(/^\/(mahasiswa|dosen|kaprodi)\/(login|register)$/)
   ) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/mahasiswa/login" />;
   }
 
   return (
@@ -66,8 +76,19 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
         />
       )}
       <Routes>
+        {/* Generic Routes (redirect to mahasiswa) */}
         <Route
           path="/login"
+          element={<Navigate to="/mahasiswa/login" />}
+        />
+        <Route
+          path="/register"
+          element={<Navigate to="/mahasiswa/register" />}
+        />
+
+        {/* User Type Specific Routes */}
+        <Route
+          path="/:userTypeParam/login"
           element={
             user ? (
               <Navigate
@@ -85,14 +106,20 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           }
         />
         <Route
-          path="/register"
+          path="/:userTypeParam/register"
           element={user ? <Navigate to="/dashboard" /> : <RegisterPage />}
         />
+
+        {/* Original Routes (kept for compatibility) */}
         <Route
           path="/dashboard"
           element={
             user?.role === "mahasiswa" ? (
-              <DashboardMahasiswa user={user} />
+              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
+                <Navigate to="/akademik/input" />
+              ) : (
+                <DashboardMahasiswa user={user} />
+              )
             ) : (
               <Navigate to="/login" />
             )
@@ -102,7 +129,11 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           path="/tasks"
           element={
             user?.role === "mahasiswa" ? (
-              <TaskManagement tasks={tasks} setTasks={setTasks} />
+              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
+                <Navigate to="/akademik/input" />
+              ) : (
+                <TaskManagement tasks={tasks} setTasks={setTasks} />
+              )
             ) : (
               <Navigate to="/login" />
             )
@@ -112,7 +143,11 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           path="/tasks/create"
           element={
             user?.role === "mahasiswa" ? (
-              <CreateTask setTasks={setTasks} />
+              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
+                <Navigate to="/akademik/input" />
+              ) : (
+                <CreateTask setTasks={setTasks} />
+              )
             ) : (
               <Navigate to="/login" />
             )
@@ -121,14 +156,26 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
         <Route
           path="/tasks/edit/:id"
           element={
-            user?.role === "mahasiswa" ? <EditTask /> : <Navigate to="/login" />
+            user?.role === "mahasiswa" ? (
+              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
+                <Navigate to="/akademik/input" />
+              ) : (
+                <EditTask />
+              )
+            ) : (
+              <Navigate to="/login" />
+            )
           }
         />
         <Route
           path="/analytics"
           element={
             user?.role === "mahasiswa" ? (
-              <AnalyticsPage />
+              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
+                <Navigate to="/akademik/input" />
+              ) : (
+                <AnalyticsPage />
+              )
             ) : (
               <Navigate to="/login" />
             )

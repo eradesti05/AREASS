@@ -61,8 +61,8 @@ const EditTask = () => {
   };
 
   const inputStyle = {
-    border: "1.5px solid #E0E4F0", borderRadius: 10, padding: "12px 16px",
-    fontSize: 14, width: "100%", outline: "none", color: C.textDark,
+    border: "1.5px solid #E0E4F0", borderRadius: 12, padding: "16px 20px",
+    fontSize: 16, width: "100%", outline: "none", color: C.textDark,
     background: C.white, boxSizing: "border-box"
   };
 
@@ -116,15 +116,15 @@ const EditTask = () => {
   }
 
   return (
-    <div style={{ padding: 32 }}>
-      <div style={{ fontSize: 22, fontWeight: 700, color: C.textDark, marginBottom: 8 }}>Edit Tugas</div>
-      <div style={{ fontSize: 13, color: C.textGray, marginBottom: 24 }}>
+    <div style={{ padding: 40 }}>
+      <div style={{ fontSize: 28, fontWeight: 700, color: C.textDark, marginBottom: 12 }}>Edit Tugas</div>
+      <div style={{ fontSize: 15, color: C.textGray, marginBottom: 32 }}>
         ✏️ Ubah detail tugas dan prioritas akan dihitung ulang otomatis
       </div>
-      <Card style={{ maxWidth: 700, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+      <Card style={{ maxWidth: "100%", margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 8 }}>Nama Tugas</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: C.textDark, marginBottom: 12 }}>Nama Tugas</div>
             <input 
               value={form.namaTugas} 
               onChange={e => setForm({ ...form, namaTugas: e.target.value })}
@@ -133,7 +133,7 @@ const EditTask = () => {
             />
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 8 }}>Kategori Tugas</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: C.textDark, marginBottom: 12 }}>Kategori Tugas</div>
             <div style={{ position: 'relative' }}>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input 
@@ -148,8 +148,8 @@ const EditTask = () => {
                   type="button"
                   onClick={() => setOpenDropdown(!openDropdown)}
                   style={{
-                    background: C.bg, border: "1.5px solid #E0E4F0", borderRadius: 10,
-                    padding: "12px 14px", cursor: 'pointer', fontSize: 14, color: C.textGray
+                    background: C.bg, border: "1.5px solid #E0E4F0", borderRadius: 12,
+                    padding: "16px 18px", cursor: 'pointer', fontSize: 18, color: C.textGray
                   }}
                 >
                   ▼
@@ -166,12 +166,12 @@ const EditTask = () => {
                     filteredCategories.map(cat => (
                       <div
                         key={cat}
-                        onClick={() => {
+                        onMouseDown={() => {
                           setForm({ ...form, kategoriTask: cat });
                           setOpenDropdown(false);
                         }}
                         style={{
-                          padding: '10px 16px', cursor: 'pointer', borderBottom: `1px solid ${C.bg}`
+                          padding: '14px 20px', cursor: 'pointer', borderBottom: `1px solid ${C.bg}`, fontSize: 15
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.background = C.primaryLight}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -186,13 +186,13 @@ const EditTask = () => {
                   )}
                 </div>
               )}
-              <div style={{ fontSize: 11, color: C.textGray, marginTop: 6 }}>
+              <div style={{ fontSize: 13, color: C.textGray, marginTop: 10 }}>
                 💡 Pilih dari list atau ketik kategori custom (akan otomatis tersimpan)
               </div>
             </div>
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 8 }}>Tingkat Kesulitan</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: C.textDark, marginBottom: 12 }}>Tingkat Kesulitan</div>
             <select 
               value={form.tingkatKesulitan} 
               onChange={e => setForm({ ...form, tingkatKesulitan: e.target.value })} 
@@ -202,9 +202,9 @@ const EditTask = () => {
               <option>Rendah</option><option>Sedang</option><option>Tinggi</option>
             </select>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 8 }}>Tenggat</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.textDark, marginBottom: 12 }}>Tenggat</div>
               <input 
                 type="date" 
                 value={form.deadline}
@@ -213,7 +213,7 @@ const EditTask = () => {
               />
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.textDark, marginBottom: 8 }}>Estimasi Pengerjaan</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.textDark, marginBottom: 12 }}>Estimasi Pengerjaan</div>
               <select 
                 value={form.estimasiPengerjaan} 
                 onChange={e => setForm({ ...form, estimasiPengerjaan: e.target.value })} 
@@ -227,15 +227,15 @@ const EditTask = () => {
           </div>
         </div>
 
-        {error && <div style={{ color: C.red, fontSize: 12, marginTop: 12, background: "#FFE8EC", padding: "8px 12px", borderRadius: 8 }}>{error}</div>}
+        {error && <div style={{ color: C.red, fontSize: 14, marginTop: 16, background: "#FFE8EC", padding: "12px 16px", borderRadius: 8 }}>{error}</div>}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24, gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 32, gap: 16 }}>
           <button 
             onClick={() => navigate("/tasks")} 
             style={{
               background: "transparent", color: C.textGray,
-              border: "1.5px solid #E0E4F0", borderRadius: 10,
-              padding: "12px 24px", fontWeight: 600, cursor: "pointer", fontSize: 14
+              border: "1.5px solid #E0E4F0", borderRadius: 12,
+              padding: "14px 28px", fontWeight: 700, cursor: "pointer", fontSize: 16
             }}
           >
             Batal
@@ -245,8 +245,8 @@ const EditTask = () => {
             disabled={saving} 
             style={{
               background: saving ? "#9099E8" : C.primary, color: "#fff", border: "none",
-              borderRadius: 10, padding: "12px 32px",
-              fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", fontSize: 14
+              borderRadius: 12, padding: "14px 36px",
+              fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", fontSize: 16
             }}
           >
             {saving ? "Menyimpan..." : "Simpan Perubahan"}

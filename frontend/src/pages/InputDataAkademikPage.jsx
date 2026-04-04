@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function InputDataAkademikPage() {
+  const navigate = useNavigate();
   const [strata, setStrata] = useState("");
   const [semesterAktif, setSemesterAktif] = useState("");
   const [ipk, setIpk] = useState("");
@@ -117,6 +119,16 @@ export default function InputDataAkademikPage() {
         }
       }
       setMessage({ type: "success", text: "Data akademik berhasil disimpan!" });
+      
+      // Set akademik completed flag and redirect to dashboard
+      const userData = JSON.parse(localStorage.getItem("areass_user"));
+      if (userData?._id) {
+        localStorage.setItem(`akademik_completed_${userData._id}`, "true");
+      }
+      
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1500);
     } catch (err) {
       setMessage({ type: "error", text: "Gagal terhubung ke server" });
     } finally {
