@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
-export default function InputDataAkademikPage() {
+export default function InputDataAkademikPage({ user }) {
   const navigate = useNavigate();
+  const { userTypeParam } = useParams();
   const [strata, setStrata] = useState("");
   const [semesterAktif, setSemesterAktif] = useState("");
   const [ipk, setIpk] = useState("");
@@ -142,8 +143,10 @@ export default function InputDataAkademikPage() {
         localStorage.setItem(`akademik_completed_${userData._id}`, "true");
       }
 
-      // Redirect immediately to dashboard (Backend handle prediksi)
-      navigate("/dashboard");
+      // Redirect to dashboard after a short delay to allow state update
+      setTimeout(() => {
+        navigate("/dashboard", { replace: true });
+      }, 500);
     } catch (err) {
       setMessage({ type: "error", text: "Gagal terhubung ke server" });
     } finally {
