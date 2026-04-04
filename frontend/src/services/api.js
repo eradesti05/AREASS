@@ -1,5 +1,5 @@
 const getBaseUrl = () => {
-  return process.env.REACT_APP_API_URL || "http://localhost:5000";
+  return process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 };
 
 // ─── HELPER ───────────────────────────────────────────────────────────────────
@@ -14,7 +14,7 @@ const request = async (method, endpoint, body = null) => {
   const config = { method, headers };
   if (body) config.body = JSON.stringify(body);
 
-  const res = await fetch(`${baseUrl}/api${endpoint}`, config);
+  const res = await fetch(`${baseUrl}${endpoint}`, config);
   const data = await res.json();
 
   if (!res.ok) throw new Error(data.message || "Request gagal");
