@@ -137,16 +137,25 @@ export default function InputDataAkademikPage({ user }) {
       
       setMessage({ type: "success", text: "Data akademik berhasil disimpan! Segera diarahkan ke dashboard..." });
 
-      // Set akademik completed flag
-      const userData = JSON.parse(localStorage.getItem("areass_user"));
-      if (userData?._id) {
-        localStorage.setItem(`akademik_completed_${userData._id}`, "true");
+      // Set flag & hard redirect
+      console.log("User object:", user);
+      console.log("User ID:", user?._id);
+      
+      if (user?._id) {
+        const flagKey = `akademik_completed_${user._id}`;
+        localStorage.setItem(flagKey, "true");
+        console.log("Flag set di localStorage:", flagKey);
+        console.log("Flag value:", localStorage.getItem(flagKey));
+        
+        // Hard redirect
+        console.log("Akan redirect ke /dashboard dalam 800ms...");
+        setTimeout(() => {
+          console.log("Executing redirect...");
+          window.location.href = "/dashboard";
+        }, 800);
+      } else {
+        console.error("User ID tidak ditemukan!");
       }
-
-      // Redirect to dashboard after a short delay to allow state update
-      setTimeout(() => {
-        navigate("/dashboard", { replace: true });
-      }, 500);
     } catch (err) {
       setMessage({ type: "error", text: "Gagal terhubung ke server" });
     } finally {

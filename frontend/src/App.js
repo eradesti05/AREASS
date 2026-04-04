@@ -115,11 +115,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           path="/dashboard"
           element={
             user?.role === "mahasiswa" ? (
-              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
-                <Navigate to="/akademik/input" />
-              ) : (
-                <DashboardMahasiswa user={user} />
-              )
+              <DashboardMahasiswa user={user} />
             ) : (
               <Navigate to="/login" />
             )
@@ -129,11 +125,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           path="/tasks"
           element={
             user?.role === "mahasiswa" ? (
-              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
-                <Navigate to="/akademik/input" />
-              ) : (
-                <TaskManagement tasks={tasks} setTasks={setTasks} />
-              )
+              <TaskManagement tasks={tasks} setTasks={setTasks} />
             ) : (
               <Navigate to="/login" />
             )
@@ -143,11 +135,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           path="/tasks/create"
           element={
             user?.role === "mahasiswa" ? (
-              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
-                <Navigate to="/akademik/input" />
-              ) : (
-                <CreateTask setTasks={setTasks} />
-              )
+              <CreateTask setTasks={setTasks} />
             ) : (
               <Navigate to="/login" />
             )
@@ -157,11 +145,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           path="/tasks/edit/:id"
           element={
             user?.role === "mahasiswa" ? (
-              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
-                <Navigate to="/akademik/input" />
-              ) : (
-                <EditTask />
-              )
+              <EditTask />
             ) : (
               <Navigate to="/login" />
             )
@@ -171,11 +155,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           path="/analytics"
           element={
             user?.role === "mahasiswa" ? (
-              !localStorage.getItem(`akademik_completed_${user._id}`) ? (
-                <Navigate to="/akademik/input" />
-              ) : (
-                <AnalyticsPage />
-              )
+              <AnalyticsPage />
             ) : (
               <Navigate to="/login" />
             )
