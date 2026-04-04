@@ -122,7 +122,7 @@ const Navbar = ({ user, onLogout, currentPath }) => {
           <span>
             <Search size={20} color="#718EBF" />
           </span>{" "}
-          Search for something
+          Cari sesuatu?
         </div>
         <span style={{ fontSize: 20, cursor: "pointer" }}>
           <Settings size={20} color="#718EBF" />
