@@ -6,10 +6,24 @@ export default function InputDataAkademikPage() {
   const [ipk, setIpk] = useState("");
   const [sks, setSks] = useState("");
   const [jumlahSksLulus, setJumlahSksLulus] = useState("");
-  const [jumlahSksTidakLulus, setJumlahSksTidakLulus] = useState("");
   const [dataSemester, setDataSemester] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const maxSemesterByJenjang = {
+    D3: 10,
+    S1: 16,
+    S2: 8,
+    S3: 12,
+  };
+
+  const maxSemester = maxSemesterByJenjang[strata] || 0;
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     if (semesterAktif) {
@@ -22,11 +36,24 @@ export default function InputDataAkademikPage() {
     }
   }, [semesterAktif]);
 
+  useEffect(() => {
+    if (parseInt(semesterAktif) > maxSemester) {
+      setSemesterAktif("");
+      setDataSemester([]);
+    }
+  }, [semesterAktif, maxSemester]);
+
   const updateDataSemester = (index, field, value) => {
     const updated = [...dataSemester];
     updated[index] = { ...updated[index], [field]: value };
     setDataSemester(updated);
   };
+
+  const sksTidakLulus = useMemo(() => {
+    const total = parseInt(sks) || 0;
+    const lulus = parseInt(jumlahSksLulus) || 0;
+    return total - lulus >= 0 ? total - lulus : 0;
+  }, [sks, jumlahSksLulus]);
 
   const ringkasan = useMemo(() => {
     const totalIp = dataSemester.reduce(
@@ -46,24 +73,18 @@ export default function InputDataAkademikPage() {
       rataRataIp,
       totalSks: sks || "---",
       sksLulus: jumlahSksLulus || "---",
-      sksTidakLulus: jumlahSksTidakLulus || "---",
+      sksTidakLulus: sksTidakLulus || 0,
       totalSksPerSemester: totalSksPerSemester || "---",
     };
-  }, [ipk, sks, jumlahSksLulus, jumlahSksTidakLulus, dataSemester]);
+  }, [ipk, sks, jumlahSksLulus, dataSemester]);
 
   const dataUmumLengkap =
-    strata &&
-    semesterAktif &&
-    ipk &&
-    sks &&
-    jumlahSksLulus &&
-    jumlahSksTidakLulus;
+    strata && semesterAktif && ipk && sks && jumlahSksLulus;
 
   const handleSubmit = async () => {
     setLoading(true);
     setMessage(null);
     const token = localStorage.getItem("areass_token");
-
     try {
       for (const row of dataSemester) {
         const payload = {
@@ -74,9 +95,8 @@ export default function InputDataAkademikPage() {
           sksPerSemester: parseInt(row.sks) || 0,
           totalSks: parseInt(sks),
           jumlahSksLulus: parseInt(jumlahSksLulus),
-          jumlahMkDiulang: parseInt(jumlahSksTidakLulus) || 0,
+          jumlahMkDiulang: sksTidakLulus,
         };
-
         const res = await fetch("http://localhost:5000/api/akademik", {
           method: "POST",
           headers: {
@@ -85,7 +105,6 @@ export default function InputDataAkademikPage() {
           },
           body: JSON.stringify(payload),
         });
-
         const data = await res.json();
         if (!res.ok) {
           setMessage({
@@ -96,10 +115,7 @@ export default function InputDataAkademikPage() {
           return;
         }
       }
-      setMessage({
-        type: "success",
-        text: "Data akademik yang diinputkan berhasil disimpan!",
-      });
+      setMessage({ type: "success", text: "Data akademik berhasil disimpan!" });
     } catch (err) {
       setMessage({ type: "error", text: "Gagal terhubung ke server" });
     } finally {
@@ -107,34 +123,37 @@ export default function InputDataAkademikPage() {
     }
   };
 
-  //  inline style aku buat disini ya
+  // Breakpoints
+  const isMobile = windowWidth <= 368;
+  const isTablet = windowWidth <= 768;
+
   const S = {
     page: {
       display: "flex",
       flexDirection: "column",
       background: "#F4F6F9",
       minHeight: "100vh",
-      padding: "32px 40px",
-      gap: 24,
+      padding: isMobile ? "16px 12px" : isTablet ? "24px 20px" : "32px 40px",
+      gap: isMobile ? 16 : 24,
+      boxSizing: "border-box",
     },
     pageTitle: {
       color: "#333B69",
-      fontSize: 22,
+      fontSize: isMobile ? 18 : 22,
       fontWeight: 700,
     },
     card: {
       width: "100%",
-      maxWidth: 1048,
       background: "#fff",
-      margin: "0 auto",
-      borderRadius: 25,
+      borderRadius: isMobile ? 15 : 25,
       boxShadow: "4px 4px 18px #00000040",
+      boxSizing: "border-box",
     },
     cardBody: {
-      padding: "32px",
+      padding: isMobile ? "16px" : isTablet ? "24px" : "32px",
       display: "flex",
       flexDirection: "column",
-      gap: 24,
+      gap: isMobile ? 16 : 24,
     },
     sectionHeader: {
       display: "flex",
@@ -143,7 +162,7 @@ export default function InputDataAkademikPage() {
     },
     sectionTitle: {
       color: "#232323",
-      fontSize: 18,
+      fontSize: isMobile ? 15 : 18,
       fontWeight: 700,
       whiteSpace: "nowrap",
     },
@@ -154,26 +173,26 @@ export default function InputDataAkademikPage() {
     },
     row: {
       display: "flex",
-      gap: 20,
-      flexWrap: "wrap",
+      flexDirection: isMobile ? "column" : isTablet ? "column" : "row",
+      gap: isMobile ? 12 : 20,
     },
     fieldGroup: {
       display: "flex",
       flex: 1,
       flexDirection: "column",
       gap: 8,
-      minWidth: 180,
+      minWidth: 0,
     },
     label: {
       color: "#232323",
-      fontSize: 15,
+      fontSize: isMobile ? 13 : 15,
     },
     input: {
       width: "100%",
       color: "#718EBF",
       background: "#fff",
-      fontSize: 15,
-      padding: "14px 20px",
+      fontSize: isMobile ? 13 : 15,
+      padding: isMobile ? "10px 14px" : "14px 20px",
       borderRadius: 15,
       border: "1px solid #DFEAF2",
       outline: "none",
@@ -183,8 +202,8 @@ export default function InputDataAkademikPage() {
       width: "100%",
       color: "#718EBF",
       background: "#fff",
-      fontSize: 15,
-      padding: "14px 20px",
+      fontSize: isMobile ? 13 : 15,
+      padding: isMobile ? "10px 14px" : "14px 20px",
       borderRadius: 15,
       border: "1px solid #DFEAF2",
       outline: "none",
@@ -194,116 +213,124 @@ export default function InputDataAkademikPage() {
     infoBox: {
       color: "#718EBF",
       background: "#fff",
-      fontSize: 15,
-      padding: "12px 16px",
+      fontSize: isMobile ? 12 : 15,
+      padding: isMobile ? "10px 12px" : "12px 16px",
       borderRadius: 15,
       border: "1px solid #DFEAF2",
     },
     tableHeader: {
       display: "flex",
       alignItems: "center",
-      gap: 16,
+      gap: isMobile ? 8 : 16,
       padding: "0 4px",
     },
     tableHeaderSem: {
       color: "#232323",
-      fontSize: 15,
+      fontSize: isMobile ? 12 : 15,
       fontWeight: 600,
-      width: 100,
+      width: isMobile ? 60 : 100,
       flexShrink: 0,
     },
     tableHeaderCol: {
       color: "#232323",
-      fontSize: 15,
+      fontSize: isMobile ? 12 : 15,
       fontWeight: 600,
       flex: 1,
     },
     tableRow: {
       display: "flex",
       alignItems: "center",
-      gap: 16,
+      gap: isMobile ? 8 : 16,
     },
     tableRowLabel: {
       color: "#718EBF",
-      fontSize: 15,
+      fontSize: isMobile ? 12 : 15,
       fontWeight: 600,
-      width: 100,
+      width: isMobile ? 60 : 100,
       flexShrink: 0,
     },
     tableInput: {
       flex: 1,
       color: "#718EBF",
       background: "#fff",
-      fontSize: 15,
-      padding: "14px 20px",
+      fontSize: isMobile ? 13 : 15,
+      padding: isMobile ? "10px 10px" : "14px 20px",
       borderRadius: 15,
       border: "1px solid #DFEAF2",
       outline: "none",
+      minWidth: 0,
+    },
+    summaryRow: {
+      display: "flex",
+      flexDirection: isMobile ? "column" : isTablet ? "row" : "row",
+      gap: isMobile ? 10 : 16,
+      flexWrap: "wrap",
     },
     summaryCard: {
       display: "flex",
       flex: 1,
       flexDirection: "column",
       background: "#DFEAF2",
-      padding: "20px",
-      gap: 16,
+      padding: isMobile ? "14px" : "20px",
+      gap: isMobile ? 8 : 16,
       borderRadius: 15,
       border: "1px solid #718EBF",
-      minWidth: 150,
+      minWidth: isMobile ? "100%" : 150,
     },
     summaryLabel: {
       color: "#718EBF",
-      fontSize: 15,
+      fontSize: isMobile ? 13 : 15,
     },
     summaryValue: {
       color: "#718EBF",
-      fontSize: 24,
+      fontSize: isMobile ? 20 : 24,
       fontWeight: 700,
     },
     submitRow: {
       display: "flex",
-      justifyContent: "flex-end",
+      justifyContent: isMobile ? "stretch" : "flex-end",
       width: "100%",
-      maxWidth: 1048,
-      margin: "0 auto 40px",
+      marginBottom: 40,
     },
     btnActive: {
       background: "#1814F3",
       color: "#fff",
-      fontSize: 18,
-      padding: "14px 40px",
+      fontSize: isMobile ? 15 : 18,
+      padding: isMobile ? "12px 20px" : "14px 40px",
       borderRadius: 9,
       border: "none",
       cursor: "pointer",
+      width: isMobile ? "100%" : "auto",
     },
     btnDisabled: {
       background: "#9CA3AF",
       color: "#fff",
-      fontSize: 18,
-      padding: "14px 40px",
+      fontSize: isMobile ? 15 : 18,
+      padding: isMobile ? "12px 20px" : "14px 40px",
       borderRadius: 9,
       border: "none",
       cursor: "not-allowed",
+      width: isMobile ? "100%" : "auto",
     },
     msgSuccess: {
       width: "100%",
-      maxWidth: 1048,
-      margin: "0 auto",
       padding: "16px 20px",
       borderRadius: 15,
       background: "#22C55E",
       color: "#fff",
       fontWeight: 600,
+      fontSize: isMobile ? 13 : 15,
+      boxSizing: "border-box",
     },
     msgError: {
       width: "100%",
-      maxWidth: 1048,
-      margin: "0 auto",
       padding: "16px 20px",
       borderRadius: 15,
       background: "#EF4444",
       color: "#fff",
       fontWeight: 600,
+      fontSize: isMobile ? 13 : 15,
+      boxSizing: "border-box",
     },
   };
 
@@ -318,14 +345,13 @@ export default function InputDataAkademikPage() {
         </div>
       )}
 
-      {/* iIsian untuk data umum */}
+      {/* Data Umum */}
       <div style={S.card}>
         <div style={S.cardBody}>
           <div style={S.sectionHeader}>
             <span style={S.sectionTitle}>Data Umum</span>
             <div style={S.sectionDivider} />
           </div>
-
           <div style={S.row}>
             <div style={S.fieldGroup}>
               <span style={S.label}>Strata/Jenjang</span>
@@ -349,11 +375,12 @@ export default function InputDataAkademikPage() {
                 value={semesterAktif}
                 onChange={(e) => setSemesterAktif(e.target.value)}
                 style={S.select}
+                disabled={!strata}
               >
                 <option value="" disabled>
                   Pilih semester aktif
                 </option>
-                {Array.from({ length: 14 }, (_, i) => (
+                {Array.from({ length: maxSemester }, (_, i) => (
                   <option key={i + 1} value={i + 1}>
                     Semester {i + 1}
                   </option>
@@ -378,7 +405,6 @@ export default function InputDataAkademikPage() {
               />
             </div>
           </div>
-
           <div style={S.row}>
             <div style={S.fieldGroup}>
               <span style={S.label}>Total SKS ditempuh</span>
@@ -407,20 +433,16 @@ export default function InputDataAkademikPage() {
             <div style={S.fieldGroup}>
               <span style={S.label}>Jumlah SKS tidak lulus</span>
               <input
-                placeholder="contoh : 5"
-                value={jumlahSksTidakLulus}
-                onChange={(e) => {
-                  if (e.target.value === "" || /^\d+$/.test(e.target.value))
-                    setJumlahSksTidakLulus(e.target.value);
-                }}
-                style={S.input}
+                value={sksTidakLulus}
+                readOnly
+                style={{ ...S.input, background: "#F3F4F6" }}
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* isian data per semester */}
+      {/* Data Per Semester */}
       {dataUmumLengkap && (
         <div style={S.card}>
           <div style={{ ...S.cardBody, gap: 20 }}>
@@ -472,7 +494,7 @@ export default function InputDataAkademikPage() {
         </div>
       )}
 
-      {/* hasil ringkasan */}
+      {/* Ringkasan */}
       {dataUmumLengkap && (
         <div style={S.card}>
           <div style={S.cardBody}>
@@ -480,7 +502,7 @@ export default function InputDataAkademikPage() {
               <span style={S.sectionTitle}>Ringkasan Data</span>
               <div style={S.sectionDivider} />
             </div>
-            <div style={S.row}>
+            <div style={S.summaryRow}>
               {[
                 { label: "IPK", value: ringkasan.ipk },
                 { label: "Rata-rata IP", value: ringkasan.rataRataIp },
@@ -492,7 +514,7 @@ export default function InputDataAkademikPage() {
                 </div>
               ))}
             </div>
-            <div style={S.row}>
+            <div style={S.summaryRow}>
               {[
                 { label: "Total SKS Lulus", value: ringkasan.sksLulus },
                 {
@@ -514,7 +536,7 @@ export default function InputDataAkademikPage() {
         </div>
       )}
 
-      {/* button submit */}
+      {/* Tombol Submit */}
       <div style={S.submitRow}>
         <button
           onClick={handleSubmit}

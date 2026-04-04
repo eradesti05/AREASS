@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../constants/theme";
 import { authAPI } from "../services/api";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 const LoginPage = ({ onLogin }) => {
   const [email, setEmail] = useState("");
@@ -99,7 +100,7 @@ const LoginPage = ({ onLogin }) => {
             set: setEmail,
             type: "text",
             placeholder: "xxxxxxxx@mahasiswa.itb.ac.id",
-            icon: "✉️",
+            icon: <Mail size={20} color="#718EBF" />,
           },
         ].map((f, i) => (
           <div
@@ -146,7 +147,9 @@ const LoginPage = ({ onLogin }) => {
             marginBottom: 16,
           }}
         >
-          <span>🔑</span>
+          <span>
+            <Lock size={20} color="#718EBF" />
+          </span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 11, color: C.textGray }}>Password</div>
             <input
@@ -168,7 +171,11 @@ const LoginPage = ({ onLogin }) => {
             onClick={() => setShowPass(!showPass)}
             style={{ cursor: "pointer", fontSize: 16 }}
           >
-            {showPass ? "🙈" : "👁️"}
+            {showPass ? (
+              <EyeOff size={20} color="#718EBF" />
+            ) : (
+              <Eye size={20} color="#718EBF" />
+            )}
           </span>
         </div>
 
@@ -179,10 +186,10 @@ const LoginPage = ({ onLogin }) => {
             marginBottom: 20,
           }}
         >
-          <span style={{ fontSize: 13, color: C.textGray }}>Ingat saya</span>
+          {/* <span style={{ fontSize: 13, color: C.textGray }}>Ingat saya</span>
           <span style={{ color: C.primary, fontSize: 13, cursor: "pointer" }}>
             Lupa Password?
-          </span>
+          </span> */}
         </div>
 
         {error && (
@@ -230,7 +237,7 @@ const LoginPage = ({ onLogin }) => {
           </span>
         </div>
 
-        <div
+        {/* <div
           style={{
             marginTop: 20,
             padding: 12,
@@ -244,7 +251,7 @@ const LoginPage = ({ onLogin }) => {
           <br />
           Dosen: dosenwali@itb.ac.id / password &nbsp;|&nbsp; Kaprodi:
           kaprodi@itb.ac.id / password
-        </div>
+        </div> */}
       </div>
     </div>
   );

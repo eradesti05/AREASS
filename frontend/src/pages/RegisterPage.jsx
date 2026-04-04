@@ -2,6 +2,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../constants/theme";
 import { authAPI } from "../services/api";
+import {
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  BookOpen,
+} from "lucide-react";
 
 const RegisterPage = () => {
   const [nama, setNama] = useState("");
@@ -15,7 +24,7 @@ const RegisterPage = () => {
   const navigate = useNavigate();
 
   const handleRegister = async () => {
-    if (!nama || !email || !password || !role || !prodi) {
+    if (!nama || !email || !password || !prodi) {
       setError("Semua field harus diisi");
       return;
     }
@@ -23,10 +32,37 @@ const RegisterPage = () => {
       setError("Password minimal 8 karakter");
       return;
     }
+
+    let detectedRole = "";
+    let nim = "";
+
+    if (email.endsWith("@mahasiswa.itb.ac.id")) {
+      detectedRole = "mahasiswa";
+      const nim = email.split("@")[0];
+    } else if (email.endsWith("@itb.ac.id")) {
+      detectedRole = role;
+      if (!role) {
+        setError("Pilih role untuk email dosen/kaprodi");
+        return;
+      }
+    } else {
+      setError(
+        "Gunakan email ITB yang valid (@mahasiswa.itb.ac.id atau @itb.ac.id)",
+      );
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
-      await authAPI.register({ nama: nama, email, password, role, prodi });
+      await authAPI.register({
+        nama: nama,
+        email,
+        password,
+        role: detectedRole,
+        prodi,
+        nim,
+      });
       navigate("/login");
     } catch (err) {
       setError(err.message || "Registrasi gagal");
@@ -102,7 +138,9 @@ const RegisterPage = () => {
 
         {/* Nama Lengkap */}
         <div style={fieldStyle}>
-          <span>👤</span>
+          <span>
+            <User size={20} color="#718EBF" />
+          </span>
           <div style={{ flex: 1 }}>
             <div style={labelStyle}>Nama Lengkap</div>
             <input
@@ -118,7 +156,9 @@ const RegisterPage = () => {
 
         {/* Email */}
         <div style={fieldStyle}>
-          <span>✉️</span>
+          <span>
+            <Mail size={20} color="#718EBF" />
+          </span>
           <div style={{ flex: 1 }}>
             <div style={labelStyle}>Email</div>
             <input
@@ -134,7 +174,9 @@ const RegisterPage = () => {
 
         {/* Password */}
         <div style={fieldStyle}>
-          <span>🔑</span>
+          <span>
+            <Lock size={20} color="#718EBF" />
+          </span>
           <div style={{ flex: 1 }}>
             <div style={labelStyle}>Password</div>
             <input
@@ -150,32 +192,42 @@ const RegisterPage = () => {
             onClick={() => setShowPass(!showPass)}
             style={{ cursor: "pointer", fontSize: 16 }}
           >
-            {showPass ? "🙈" : "👁️"}
+            {showPass ? (
+              <EyeOff size={20} color="#718EBF" />
+            ) : (
+              <Eye size={20} color="#718EBF" />
+            )}
           </span>
         </div>
 
         {/* Role - Select Box */}
+        {email.endsWith("@itb.ac.id") &&
+          !email.endsWith("@mahasiswa.itb.ac.id") && (
+            <div style={fieldStyle}>
+              <span>
+                <GraduationCap size={20} color="#718EBF" />
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={labelStyle}>Role</div>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  style={{ ...inputStyle, cursor: "pointer" }}
+                >
+                  <option value="" disabled>
+                    Pilih role
+                  </option>
+                  <option value="dosen_wali">Dosen Wali</option>
+                  <option value="kaprodi">Kaprodi</option>
+                </select>
+              </div>
+            </div>
+          )}
+        {/* Prodi */}
         <div style={fieldStyle}>
-          <span>🎓</span>
-          <div style={{ flex: 1 }}>
-            <div style={labelStyle}>Role</div>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              style={{ ...inputStyle, cursor: "pointer" }}
-            >
-              <option value="" disabled>
-                Pilih role
-              </option>
-              <option value="mahasiswa">Mahasiswa</option>
-              <option value="dosen_wali">Dosen Wali</option>
-              <option value="kaprodi">Kaprodi</option>
-            </select>
-          </div>
-        </div>
-        {/* Nama Lengkap */}
-        <div style={fieldStyle}>
-          <span>👤</span>
+          <span>
+            <BookOpen size={20} color="#718EBF" />
+          </span>
           <div style={{ flex: 1 }}>
             <div style={labelStyle}>Prodi</div>
             <input
