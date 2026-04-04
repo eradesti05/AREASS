@@ -676,11 +676,11 @@ export default function InputDataAkademikPage({ user }) {
                     localStorage.setItem(flagKey, "true");
                     console.log(`Flag set: ${flagKey} = ${localStorage.getItem(flagKey)}`);
                     
-                    // Delay sedikit untuk ensure flag tersimpan, kemudian navigate
+                    // Hard reload untuk ensure flag terdeteksi dan page reload
                     setTimeout(() => {
-                      console.log("Navigating to /dashboard");
-                      navigate("/dashboard", { replace: true });
-                    }, 100);
+                      console.log("Redirecting dengan hard reload ke /dashboard");
+                      window.location.href = "/dashboard";
+                    }, 200);
                   } else {
                     console.error("User ID tidak ditemukan!");
                   }
