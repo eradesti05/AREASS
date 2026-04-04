@@ -2,27 +2,68 @@ import { useState, useEffect } from "react";
 import { C } from '../constants/theme';
 import { Card } from '../components/UIComponents';
 import { akademikAPI, taskAPI, prediksiAPI } from '../services/api';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Pie } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend as ChartLegend } from "chart.js";
+import { Bar as BarChart, Line as LineChart } from "react-chartjs-2";
+import { Chart as ChartJS2, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip as ChartTooltip2, Legend as ChartLegend2 } from "chart.js";
+import { PieChart, Pie as MiniPie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+
+ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
+ChartJS2.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, ChartTooltip2, ChartLegend2);
 
 const DashboardMahasiswa = ({ user }) => {
   const [akademik, setAkademik] = useState([]);
   const [summary, setSummary] = useState({ totalTugas: 0, tenggatWaktuTugas: 0, estimasiBebanKerja: 0, backlog: 0, onProgress: 0, done: 0 });
   const [prediksi, setPrediksi] = useState({ hasilPrediksi: 'Aman', skorConfidence: 0 });
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [akData, sumData, predData] = await Promise.all([
-          akademikAPI.getAll(),
-          taskAPI.getSummary(),
-          prediksiAPI.getLatest(),
-        ]);
-        setAkademik(akData);
-        setSummary(sumData);
-        setPrediksi(predData);
+        console.log('🔄 Fetching akademik data...');
+        const akademikResult = await akademikAPI.getAll().catch(e => {
+          console.error('❌ Akademik API Error:', e);
+          return [];
+        });
+        
+        console.log('🔄 Fetching task summary...');
+        const summaryResult = await taskAPI.getSummary().catch(e => {
+          console.error('❌ Task Summary API Error:', e);
+          return { totalTugas: 0, tenggatWaktuTugas: 0, estimasiBebanKerja: 0, backlog: 0, onProgress: 0, done: 0 };
+        });
+        
+        console.log('🔄 Fetching all tasks...');
+        const tasksResult = await taskAPI.getAll().catch(e => {
+          console.error('❌ Tasks API Error:', e);
+          return [];
+        });
+        
+        console.log('🔄 Fetching prediksi...');
+        const prediksiResult = await prediksiAPI.getLatest().catch(e => {
+          console.error('❌ Prediksi API Error:', e);
+          return { hasilPrediksi: 'Aman', skorConfidence: 0 };
+        });
+        
+        console.log('✅ Akademik Data:', akademikResult);
+        console.log('✅ Summary Data:', summaryResult);
+        console.log('✅ Tasks Data:', tasksResult);
+        console.log('✅ Prediksi Data:', prediksiResult);
+        
+        // Handle if akademik data is wrapped in an object
+        const akademikArray = Array.isArray(akademikResult) ? akademikResult : (akademikResult?.data || []);
+        const tasksArray = Array.isArray(tasksResult) ? tasksResult : (tasksResult?.data || []);
+        
+        setAkademik(akademikArray);
+        setSummary(summaryResult);
+        setTasks(tasksArray);
+        setPrediksi(prediksiResult);
       } catch (err) {
-        console.error('Error fetching dashboard:', err);
+        console.error('❌ Dashboard fetch error:', err);
+        setAkademik([]);
+        setSummary({ totalTugas: 0, tenggatWaktuTugas: 0, estimasiBebanKerja: 0, backlog: 0, onProgress: 0, done: 0 });
+        setTasks([]);
+        setPrediksi({ hasilPrediksi: 'Aman', skorConfidence: 0 });
       } finally {
         setLoading(false);
       }
@@ -31,8 +72,14 @@ const DashboardMahasiswa = ({ user }) => {
   }, []);
 
   const latest = akademik[akademik.length - 1] || {};
-  const ipkTrend = akademik.map(d => ({ semester: `Sem ${d.semesterKe}`, ip: d.ipSemester }));
-  const sksTrend = akademik.map(d => ({ semester: `Sem ${d.semesterKe}`, sks: d.sksPerSemester }));
+  
+  // Use akademik data if available, otherwise use empty arrays (user needs to input data)
+  const ipkTrend = akademik && akademik.length > 0 
+    ? akademik.map(d => ({ semester: `Sem ${d.semesterKe}`, ip: d.ipSemester }))
+    : [];
+  const sksTrend = akademik && akademik.length > 0
+    ? akademik.map(d => ({ semester: `Sem ${d.semesterKe}`, sks: d.sksPerSemester }))
+    : [];
   const taskProgress = [
     { name: "On Progress", value: summary.onProgress || 0, color: "#FF9800" },
     { name: "Backlog", value: summary.backlog || 0, color: "#000000" },
@@ -48,100 +95,323 @@ const DashboardMahasiswa = ({ user }) => {
   );
 
   return (
-    <div style={{ padding: 32 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24, marginBottom: 32 }}>
-        <Card>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.textDark, marginBottom: 12 }}>Mahasiswa</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#FFF0CC", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🛡️</div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>Selamat Datang</div>
-              <div style={{ color: C.textGray, fontSize: 12 }}>{user.nama}</div>
-              <div style={{ color: C.textGray, fontSize: 12 }}>{user.nim}</div>
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.textDark, marginBottom: 12 }}>Indikator Resiko Akademik</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#FFF0CC", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🛡️</div>
-            <div>
-              <div style={{ color: C.textGray, fontSize: 12 }}>Status Akademik</div>
-              <div style={{ color: statusColor[prediksi.hasilPrediksi] || C.green, fontWeight: 700, fontSize: 14 }}>
-                {prediksi.hasilPrediksi || 'Aman'}
+    <div style={{ padding: "24px 16px", background: "#f0ede6", minHeight: "100vh" }}>
+      {/* Mahasiswa, Kemajuan Tugas, and Ringkasan Harian - 3 Column Layout */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24, marginBottom: 32, maxWidth: 1200, margin: "0 auto 32px" }}>
+        {/* Mahasiswa Welcome Card */}
+        <Card style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderRadius: 12, border: "none", padding: "18px 20px", background: "#1B7B6D" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>Mahasiswa</div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 18, color: "#FFFFFF", marginBottom: 4 }}>Selamat Datang, {user.nama?.split(' ')[0]}</div>
+            <div style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Semester ini tetap semangat!</div>
+            {/* Dynamic prediction badge */}
+            {prediksi?.hasilPrediksi ? (
+              <>
+                <div style={{ display: "inline-block", background: "rgba(255,255,255,0.2)", color: "#FFFFFF", padding: "6px 12px", borderRadius: 16, fontSize: 12, fontWeight: 600 }}>
+                  ✓ {prediksi.hasilPrediksi}
+                </div>
+                {prediksi.skorConfidence > 0 && (
+                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 8 }}>
+                    Confidence: {(prediksi.skorConfidence * 100).toFixed(0)}%
+                  </div>
+                )}
+              </>
+            ) : (
+              <div style={{ display: "inline-block", background: "rgba(255,255,255,0.2)", color: "#FFFFFF", padding: "6px 12px", borderRadius: 16, fontSize: 12, fontWeight: 600 }}>
+                ⏳ Belum ada prediksi
               </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Kemajuan Tugas */}
+        <Card style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderRadius: 12, border: "none", padding: "18px", background: "#FFFFFF" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.textGray, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>Kemajuan Tugas</div>
+          {summary.totalTugas === 0 ? (
+            <div style={{ color: "#a39c94", textAlign: "center", padding: "40px 20px", fontSize: "14px", height: "110px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px" }}>
+              <div>📭 Belum ada tugas</div>
+              <a href="/tasks/create" style={{ color: "#7bbf9e", textDecoration: "none", fontSize: "13px", fontWeight: "600", borderBottom: "1px solid #7bbf9e" }}>Buat tugas sekarang →</a>
             </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.textDark, marginBottom: 8 }}>Kemajuan Tugas</div>
-          <ResponsiveContainer width="100%" height={120}>
-            <PieChart>
-              <Pie data={taskProgress} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value">
-                {taskProgress.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-            {taskProgress.map((t, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: t.color }} />
-                <span style={{ color: C.textGray }}>{t.value} {t.name}</span>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={110}>
+                <PieChart>
+                  <MiniPie data={taskProgress} cx="50%" cy="50%" innerRadius={28} outerRadius={42} dataKey="value">
+                    {taskProgress.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </MiniPie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginTop: 10 }}>
+                {taskProgress.map((t, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: t.color }} />
+                    <span style={{ color: C.textGray }}>{t.value} {t.name}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </>
+          )}
+        </Card>
+
+        <Card style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderRadius: 12, border: "none", padding: "16px", background: "#FFFFFF" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.textGray, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>Ringkasan Harian</div>
+          {summary.totalTugas === 0 ? (
+            <div style={{ color: "#a39c94", textAlign: "center", padding: "30px 20px", fontSize: "14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px" }}>
+              <div style={{ fontSize: 20 }}>📝</div>
+              <div>Belum ada tugas yang dibuat</div>
+              <a href="/tasks/create" style={{ color: "#7bbf9e", textDecoration: "none", fontSize: "13px", fontWeight: "600", borderBottom: "1px solid #7bbf9e" }}>Mulai buat tugas →</a>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                { val: summary.totalTugas, label: "Total Tugas", bg: C.accent, icon: "📋" },
+                { val: summary.tenggatWaktuTugas, label: "Tenggat Waktu", bg: C.primary, icon: "🕐" },
+                { val: summary.estimasiBebanKerja, label: "Estimasi Beban", bg: C.red, icon: "📈" },
+              ].map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 10, borderBottom: i < 2 ? "1px solid #F0F0F0" : "none" }}>
+                  <div style={{ width: 48, height: 48, borderRadius: "8px", background: `${item.bg}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{item.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 18, color: item.bg }}>{item.val}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.textGray }}>{item.label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 1200, margin: "0 auto" }}>
+        {/* Bar Chart - Trend Beban SKS */}
+        <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", padding: "20px", border: "none", boxShadow: "none" }}>
+          <h2 style={{ fontSize: "14px", fontWeight: "600", color: "#8b8377", marginBottom: "16px", letterSpacing: "0.5px", margin: "0 0 16px 0", textTransform: "uppercase" }}>Trend Beban SKS</h2>
+          {sksTrend && sksTrend.length > 0 ? (
+            <>
+              <div style={{ position: "relative", height: "280px", marginBottom: "12px" }}>
+                <BarChart
+                  data={{
+                    labels: sksTrend.map(d => d.semester),
+                    datasets: [
+                      {
+                        label: "Beban SKS",
+                        data: sksTrend.map(d => d.sks),
+                        backgroundColor: "#7bbf9e",
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        categoryPercentage: 0.6,
+                        barPercentage: 0.8,
+                      },
+                    ],
+                  }}
+                  options={{
+                    indexAxis: "x",
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: false,
+                      },
+                      tooltip: {
+                        backgroundColor: "#ffffff",
+                        borderColor: "#e0dbd1",
+                        borderWidth: 1,
+                        titleColor: "#8b8377",
+                        bodyColor: "#8b8377",
+                        padding: 8,
+                        borderRadius: 6,
+                        titleFont: { size: 12 },
+                        bodyFont: { size: 12 },
+                      },
+                    },
+                    scales: {
+                      y: {
+                        display: false,
+                        beginAtZero: true,
+                        max: 20,
+                      },
+                      x: {
+                        grid: {
+                          display: false,
+                        },
+                        ticks: {
+                          color: "#a39c94",
+                          font: { size: 12 },
+                        },
+                        border: {
+                          display: false,
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "center", marginTop: "12px", fontSize: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#8b8377" }}>
+                  <div style={{ width: "12px", height: "12px", backgroundColor: "#7bbf9e", borderRadius: "2px" }} />
+                  <span>Beban SKS</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div style={{ color: "#a39c94", textAlign: "center", padding: "40px 20px", fontSize: "14px", height: "280px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px" }}>
+              <div>Belum ada data akademik</div>
+              <a href="/akademik/input" style={{ color: "#7bbf9e", textDecoration: "none", fontSize: "13px", fontWeight: "600", borderBottom: "1px solid #7bbf9e" }}>Input data sekarang →</a>
+            </div>
+          )}
+        </div>
+
+        {/* Line Chart - Trend IPK */}
+        <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", padding: "20px", border: "none", boxShadow: "none" }}>
+          <h2 style={{ fontSize: "14px", fontWeight: "600", color: "#8b8377", marginBottom: "16px", letterSpacing: "0.5px", margin: "0 0 16px 0", textTransform: "uppercase" }}>Trend IPK</h2>
+          {ipkTrend && ipkTrend.length > 0 ? (
+            <>
+              <div style={{ position: "relative", height: "280px", marginBottom: "12px" }}>
+                <LineChart
+                  data={{
+                    labels: ipkTrend.map(d => d.semester),
+                    datasets: [
+                      {
+                        label: "IP Semester",
+                        data: ipkTrend.map(d => d.ip),
+                        borderColor: "#e9a84c",
+                        borderDash: [5, 5],
+                        borderWidth: 2.5,
+                        pointRadius: 5,
+                        pointBackgroundColor: "#e9a84c",
+                        pointBorderColor: "#e9a84c",
+                        pointBorderWidth: 0,
+                        pointHoverRadius: 6,
+                        tension: 0.3,
+                        fill: false,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: false,
+                      },
+                      tooltip: {
+                        backgroundColor: "#ffffff",
+                        borderColor: "#e0dbd1",
+                        borderWidth: 1,
+                        titleColor: "#8b8377",
+                        bodyColor: "#8b8377",
+                        padding: 8,
+                        borderRadius: 6,
+                        titleFont: { size: 12 },
+                        bodyFont: { size: 12 },
+                      },
+                    },
+                    scales: {
+                      y: {
+                        min: 1.0,
+                        max: 4.0,
+                        ticks: {
+                          color: "#a39c94",
+                          font: { size: 12 },
+                        },
+                        grid: {
+                          color: "#e8e0d7",
+                          drawBorder: false,
+                        },
+                        border: {
+                          display: false,
+                        },
+                      },
+                      x: {
+                        grid: {
+                          display: false,
+                        },
+                        ticks: {
+                          color: "#a39c94",
+                          font: { size: 12 },
+                        },
+                        border: {
+                          display: false,
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "center", marginTop: "12px", fontSize: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#8b8377" }}>
+                  <div style={{ width: "12px", height: "2.5px", backgroundColor: "#e9a84c", backgroundImage: "linear-gradient(to right, #e9a84c 0%, #e9a84c 60%, transparent 60%)" }} />
+                  <span>IP Semester</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div style={{ color: "#a39c94", textAlign: "center", padding: "40px 20px", fontSize: "14px", height: "280px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px" }}>
+              <div>Belum ada data akademik</div>
+              <a href="/akademik/input" style={{ color: "#7bbf9e", textDecoration: "none", fontSize: "13px", fontWeight: "600", borderBottom: "1px solid #7bbf9e" }}>Input data sekarang →</a>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tugas Mendatang */}
+      {tasks.length > 0 && (
+        <div style={{ maxWidth: 1200, margin: "32px auto 0", backgroundColor: "#ffffff", borderRadius: "12px", padding: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          <h2 style={{ fontSize: "14px", fontWeight: "600", color: "#8b8377", marginBottom: "16px", letterSpacing: "0.5px", margin: "0 0 16px 0", textTransform: "uppercase" }}>Tugas Mendatang</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {tasks
+              .filter(t => t.status !== 'Done') // Exclude completed tasks
+              .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+              .slice(0, 5) // Show only top 5
+              .map(task => {
+                const deadline = new Date(task.deadline);
+                const today = new Date();
+                const sisaHari = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+                const isOverdue = sisaHari < 0;
+                
+                return (
+                  <div 
+                    key={task._id}
+                    style={{
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "space-between", 
+                      padding: "12px 16px", 
+                      background: isOverdue ? "#FFF0F0" : "#f8f8f8",
+                      borderRadius: "10px",
+                      border: isOverdue ? `1px solid #FFB3B3` : "1px solid #e8e8e8",
+                      transition: "all 0.2s"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = isOverdue ? "#FFE8E8" : "#f0f0f0"}
+                    onMouseOut={e => e.currentTarget.style.background = isOverdue ? "#FFF0F0" : "#f8f8f8"}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
+                      <input type="checkbox" style={{ cursor: "pointer", width: 18, height: 18 }} />
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "#2c3e50", marginBottom: 2 }}>{task.namaTugas}</div>
+                        <div style={{ fontSize: 12, color: "#8b8377" }}>{task.kategoriTask}</div>
+                      </div>
+                    </div>
+                    <div 
+                      style={{
+                        fontSize: 12, 
+                        fontWeight: 600, 
+                        padding: "6px 12px", 
+                        borderRadius: "8px",
+                        background: isOverdue ? "#FF6B6B" : (sisaHari === 0 ? "#FF9800" : sisaHari === 1 ? "#FFC107" : "#4CAF50"),
+                        color: isOverdue ? "#fff" : (sisaHari <= 1 ? "#000" : "#fff"),
+                        minWidth: "80px",
+                        textAlign: "center"
+                      }}
+                    >
+                      {isOverdue ? "Besok" : sisaHari === 1 ? "1 hari" : sisaHari === 0 ? "Hari ini" : `${sisaHari} hari`}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
-        </Card>
-      </div>
-
-      <div style={{ marginBottom: 8, fontSize: 16, fontWeight: 700, color: C.textDark }}>Ringkasan Harian</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 32 }}>
-        {[
-          { val: summary.totalTugas, label: "Total Tugas", bg: C.accent },
-          { val: summary.tenggatWaktuTugas, label: "Tenggat Waktu Tugas", bg: C.primary },
-          { val: summary.estimasiBebanKerja, label: "Estimasi Beban Kerja", bg: C.red },
-        ].map((item, i) => (
-          <Card key={i} style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", background: item.bg, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 20 }}>{item.val}</div>
-            <div style={{ fontWeight: 600, color: C.textDark, fontSize: 14 }}>{item.label}</div>
-          </Card>
-        ))}
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-        <Card>
-          <div style={{ fontWeight: 700, marginBottom: 16, color: C.textDark }}>Trend Beban SKS</div>
-          {sksTrend.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={sksTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
-                <XAxis dataKey="semester" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="sks" name="Beban SKS" fill={C.primary} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <div style={{ color: C.textGray, textAlign: "center", padding: 40 }}>Belum ada data akademik</div>}
-        </Card>
-        <Card>
-          <div style={{ fontWeight: 700, marginBottom: 16, color: C.textDark }}>Trend IPK</div>
-          {ipkTrend.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={ipkTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
-                <XAxis dataKey="semester" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 4]} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="ip" name="IP Semester" stroke={C.accent} strokeWidth={2} dot={{ fill: C.accent }} />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : <div style={{ color: C.textGray, textAlign: "center", padding: 40 }}>Belum ada data akademik</div>}
-        </Card>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

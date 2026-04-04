@@ -102,19 +102,21 @@ const role = (...roles) => (req, res, next) => {
 };
 
 // ─── RULE-BASED PRIORITY SCORE ────────────────────────────────────────────────
-// Formula: Score = (urgensi × 2) + kesulitan + estimasi + status_backlog
+// Formula: Score = (urgensi × 3) + (kesulitan × 1.5) + estimasi + (status_backlog × 2)
 // Semakin tinggi score = semakin prioritas
+// Range: 2 (min) hingga 21 (max) untuk distribusi yang lebih baik
 const hitungPriority = (task) => {
   const now = new Date();
   const deadline = new Date(task.deadline);
   const sisaHari = Math.max(0, Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)));
 
-  // Skor urgensi berdasarkan sisa hari
+  // Skor urgensi berdasarkan sisa hari — ini faktor paling penting
   let skorUrgensi = 1;
-  if (sisaHari <= 1) skorUrgensi = 5;
-  else if (sisaHari <= 3) skorUrgensi = 4;
-  else if (sisaHari <= 7) skorUrgensi = 3;
-  else if (sisaHari <= 14) skorUrgensi = 2;
+  if (sisaHari <= 1) skorUrgensi = 5;      // Hari ini atau lusa
+  else if (sisaHari <= 3) skorUrgensi = 4; // 2-3 hari
+  else if (sisaHari <= 7) skorUrgensi = 3; // 4-7 hari
+  else if (sisaHari <= 14) skorUrgensi = 2;// 8-14 hari
+  // else skorUrgensi = 1 (lebih dari 2 minggu)
 
   // Skor kesulitan
   const skorKesulitan = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
@@ -123,19 +125,21 @@ const hitungPriority = (task) => {
   const jam = parseInt(task.estimasiPengerjaan) || 1;
   const skorEstimasi = jam >= 6 ? 3 : jam >= 3 ? 2 : 1;
 
-  // Skor status (backlog lebih prioritas dari on progress)
-  const skorStatus = task.status === 'Backlog' ? 1 : 0;
+  // Skor status — backlog lebih prioritas karena belum dimulai
+  const skorStatus = task.status === 'Backlog' ? 2 : (task.status === 'On Progress' ? 1 : 0);
 
-  const totalScore = (skorUrgensi * 2) +
-    (skorKesulitan[task.tingkatKesulitan] || 1) +
+  // Total dengan bobot yang lebih jelas
+  const totalScore = (skorUrgensi * 3) +
+    (skorKesulitan[task.tingkatKesulitan] || 1) * 1.5 +
     skorEstimasi +
     skorStatus;
 
-  // Label prioritas berdasarkan total score
+  // Label prioritas — threshold yang lebih variatif
   let label = 'Rendah';
-  if (totalScore >= 14) label = 'Kritis';
-  else if (totalScore >= 10) label = 'Tinggi';
-  else if (totalScore >= 7) label = 'Sedang';
+  if (totalScore >= 18) label = 'Kritis';      // ~86-100% dari max
+  else if (totalScore >= 13) label = 'Tinggi'; // ~62-85% dari max
+  else if (totalScore >= 8) label = 'Sedang';  // ~38-61% dari max
+  else label = 'Rendah';                       // ~10-37% dari max
 
   return { score: totalScore, label, sisaHari };
 };
@@ -310,36 +314,52 @@ app.post('/api/akademik', auth, role('mahasiswa'), async (req, res) => {
     // After saving, try to get prediction from ML API
     let prediksi = null;
     try {
-      const allAkademik = await Akademik.find({ mahasiswaId: req.user.id });
-      const mlPayload = {
-        student_id: req.user.id,
-        ipk_total: req.body.ipkTotal,
-        history: allAkademik.map(row => ({
-          strata: row.strata,
-          semester: row.semesterKe,
-          ip_semester: row.ipSemester,
-          sks_semester: row.sksPerSemester,
-          total_sks: row.totalSks,
-          sks_lulus: row.jumlahSksLulus,
-        })),
-      };
+      const allAkademik = await Akademik.find({ mahasiswaId: req.user.id }).sort({ semesterKe: 1 });
+      
+      if (allAkademik.length === 0) {
+        console.warn('⚠️ No akademik data found for student', req.user.id);
+      } else {
+        const mlPayload = {
+          student_id: req.user.id,
+          ipk_total: req.body.ipkTotal,
+          history: allAkademik.map(row => ({
+            strata: row.strata,
+            semester: row.semesterKe,
+            ip_semester: row.ipSemester,
+            sks_semester: row.sksPerSemester,
+            total_sks: row.totalSks,
+            sks_lulus: row.jumlahSksLulus,
+          })),
+        };
+        
+        console.log('📤 Sending to ML API with', allAkademik.length, 'semesters:', JSON.stringify(mlPayload, null, 2));
 
-      const mlRes = await fetch('https://areass.versa.my.id/ml/predict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mlPayload),
-      });
+        const mlRes = await fetch('https://areass.versa.my.id/ml/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(mlPayload),
+        });
 
-      if (mlRes.ok) {
-        prediksi = await mlRes.json();
-        // Update akademik data dengan hasil prediksi
-        await Akademik.updateMany(
-          { mahasiswaId: req.user.id },
-          { 
-            hasilPrediksi: prediksi.prediction,
-            skorConfidence: prediksi.probability ? prediksi.probability.hasilPrediksi_lulus_tepat_waktu || 0.5 : 0.5
-          }
-        );
+        if (mlRes.ok) {
+          prediksi = await mlRes.json();
+          console.log('✅ ML Prediction received:', prediksi);
+          
+          // Update akademik data dengan hasil prediksi
+          const skorConfidence = prediksi.probability ? prediksi.probability[prediksi.prediction] || 0.5 : 0.5;
+          console.log('📊 Storing prediction:', { prediction: prediksi.prediction, skorConfidence });
+          
+          await Akademik.updateMany(
+            { mahasiswaId: req.user.id },
+            { 
+              hasilPrediksi: prediksi.prediction,
+              skorConfidence: skorConfidence
+            }
+          );
+        } else {
+          console.error('❌ ML API Error:', mlRes.status, mlRes.statusText);
+          const errorText = await mlRes.text();
+          console.error('ML API Response:', errorText);
+        }
       }
     } catch (mlErr) {
       console.error('ML Prediction Error:', mlErr.message);
