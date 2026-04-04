@@ -13,6 +13,7 @@ export default function InputDataAkademikPage({ user }) {
   const [dataSemester, setDataSemester] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const maxSemesterByJenjang = {
     D3: 10,
@@ -131,30 +132,16 @@ export default function InputDataAkademikPage({ user }) {
         }
       }
       
-      setMessage({ type: "success", text: "Data akademik berhasil disimpan! Segera diarahkan ke dashboard..." });
-
-      // Set flag & hard redirect
-      console.log("User object:", user);
-      console.log("User ID:", user?._id);
-      
+      // Set akademik completed flag
       if (user?._id) {
-        const flagKey = `akademik_completed_${user._id}`;
-        localStorage.setItem(flagKey, "true");
-        console.log("Flag set di localStorage:", flagKey);
-        console.log("Flag value:", localStorage.getItem(flagKey));
-        
-        // Hard redirect
-        console.log("Akan redirect ke /dashboard dalam 800ms...");
-        setTimeout(() => {
-          console.log("Executing redirect...");
-          window.location.href = "/dashboard";
-        }, 800);
-      } else {
-        console.error("User ID tidak ditemukan!");
+        localStorage.setItem(`akademik_completed_${user._id}`, "true");
       }
+      
+      // Show success modal instead of auto redirect
+      setShowSuccessModal(true);
+      setLoading(false);
     } catch (err) {
       setMessage({ type: "error", text: "Gagal terhubung ke server" });
-    } finally {
       setLoading(false);
     }
   };
@@ -367,6 +354,80 @@ export default function InputDataAkademikPage({ user }) {
       fontWeight: 600,
       fontSize: isMobile ? 13 : 15,
       boxSizing: "border-box",
+    },
+    modalOverlay: {
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1000,
+    },
+    modal: {
+      background: "#fff",
+      borderRadius: 20,
+      padding: "40px 32px",
+      maxWidth: 400,
+      width: "90%",
+      boxShadow: "0 10px 40px rgba(0, 0, 0, 0.2)",
+      position: "relative",
+    },
+    modalCloseBtn: {
+      position: "absolute",
+      top: 16,
+      right: 16,
+      background: "#E5E7EB",
+      border: "none",
+      width: 32,
+      height: 32,
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      cursor: "pointer",
+      color: "#6B7280",
+      fontSize: 20,
+    },
+    modalContent: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 16,
+    },
+    modalIcon: {
+      width: 80,
+      height: 80,
+      borderRadius: "50%",
+      background: "#E0F7F4",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 40,
+      color: "#14B8A6",
+      fontWeight: 700,
+    },
+    modalTitle: {
+      fontSize: 24,
+      fontWeight: 700,
+      color: "#1F2937",
+      margin: 0,
+      textAlign: "center",
+    },
+    modalBtn: {
+      width: "100%",
+      padding: "14px 20px",
+      background: "#14B8A6",
+      color: "#fff",
+      border: "none",
+      borderRadius: 12,
+      fontSize: 16,
+      fontWeight: 600,
+      cursor: "pointer",
+      marginTop: 8,
     },
   };
 
@@ -595,6 +656,33 @@ export default function InputDataAkademikPage({ user }) {
           {loading ? "Menyimpan..." : "Add Data"}
         </button>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div style={S.modalOverlay}>
+          <div style={S.modal}>
+            <div style={S.modalCloseBtn} onClick={() => setShowSuccessModal(false)}>
+              ✕
+            </div>
+            
+            <div style={S.modalContent}>
+              <div style={S.modalIcon}>✓</div>
+              <h2 style={S.modalTitle}>Data Berhasil Dibuat</h2>
+              <button
+                onClick={() => {
+                  if (user?._id) {
+                    localStorage.setItem(`akademik_completed_${user._id}`, "true");
+                  }
+                  window.location.href = "/dashboard";
+                }}
+                style={S.modalBtn}
+              >
+                Oke
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
