@@ -12,6 +12,8 @@ app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'areass_secret_2026';
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/areass';
+const ML_API_URL = process.env.ML_API_URL || 'http://localhost:8000';
+console.log('🔧 Configured ML API URL:', ML_API_URL);
 
 // ─── CONNECT DB ───────────────────────────────────────────────────────────────
 mongoose.connect(MONGO_URI)
@@ -334,7 +336,7 @@ app.post('/api/akademik', auth, role('mahasiswa'), async (req, res) => {
         
         console.log('📤 Sending to ML API with', allAkademik.length, 'semesters:', JSON.stringify(mlPayload, null, 2));
 
-        const mlRes = await fetch('https://areass.versa.my.id/ml/predict', {
+        const mlRes = await fetch(`${ML_API_URL}/predict`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(mlPayload),
