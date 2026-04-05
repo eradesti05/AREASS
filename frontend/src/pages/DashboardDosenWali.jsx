@@ -1,6 +1,7 @@
 import { C } from '../constants/theme';
 import { Card, StatusBadge } from '../components/UIComponents';
 import { mahasiswaList, nilaiMahasiswaBimbingan } from '../data/dummyData';
+import { Edit2 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer
@@ -51,8 +52,10 @@ const DashboardDosenWali = () => (
               <td style={{ padding: "14px 16px" }}>
                 <button style={{
                   background: "transparent", border: "1.5px solid #E0E4F0",
-                  borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontSize: 16
-                }}>✏️</button>
+                  borderRadius: 8, padding: "4px 10px", cursor: "pointer", display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textGray
+                }}>
+                  <Edit2 size={16} />
+                </button>
               </td>
             </tr>
           ))}

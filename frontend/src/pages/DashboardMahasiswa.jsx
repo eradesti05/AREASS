@@ -8,6 +8,7 @@ import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend as ChartL
 import { Bar as BarChart, Line as LineChart } from "react-chartjs-2";
 import { Chart as ChartJS2, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip as ChartTooltip2, Legend as ChartLegend2 } from "chart.js";
 import { PieChart, Pie as MiniPie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { CheckCircle, TrendingUp } from "lucide-react";
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 ChartJS2.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, ChartTooltip2, ChartLegend2);
@@ -92,7 +93,13 @@ const DashboardMahasiswa = ({ user }) => {
 
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
-      <div style={{ color: C.textGray, fontSize: 16 }}>⏳ Memuat data...</div>
+      <div style={{ color: C.textGray, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <svg style={{ animation: 'spin 1s linear infinite' }} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" strokeOpacity="0.25"/>
+          <path d="M12 2A10 10 0 0 0 2 12" strokeLinecap="round"/>
+        </svg>
+        Memuat data...
+      </div>
     </div>
   );
 
@@ -109,8 +116,8 @@ const DashboardMahasiswa = ({ user }) => {
             {/* Dynamic prediction badge */}
             {prediksi?.hasilPrediksi ? (
               <>
-                <div style={{ display: "inline-block", background: "rgba(255,255,255,0.2)", color: "#FFFFFF", padding: "6px 12px", borderRadius: 16, fontSize: 12, fontWeight: 600 }}>
-                  ✓ {prediksi.hasilPrediksi}
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.2)", color: "#FFFFFF", padding: "6px 12px", borderRadius: 16, fontSize: 12, fontWeight: 600 }}>
+                  <CheckCircle size={14} /> {prediksi.hasilPrediksi}
                 </div>
                 {prediksi.skorConfidence > 0 && (
                   <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 8 }}>
@@ -120,7 +127,7 @@ const DashboardMahasiswa = ({ user }) => {
               </>
             ) : (
               <div style={{ display: "inline-block", background: "rgba(255,255,255,0.2)", color: "#FFFFFF", padding: "6px 12px", borderRadius: 16, fontSize: 12, fontWeight: 600 }}>
-                ⏳ Belum ada prediksi
+                Belum ada prediksi
               </div>
             )}
           </div>
@@ -167,12 +174,12 @@ const DashboardMahasiswa = ({ user }) => {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
-                { val: summary.totalTugas, label: "Total Tugas", bg: C.accent, icon: "📋" },
-                { val: summary.tenggatWaktuTugas, label: "Tenggat Waktu", bg: C.primary, icon: "🕐" },
-                { val: summary.estimasiBebanKerja, label: "Estimasi Beban", bg: C.red, icon: "📈" },
+                { val: summary.totalTugas, label: "Total Tugas", bg: C.accent },
+                { val: summary.tenggatWaktuTugas, label: "Tenggat Waktu", bg: C.primary },
+                { val: summary.estimasiBebanKerja, label: "Estimasi Beban", bg: C.red },
               ].map((item, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 10, borderBottom: i < 2 ? "1px solid #F0F0F0" : "none" }}>
-                  <div style={{ width: 48, height: 48, borderRadius: "8px", background: `${item.bg}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{item.icon}</div>
+                  <div style={{ width: 48, height: 48, borderRadius: "8px", background: `${item.bg}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: 18, color: item.bg }}>{item.val}</div>
                     <div style={{ fontSize: 12, fontWeight: 600, color: C.textGray }}>{item.label}</div>
@@ -418,8 +425,8 @@ const DashboardMahasiswa = ({ user }) => {
                         fontWeight: 700, 
                         padding: "8px 14px", 
                         borderRadius: "20px",
-                        background: isOverdue ? "#FF6B6B" : (sisaHari === 0 ? "#FF9800" : sisaHari === 1 ? "#FFC107" : "#4CAF50"),
-                        color: isOverdue ? "#fff" : (sisaHari <= 1 ? "#333" : "#fff"),
+                        background: isOverdue ? "#FF6B6B" : (sisaHari === 0 ? "#FF6B6B" : sisaHari === 1 ? "#FFC107" : "#4CAF50"),
+                        color: isOverdue ? "#fff" : (sisaHari <= 1 ? "#fff" : "#fff"),
                         minWidth: "90px",
                         textAlign: "center",
                         flexShrink: 0

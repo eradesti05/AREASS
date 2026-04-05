@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { C } from '../constants/theme';
 import { StatusBadge } from '../components/UIComponents';
 import { taskAPI, categoryAPI } from '../services/api';
+import { Zap, Folder, Calendar, X, Edit2, Clock, Plus, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
 
 const PriorityBadge = ({ label }) => {
   const map = {
@@ -14,8 +15,8 @@ const PriorityBadge = ({ label }) => {
   };
   const s = map[label] || { bg: '#eee', text: '#555' };
   return (
-    <span style={{ background: s.bg, color: s.text, padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 700 }}>
-      ⚡ {label}
+    <span style={{ background: s.bg, color: s.text, padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
+      <Zap size={10} /> {label}
     </span>
   );
 };
@@ -126,7 +127,13 @@ const TaskManagement = () => {
 
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
-      <div style={{ color: C.textGray, fontSize: 16 }}>⏳ Memuat tasks...</div>
+      <div style={{ color: C.textGray, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <svg style={{ animation: 'spin 1s linear infinite' }} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" strokeOpacity="0.25"/>
+          <path d="M12 2A10 10 0 0 0 2 12" strokeLinecap="round"/>
+        </svg>
+        Memuat tasks...
+      </div>
     </div>
   );
 
@@ -137,23 +144,23 @@ const TaskManagement = () => {
         <button onClick={() => navigate("/tasks/create")} style={{
           background: C.primary, color: "#fff", border: "none",
           borderRadius: 12, padding: "12px 28px", fontWeight: 700, cursor: "pointer", fontSize: 15,
-          boxShadow: cardBoxShadow, transition
+          boxShadow: cardBoxShadow, transition, display: 'inline-flex', alignItems: 'center', gap: 8
         }}
         onMouseOver={e => e.currentTarget.style.background = C.primaryDark}
         onMouseOut={e => e.currentTarget.style.background = C.primary}
-        >+ Buat Tugas</button>
+        ><Plus size={18} /> Buat Tugas</button>
       </div>
 
       {/* Info rule-based */}
-      <div style={{ background: C.primaryLight, borderRadius: 10, padding: "10px 20px", marginBottom: 24, fontSize: 13, color: C.primary, fontWeight: 600 }}>
-        ⚡ <strong>Rule-Based Scheduling aktif</strong> — Task diurutkan otomatis berdasarkan urgensi deadline, tingkat kesulitan, dan estimasi pengerjaan
+      <div style={{ background: C.primaryLight, borderRadius: 10, padding: "10px 20px", marginBottom: 24, fontSize: 13, color: C.primary, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Zap size={16} /> <strong>Rule-Based Scheduling aktif</strong> — Task diurutkan otomatis berdasarkan urgensi deadline, tingkat kesulitan, dan estimasi pengerjaan
       </div>
 
       {/* Filters */}
       <div style={{ background: C.white, borderRadius: 14, padding: 18, marginBottom: 28, boxShadow: cardBoxShadow, display: 'flex', gap: 20, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div>
-          <label style={{ fontSize: 13, fontWeight: 700, color: C.textGray, marginBottom: 6, display: 'block' }}>
-            📁 Filter Kategori
+          <label style={{ fontSize: 13, fontWeight: 700, color: C.textGray, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Folder size={14} /> Filter Kategori
           </label>
           <select 
             value={filterCategory} 
@@ -172,8 +179,8 @@ const TaskManagement = () => {
         </div>
 
         <div>
-          <label style={{ fontSize: 13, fontWeight: 700, color: C.textGray, marginBottom: 6, display: 'block' }}>
-            📅 Filter Deadline
+          <label style={{ fontSize: 13, fontWeight: 700, color: C.textGray, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Calendar size={14} /> Filter Deadline
           </label>
           <input 
             type="date"
@@ -195,12 +202,12 @@ const TaskManagement = () => {
             style={{
               background: 'transparent', color: C.primary, border: `1.5px solid ${C.primary}`,
               borderRadius: 10, padding: "10px 18px", fontWeight: 700, cursor: 'pointer',
-              fontSize: 13, transition
+              fontSize: 13, transition, display: 'inline-flex', alignItems: 'center', gap: 6
             }}
             onMouseOver={e => e.currentTarget.style.background = C.primaryLight}
             onMouseOut={e => e.currentTarget.style.background = 'transparent'}
           >
-            ✕ Clear Filter
+            <X size={14} /> Clear Filter
           </button>
         )}
       </div>
@@ -224,12 +231,12 @@ const TaskManagement = () => {
                 {col === "Backlog" && (
                   <button onClick={() => navigate("/tasks/create")} style={{
                     background: C.primaryLight, color: C.primary, border: "none",
-                    borderRadius: "50%", width: 30, height: 30, cursor: "pointer", fontSize: 18, fontWeight: 800,
+                    borderRadius: "50%", width: 30, height: 30, cursor: "pointer", display: 'flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: cardBoxShadow, transition
                   }}
                   onMouseOver={e => e.currentTarget.style.background = "rgba(26, 35, 200, 0.15)"}
                   onMouseOut={e => e.currentTarget.style.background = C.primaryLight}
-                  >+</button>
+                  ><Plus size={18} /></button>
                 )}
               </div>
               <div style={{ height: 3, borderRadius: 2, background: colColors[col], marginBottom: 18 }} />
@@ -283,13 +290,13 @@ const TaskManagement = () => {
                               background: "transparent", border: "none", cursor: "pointer",
                               padding: 6, borderRadius: 8, transition,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              color: C.textGray, fontSize: 16
+                              color: C.textGray
                             }}
                             title="Edit task"
                             onMouseOver={e => e.currentTarget.style.background = "rgba(26, 35, 200, 0.1)"}
                             onMouseOut={e => e.currentTarget.style.background = 'transparent'}
                           >
-                            ✏️
+                            <Edit2 size={16} />
                           </button>
                           <select
                             onChange={e => {
@@ -312,7 +319,7 @@ const TaskManagement = () => {
                             {columns.filter(c => c !== col).map(c => (
                               <option key={c} value={c}>Pindah ke {c}</option>
                             ))}
-                            <option value="delete">🗑️ Hapus</option>
+                            <option value="delete" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Hapus</option>
                           </select>
                         </div>
                       </div>
@@ -320,11 +327,13 @@ const TaskManagement = () => {
                       <div style={{ fontWeight: 800, fontSize: 15, color: C.textDark, marginBottom: 6 }}>{task.namaTugas}</div>
                       <div style={{ fontSize: 13, color: C.textGray, marginBottom: 10 }}>{task.kategoriTask}</div>
 
-                      <div style={{ fontSize: 12, color: isOverdue ? C.red : C.textGray, fontWeight: 500 }}>
-                        📅 {new Date(task.deadline).toLocaleDateString('id-ID')} · ⏱️ {task.estimasiPengerjaan}
-                        {isOverdue && <span style={{ marginLeft: 6, fontWeight: 800 }}>⚠️ Terlambat!</span>}
+                      <div style={{ fontSize: 12, color: isOverdue ? C.red : C.textGray, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> {new Date(task.deadline).toLocaleDateString('id-ID')}</div>
+                        <span>·</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={12} /> {task.estimasiPengerjaan}</div>
+                        {isOverdue && <span style={{ marginLeft: 6, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}><AlertCircle size={12} /> Terlambat!</span>}
                         {!isOverdue && sisaHari <= 3 && task.status !== 'Done' && (
-                          <span style={{ marginLeft: 6, color: C.red, fontWeight: 800 }}>⚠️ {sisaHari} hari lagi</span>
+                          <span style={{ marginLeft: 6, color: C.red, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}><AlertCircle size={12} /> {sisaHari} hari lagi</span>
                         )}
                       </div>
 
@@ -414,8 +423,10 @@ const TaskManagement = () => {
                 width: 80, height: 80, borderRadius: "50%",
                 background: "#E0F7F4", display: "flex",
                 alignItems: "center", justifyContent: "center",
-                fontSize: 40, color: "#14B8A6", fontWeight: 700
-              }}>✓</div>
+                color: "#14B8A6", fontWeight: 700
+              }}>
+                <CheckCircle size={40} fill="#14B8A6" color="#E0F7F4" />
+              </div>
               <h2 style={{ fontSize: 24, fontWeight: 700, color: "#1F2937", margin: 0 }}>Data Berhasil Dihapus</h2>
             </div>
           </div>

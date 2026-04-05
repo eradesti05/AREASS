@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C } from '../constants/theme';
 import { Card } from '../components/UIComponents';
+import { Edit2 } from 'lucide-react';
 
 const ProfilePage = ({ user }) => {
   const [tab, setTab] = useState("Edit Profil");
@@ -55,8 +56,10 @@ const ProfilePage = ({ user }) => {
               position: "absolute", bottom: 0, right: 0,
               width: 28, height: 28, background: C.primary, borderRadius: "50%",
               display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#fff", fontSize: 12, cursor: "pointer"
-            }}>✏️</div>
+              color: "#fff", cursor: "pointer"
+            }}>
+              <Edit2 size={14} />
+            </div>
           </div>
 
           {/* Form */}

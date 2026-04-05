@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationAPI } from '../services/api';
 import { C } from '../constants/theme';
+import { Bell, AlertCircle, BarChart3, Loader2, RotateCw } from 'lucide-react';
 
 const NotificationCenter = () => {
   const navigate = useNavigate();
@@ -77,12 +78,15 @@ const NotificationCenter = () => {
         style={{
           background: 'transparent',
           border: 'none',
-          fontSize: 20,
           cursor: 'pointer',
-          position: 'relative'
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: C.textGray
         }}
       >
-        🔔
+        <Bell size={20} />
         {unreadCount > 0 && (
           <span style={{
             position: 'absolute',
@@ -125,16 +129,16 @@ const NotificationCenter = () => {
               </span>
               <button
                 onClick={fetchNotifications}
-                style={{ background: 'transparent', border: 'none', fontSize: 16, cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textGray }}
               >
-                🔄
+                <RotateCw size={16} />
               </button>
             </div>
           </div>
 
           {loading && (
-            <div style={{ padding: 16, textAlign: 'center', color: C.textGray, fontSize: 13 }}>
-              ⏳ Memuat notifikasi...
+            <div style={{ padding: 16, textAlign: 'center', color: C.textGray, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Memuat notifikasi...
             </div>
           )}
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { C } from '../constants/theme';
 import { Card } from '../components/UIComponents';
 import { taskAPI, categoryAPI } from '../services/api';
+import { X, CheckCircle } from 'lucide-react';
 
 const CreateTask = () => {
   const navigate = useNavigate();
@@ -513,7 +514,7 @@ const CreateTask = () => {
               onClick={() => setShowSuccessModal(false)}
               style={{
                 position: "absolute", top: 16, right: 16,
-                background: "none", border: "none", fontSize: 24,
+                background: "none", border: "none",
                 cursor: "pointer", color: C.textGray,
                 padding: 0, width: 32, height: 32,
                 display: "flex", alignItems: "center", justifyContent: "center"
@@ -521,7 +522,7 @@ const CreateTask = () => {
               onMouseEnter={(e) => e.currentTarget.style.color = C.textDark}
               onMouseLeave={(e) => e.currentTarget.style.color = C.textGray}
             >
-              ✕
+              <X size={24} />
             </button>
             
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
@@ -530,9 +531,11 @@ const CreateTask = () => {
                 width: 80, height: 80, borderRadius: "50%",
                 background: C.primaryLight, display: "flex",
                 alignItems: "center", justifyContent: "center",
-                fontSize: 40, color: C.primary, fontWeight: 700,
+                color: C.primary, fontWeight: 700,
                 animation: "scaleIn 0.5s ease"
-              }}>✓</div>
+              }}>
+                <CheckCircle size={40} fill={C.primary} color={C.primaryLight} />
+              </div>
               
               <div style={{ textAlign: "center" }}>
                 <h2 style={{ fontSize: 22, fontWeight: 700, color: C.textDark, margin: "0 0 6px 0" }}>Tugas Berhasil Dibuat</h2>

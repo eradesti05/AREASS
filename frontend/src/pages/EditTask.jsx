@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { C } from '../constants/theme';
 import { Card } from '../components/UIComponents';
 import { taskAPI, categoryAPI } from '../services/api';
+import { Edit2, X, CheckCircle } from 'lucide-react';
 
 const EditTask = () => {
   const navigate = useNavigate();
@@ -138,7 +139,9 @@ const EditTask = () => {
           alignItems: "flex-start",
           gap: 12
         }}>
-          <div style={{ fontSize: 20, marginTop: 2 }}>✏️</div>
+          <div style={{ marginTop: 2, color: C.primary }}>
+            <Edit2 size={18} />
+          </div>
           <div>
             <p style={{ margin: "0 0 4px 0", fontSize: 14, fontWeight: 600, color: C.primary }}>Perbarui dengan lengkap</p>
             <p style={{ margin: 0, fontSize: 13, color: C.textGray }}>Ubah detail tugas sesuai kebutuhan untuk memastikan prioritas tetap akurat</p>
@@ -561,9 +564,11 @@ const EditTask = () => {
                 width: 80, height: 80, borderRadius: "50%",
                 background: C.primaryLight, display: "flex",
                 alignItems: "center", justifyContent: "center",
-                fontSize: 40, color: C.primary, fontWeight: 700,
+                color: C.primary, fontWeight: 700,
                 animation: "scaleIn 0.5s ease"
-              }}>✓</div>
+              }}>
+                <CheckCircle size={40} fill={C.primary} color={C.primaryLight} />
+              </div>
               <div style={{ textAlign: "center" }}>
                 <h2 style={{ fontSize: 22, fontWeight: 700, color: C.textDark, margin: "0 0 6px 0" }}>Tugas Berhasil Diubah</h2>
                 <p style={{ fontSize: 13, color: C.textGray, margin: 0 }}>Perubahan tugas Anda telah disimpan</p>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { akademikAPI } from "../services/api";
+import { X, CheckCircle } from 'lucide-react';
 
 export default function InputDataAkademikPage({ user }) {
   const navigate = useNavigate();
@@ -662,11 +663,13 @@ export default function InputDataAkademikPage({ user }) {
         <div style={S.modalOverlay}>
           <div style={S.modal}>
             <div style={S.modalCloseBtn} onClick={() => setShowSuccessModal(false)}>
-              ✕
+              <X size={24} />
             </div>
             
             <div style={S.modalContent}>
-              <div style={S.modalIcon}>✓</div>
+              <div style={S.modalIcon}>
+                <CheckCircle size={40} fill="#14B8A6" color="white" />
+              </div>
               <h2 style={S.modalTitle}>Data Berhasil Dibuat</h2>
               <button
                 onClick={() => {
