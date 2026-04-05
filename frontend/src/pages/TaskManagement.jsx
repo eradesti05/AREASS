@@ -166,10 +166,14 @@ const TaskManagement = () => {
             value={filterCategory} 
             onChange={e => setFilterCategory(e.target.value)}
             style={{
-              border: "1.5px solid #E0E4F0", borderRadius: 10, padding: "10px 14px",
-              fontSize: 14, color: C.textDark, background: C.white, cursor: 'pointer',
-              minWidth: 180, transition
+              border: filterCategory ? `2px solid ${C.primary}` : "1.5px solid #E0E4F0",
+              borderRadius: 10, padding: "10px 14px",
+              fontSize: 14, color: filterCategory ? C.primary : C.textDark, background: C.white, cursor: 'pointer',
+              minWidth: 180, transition: 'all 0.2s', fontWeight: filterCategory ? 600 : 400,
+              boxShadow: filterCategory ? `0 0 0 3px ${C.primaryLight}` : 'none'
             }}
+            onFocus={(e) => { e.target.style.boxShadow = `0 0 0 3px ${C.primaryLight}`; e.target.style.borderColor = C.primary; }}
+            onBlur={(e) => { e.target.style.boxShadow = filterCategory ? `0 0 0 3px ${C.primaryLight}` : 'none'; }}
           >
             <option value="">Semua Kategori</option>
             {categories.map(cat => (
@@ -187,9 +191,14 @@ const TaskManagement = () => {
             value={filterDeadline}
             onChange={e => setFilterDeadline(e.target.value)}
             style={{
-              border: "1.5px solid #E0E4F0", borderRadius: 10, padding: "10px 14px",
-              fontSize: 14, color: C.textDark, background: C.white, cursor: 'pointer', transition
+              border: filterDeadline ? `2px solid ${C.primary}` : "1.5px solid #E0E4F0",
+              borderRadius: 10, padding: "10px 14px",
+              fontSize: 14, color: filterDeadline ? C.primary : C.textDark, background: C.white, cursor: 'pointer',
+              transition: 'all 0.2s', fontWeight: filterDeadline ? 600 : 400,
+              boxShadow: filterDeadline ? `0 0 0 3px ${C.primaryLight}` : 'none'
             }}
+            onFocus={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${C.primaryLight}`; e.currentTarget.style.borderColor = C.primary; }}
+            onBlur={(e) => { e.currentTarget.style.boxShadow = filterDeadline ? `0 0 0 3px ${C.primaryLight}` : 'none'; }}
           />
         </div>
 

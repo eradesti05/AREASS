@@ -8,7 +8,7 @@ import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend as ChartL
 import { Bar as BarChart, Line as LineChart } from "react-chartjs-2";
 import { Chart as ChartJS2, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip as ChartTooltip2, Legend as ChartLegend2 } from "chart.js";
 import { PieChart, Pie as MiniPie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { CheckCircle, TrendingUp } from "lucide-react";
+import { CheckCircle, TrendingUp, ListTodo, Clock, Zap } from "lucide-react";
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 ChartJS2.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, ChartTooltip2, ChartLegend2);
@@ -167,25 +167,32 @@ const DashboardMahasiswa = ({ user }) => {
           <div style={{ fontSize: 10, fontWeight: 700, color: C.textGray, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>Ringkasan Harian</div>
           {summary.totalTugas === 0 ? (
             <div style={{ color: "#a39c94", textAlign: "center", padding: "30px 20px", fontSize: "14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px" }}>
-              <div style={{ fontSize: 20 }}>📝</div>
+              <div style={{ color: "#a39c94" }}>
+                <ListTodo size={32} strokeWidth={1.5} />
+              </div>
               <div>Belum ada tugas yang dibuat</div>
               <a href="/tasks/create" style={{ color: "#7bbf9e", textDecoration: "none", fontSize: "13px", fontWeight: "600", borderBottom: "1px solid #7bbf9e" }}>Mulai buat tugas →</a>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
-                { val: summary.totalTugas, label: "Total Tugas", bg: C.accent },
-                { val: summary.tenggatWaktuTugas, label: "Tenggat Waktu", bg: C.primary },
-                { val: summary.estimasiBebanKerja, label: "Estimasi Beban", bg: C.red },
-              ].map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 10, borderBottom: i < 2 ? "1px solid #F0F0F0" : "none" }}>
-                  <div style={{ width: 48, height: 48, borderRadius: "8px", background: `${item.bg}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 18, color: item.bg }}>{item.val}</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: C.textGray }}>{item.label}</div>
+                { val: summary.totalTugas, label: "Total Tugas", bg: C.accent, icon: ListTodo },
+                { val: summary.tenggatWaktuTugas, label: "Tenggat Waktu", bg: C.primary, icon: Clock },
+                { val: summary.estimasiBebanKerja, label: "Estimasi Beban", bg: C.red, icon: Zap },
+              ].map((item, i) => {
+                const IconComponent = item.icon;
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 10, borderBottom: i < 2 ? "1px solid #F0F0F0" : "none" }}>
+                    <div style={{ width: 48, height: 48, borderRadius: "8px", background: `${item.bg}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: item.bg }}>
+                      <IconComponent size={24} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 18, color: item.bg }}>{item.val}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: C.textGray }}>{item.label}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>
