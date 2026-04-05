@@ -10,12 +10,14 @@ Versa Syahputra Santo (23525041)
 
 ### Development command:
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
-### Deployment command:
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+### Production command:
+```sh
+docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ### Stop all service:
