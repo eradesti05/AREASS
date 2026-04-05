@@ -222,7 +222,7 @@ const Navbar = ({ user, onLogout, currentPath }) => {
                 onMouseOver={e => e.currentTarget.style.background = "#FFF0F0"}
                 onMouseOut={e => e.currentTarget.style.background = "transparent"}
               >
-                🚪 Keluar
+                <LogOut size={16} style={{ marginRight: 6 }} /> Keluar
               </button>
             </div>
           )}
