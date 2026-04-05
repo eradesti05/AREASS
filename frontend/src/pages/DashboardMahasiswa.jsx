@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { C } from '../constants/theme';
 import { Card } from '../components/UIComponents';
 import { akademikAPI, taskAPI, prediksiAPI } from '../services/api';
@@ -12,6 +13,7 @@ ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 ChartJS2.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, ChartTooltip2, ChartLegend2);
 
 const DashboardMahasiswa = ({ user }) => {
+  const navigate = useNavigate();
   const [akademik, setAkademik] = useState([]);
   const [summary, setSummary] = useState({ totalTugas: 0, tenggatWaktuTugas: 0, estimasiBebanKerja: 0, backlog: 0, onProgress: 0, done: 0 });
   const [prediksi, setPrediksi] = useState({ hasilPrediksi: 'Aman', skorConfidence: 0 });
@@ -95,9 +97,9 @@ const DashboardMahasiswa = ({ user }) => {
   );
 
   return (
-    <div style={{ padding: "24px 16px", background: "#f0ede6", minHeight: "100vh" }}>
+    <div style={{ padding: "24px 16px", background: "#f0ede6", minHeight: "100vh", boxSizing: "border-box" }}>
       {/* Mahasiswa, Kemajuan Tugas, and Ringkasan Harian - 3 Column Layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24, marginBottom: 32, maxWidth: 1200, margin: "0 auto 32px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24, marginBottom: 32, maxWidth: 1200, margin: "0 auto 32px", boxSizing: "border-box" }}>
         {/* Mahasiswa Welcome Card */}
         <Card style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderRadius: 12, border: "none", padding: "18px 20px", background: "#1B7B6D" }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>Mahasiswa</div>
@@ -182,9 +184,9 @@ const DashboardMahasiswa = ({ user }) => {
         </Card>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 1200, margin: "0 auto" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 1200, margin: "0 auto", boxSizing: "border-box" }}>
         {/* Bar Chart - Trend Beban SKS */}
-        <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", padding: "20px", border: "none", boxShadow: "none" }}>
+        <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", padding: "20px", border: "none", boxShadow: "none", boxSizing: "border-box" }}>
           <h2 style={{ fontSize: "14px", fontWeight: "600", color: "#8b8377", marginBottom: "16px", letterSpacing: "0.5px", margin: "0 0 16px 0", textTransform: "uppercase" }}>Trend Beban SKS</h2>
           {sksTrend && sksTrend.length > 0 ? (
             <>
@@ -262,7 +264,7 @@ const DashboardMahasiswa = ({ user }) => {
         </div>
 
         {/* Line Chart - Trend IPK */}
-        <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", padding: "20px", border: "none", boxShadow: "none" }}>
+        <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", padding: "20px", border: "none", boxShadow: "none", boxSizing: "border-box" }}>
           <h2 style={{ fontSize: "14px", fontWeight: "600", color: "#8b8377", marginBottom: "16px", letterSpacing: "0.5px", margin: "0 0 16px 0", textTransform: "uppercase" }}>Trend IPK</h2>
           {ipkTrend && ipkTrend.length > 0 ? (
             <>
@@ -356,9 +358,9 @@ const DashboardMahasiswa = ({ user }) => {
 
       {/* Tugas Mendatang */}
       {tasks.length > 0 && (
-        <div style={{ maxWidth: 1200, margin: "32px auto 0", backgroundColor: "#ffffff", borderRadius: "12px", padding: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <h2 style={{ fontSize: "14px", fontWeight: "600", color: "#8b8377", marginBottom: "16px", letterSpacing: "0.5px", margin: "0 0 16px 0", textTransform: "uppercase" }}>Tugas Mendatang</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ maxWidth: 1200, margin: "24px auto 0 auto", backgroundColor: "#ffffff", borderRadius: "14px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", boxSizing: "border-box" }}>
+          <h2 style={{ fontSize: "13px", fontWeight: "700", color: "#8b8377", marginBottom: "20px", letterSpacing: "0.5px", textTransform: "uppercase" }}>📋 Tugas Mendatang</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {tasks
               .filter(t => t.status !== 'Done') // Exclude completed tasks
               .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
@@ -372,36 +374,55 @@ const DashboardMahasiswa = ({ user }) => {
                 return (
                   <div 
                     key={task._id}
+                    onClick={() => navigate(`/tasks/edit/${task._id}`)}
                     style={{
                       display: "flex", 
                       alignItems: "center", 
                       justifyContent: "space-between", 
-                      padding: "12px 16px", 
-                      background: isOverdue ? "#FFF0F0" : "#f8f8f8",
+                      padding: "14px 16px", 
+                      background: "#f9f9f9",
                       borderRadius: "10px",
-                      border: isOverdue ? `1px solid #FFB3B3` : "1px solid #e8e8e8",
-                      transition: "all 0.2s"
+                      border: "1px solid #e8e8e8",
+                      transition: "all 0.2s",
+                      cursor: "pointer"
                     }}
-                    onMouseOver={e => e.currentTarget.style.background = isOverdue ? "#FFE8E8" : "#f0f0f0"}
-                    onMouseOut={e => e.currentTarget.style.background = isOverdue ? "#FFF0F0" : "#f8f8f8"}
+                    onMouseOver={e => {
+                      e.currentTarget.style.background = "#f0f8f6";
+                      e.currentTarget.style.borderColor = "#7bbf9e";
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(123,191,158,0.1)";
+                    }}
+                    onMouseOut={e => {
+                      e.currentTarget.style.background = "#f9f9f9";
+                      e.currentTarget.style.borderColor = "#e8e8e8";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-                      <input type="checkbox" style={{ cursor: "pointer", width: 18, height: 18 }} />
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#2c3e50", marginBottom: 2 }}>{task.namaTugas}</div>
-                        <div style={{ fontSize: 12, color: "#8b8377" }}>{task.kategoriTask}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0 }}>
+                      <input 
+                        type="checkbox" 
+                        disabled
+                        style={{ cursor: "not-allowed", width: 20, height: 20, flexShrink: 0, accentColor: "#7bbf9e", opacity: 0.5 }} 
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#2c3e50", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {task.namaTugas}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#999", fontWeight: 500 }}>
+                          {task.kategoriTask}
+                        </div>
                       </div>
                     </div>
                     <div 
                       style={{
-                        fontSize: 12, 
-                        fontWeight: 600, 
-                        padding: "6px 12px", 
-                        borderRadius: "8px",
+                        fontSize: 11, 
+                        fontWeight: 700, 
+                        padding: "8px 14px", 
+                        borderRadius: "20px",
                         background: isOverdue ? "#FF6B6B" : (sisaHari === 0 ? "#FF9800" : sisaHari === 1 ? "#FFC107" : "#4CAF50"),
-                        color: isOverdue ? "#fff" : (sisaHari <= 1 ? "#000" : "#fff"),
-                        minWidth: "80px",
-                        textAlign: "center"
+                        color: isOverdue ? "#fff" : (sisaHari <= 1 ? "#333" : "#fff"),
+                        minWidth: "90px",
+                        textAlign: "center",
+                        flexShrink: 0
                       }}
                     >
                       {isOverdue ? "Besok" : sisaHari === 1 ? "1 hari" : sisaHari === 0 ? "Hari ini" : `${sisaHari} hari`}
