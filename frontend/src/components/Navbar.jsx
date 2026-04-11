@@ -8,14 +8,15 @@ const Navbar = ({ user, onLogout, currentPath }) => {
   const navigate = useNavigate();
   const [showLogoutMenu, setShowLogoutMenu] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  
+
   // Handle both _id (MongoDB) dan id (backend response)
   const userId = user?._id || user?.id;
-  
+
   // Check if akademik is completed for mahasiswa
-  const akademikCompleted = user?.role === "mahasiswa" 
-    ? localStorage.getItem(`akademik_completed_${userId}`)
-    : true;
+  const akademikCompleted =
+    user?.role === "mahasiswa"
+      ? localStorage.getItem(`akademik_completed_${userId}`)
+      : true;
 
   const navItems =
     user?.role === "mahasiswa"
@@ -23,13 +24,11 @@ const Navbar = ({ user, onLogout, currentPath }) => {
         ? [
             { path: "/dashboard", label: "Dashboard" },
             { path: "/tasks", label: "Task Management" },
-            { path: "/analytics", label: "Analitik" },
+            // { path: "/analytics", label: "Analitik" },
             { path: "/profile", label: "Profil" },
             { path: "/akademik/input", label: "Input Data Akademik" },
           ]
-        : [
-            { path: "/akademik/input", label: "Input Data Akademik" },
-          ]
+        : [{ path: "/akademik/input", label: "Input Data Akademik" }]
       : user?.role === "dosen_wali"
         ? [
             { path: "/dashboard-dosen", label: "Dashboard" },
@@ -143,7 +142,7 @@ const Navbar = ({ user, onLogout, currentPath }) => {
           <Settings size={20} color="#718EBF" />
         </span>
         <Bell size={20} color="#718EBF" />
-        
+
         {/* Profile Avatar with Dropdown */}
         <div style={{ position: "relative" }}>
           <div
@@ -161,14 +160,16 @@ const Navbar = ({ user, onLogout, currentPath }) => {
               cursor: "pointer",
               fontSize: 14,
               transition: "all 0.2s",
-              boxShadow: showLogoutMenu ? "0 0 0 3px rgba(102, 126, 234, 0.2)" : "none",
+              boxShadow: showLogoutMenu
+                ? "0 0 0 3px rgba(102, 126, 234, 0.2)"
+                : "none",
             }}
-            onMouseOver={e => e.currentTarget.style.opacity = "0.8"}
-            onMouseOut={e => e.currentTarget.style.opacity = "1"}
+            onMouseOver={(e) => (e.currentTarget.style.opacity = "0.8")}
+            onMouseOut={(e) => (e.currentTarget.style.opacity = "1")}
           >
             {user?.nama?.charAt(0) || "U"}
           </div>
-          
+
           {/* Dropdown Menu */}
           {showLogoutMenu && (
             <div
@@ -192,14 +193,16 @@ const Navbar = ({ user, onLogout, currentPath }) => {
                   fontSize: 13,
                 }}
               >
-                <div style={{ fontWeight: 600, color: "#2c3e50", marginBottom: 4 }}>
+                <div
+                  style={{ fontWeight: 600, color: "#2c3e50", marginBottom: 4 }}
+                >
                   {user?.nama}
                 </div>
                 <div style={{ fontSize: 12, color: "#8b8377" }}>
                   {user?.email}
                 </div>
               </div>
-              
+
               {/* Logout Button */}
               <button
                 onClick={() => {
@@ -219,15 +222,19 @@ const Navbar = ({ user, onLogout, currentPath }) => {
                   borderRadius: "0 0 12px 12px",
                   transition: "all 0.2s",
                 }}
-                onMouseOver={e => e.currentTarget.style.background = "#FFF0F0"}
-                onMouseOut={e => e.currentTarget.style.background = "transparent"}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.background = "#FFF0F0")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
               >
                 <LogOut size={16} style={{ marginRight: 6 }} /> Keluar
               </button>
             </div>
           )}
         </div>
-        
+
         {/* Logout Confirmation Modal */}
         {showConfirmModal && (
           <div
@@ -253,30 +260,54 @@ const Navbar = ({ user, onLogout, currentPath }) => {
                 maxWidth: 400,
                 boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
               }}
-              onClick={e => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
             >
               {/* Icon */}
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                <div style={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: "50%",
-                  background: "#FFE8E8",
+              <div
+                style={{
                   display: "flex",
-                  alignItems: "center",
                   justifyContent: "center",
-                }}>
+                  marginBottom: 16,
+                }}
+              >
+                <div
+                  style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: "50%",
+                    background: "#FFE8E8",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <LogOut size={32} color="#FF6B6B" />
                 </div>
               </div>
-              
-              <div style={{ fontSize: 18, fontWeight: 700, color: "#2c3e50", marginBottom: 12, textAlign: "center" }}>
+
+              <div
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: "#2c3e50",
+                  marginBottom: 12,
+                  textAlign: "center",
+                }}
+              >
                 Konfirmasi Keluar
               </div>
-              <div style={{ fontSize: 14, color: "#8b8377", marginBottom: 24, lineHeight: 1.6, textAlign: "center" }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  color: "#8b8377",
+                  marginBottom: 24,
+                  lineHeight: 1.6,
+                  textAlign: "center",
+                }}
+              >
                 Apakah Anda yakin ingin keluar dari akun ini?
               </div>
-              
+
               {/* Buttons */}
               <div style={{ display: "flex", gap: 12 }}>
                 <button
@@ -293,8 +324,12 @@ const Navbar = ({ user, onLogout, currentPath }) => {
                     color: "#8b8377",
                     transition: "all 0.2s",
                   }}
-                  onMouseOver={e => e.currentTarget.style.background = "#e8e8e8"}
-                  onMouseOut={e => e.currentTarget.style.background = "#f0f0f0"}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.background = "#e8e8e8")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#f0f0f0")
+                  }
                 >
                   Batal
                 </button>
@@ -316,8 +351,12 @@ const Navbar = ({ user, onLogout, currentPath }) => {
                     color: "#fff",
                     transition: "all 0.2s",
                   }}
-                  onMouseOver={e => e.currentTarget.style.background = "#FF5252"}
-                  onMouseOut={e => e.currentTarget.style.background = "#FF6B6B"}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.background = "#FF5252")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#FF6B6B")
+                  }
                 >
                   Ya, Keluar
                 </button>

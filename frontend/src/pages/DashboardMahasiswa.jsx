@@ -1,72 +1,135 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { C } from '../constants/theme';
-import { Card } from '../components/UIComponents';
-import { akademikAPI, taskAPI, prediksiAPI } from '../services/api';
+import { C } from "../constants/theme";
+import { Card } from "../components/UIComponents";
+import { akademikAPI, taskAPI, prediksiAPI } from "../services/api";
 import { Pie } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend as ChartLegend } from "chart.js";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from "chart.js";
 import { Bar as BarChart, Line as LineChart } from "react-chartjs-2";
-import { Chart as ChartJS2, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip as ChartTooltip2, Legend as ChartLegend2 } from "chart.js";
-import { PieChart, Pie as MiniPie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { CheckCircle, TrendingUp, ListTodo, Clock, Zap } from "lucide-react";
+import {
+  Chart as ChartJS2,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip as ChartTooltip2,
+  Legend as ChartLegend2,
+} from "chart.js";
+import {
+  PieChart,
+  Pie as MiniPie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
+import {
+  CheckCircle,
+  TrendingUp,
+  ListTodo,
+  Clock,
+  Zap,
+  View,
+  Info,
+} from "lucide-react";
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
-ChartJS2.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, ChartTooltip2, ChartLegend2);
+ChartJS2.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  ChartTooltip2,
+  ChartLegend2,
+);
 
 const DashboardMahasiswa = ({ user }) => {
   const navigate = useNavigate();
   const [akademik, setAkademik] = useState([]);
-  const [summary, setSummary] = useState({ totalTugas: 0, tenggatWaktuTugas: 0, estimasiBebanKerja: 0, backlog: 0, onProgress: 0, done: 0 });
-  const [prediksi, setPrediksi] = useState({ hasilPrediksi: 'Aman', skorConfidence: 0 });
+  const [summary, setSummary] = useState({
+    totalTugas: 0,
+    tenggatWaktuTugas: 0,
+    estimasiBebanKerja: 0,
+    backlog: 0,
+    onProgress: 0,
+    done: 0,
+  });
+  const [prediksi, setPrediksi] = useState({
+    hasilPrediksi: "Aman",
+    skorConfidence: 0,
+  });
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        console.log('🔄 Fetching akademik data...');
-        const akademikResult = await akademikAPI.getAll().catch(e => {
-          console.error('❌ Akademik API Error:', e);
+        const akademikResult = await akademikAPI.getAll().catch((e) => {
+          console.error("❌ Akademik API Error:", e);
           return [];
         });
-        
-        console.log('🔄 Fetching task summary...');
-        const summaryResult = await taskAPI.getSummary().catch(e => {
-          console.error('❌ Task Summary API Error:', e);
-          return { totalTugas: 0, tenggatWaktuTugas: 0, estimasiBebanKerja: 0, backlog: 0, onProgress: 0, done: 0 };
+
+        const summaryResult = await taskAPI.getSummary().catch((e) => {
+          console.error("❌ Task Summary API Error:", e);
+          return {
+            totalTugas: 0,
+            tenggatWaktuTugas: 0,
+            estimasiBebanKerja: 0,
+            backlog: 0,
+            onProgress: 0,
+            done: 0,
+          };
         });
-        
-        console.log('🔄 Fetching all tasks...');
-        const tasksResult = await taskAPI.getAll().catch(e => {
-          console.error('❌ Tasks API Error:', e);
+
+        const tasksResult = await taskAPI.getAll().catch((e) => {
+          console.error("❌ Tasks API Error:", e);
           return [];
         });
-        
-        console.log('🔄 Fetching prediksi...');
-        const prediksiResult = await prediksiAPI.getLatest().catch(e => {
-          console.error('❌ Prediksi API Error:', e);
-          return { hasilPrediksi: 'Aman', skorConfidence: 0 };
-        });
-        
-        console.log('✅ Akademik Data:', akademikResult);
-        console.log('✅ Summary Data:', summaryResult);
-        console.log('✅ Tasks Data:', tasksResult);
-        console.log('✅ Prediksi Data:', prediksiResult);
-        
-        // Handle if akademik data is wrapped in an object
-        const akademikArray = Array.isArray(akademikResult) ? akademikResult : (akademikResult?.data || []);
-        const tasksArray = Array.isArray(tasksResult) ? tasksResult : (tasksResult?.data || []);
-        
+
+        // ─── Proses akademik array dulu ───
+        const akademikArray = Array.isArray(akademikResult)
+          ? akademikResult
+          : akademikResult?.data || [];
+
+        const tasksArray = Array.isArray(tasksResult)
+          ? tasksResult
+          : tasksResult?.data || [];
+
+        // ─── Auto run prediksi jika ada data akademik ───
+        let prediksiResult = { hasilPrediksi: "Aman", skorConfidence: 0 };
+        if (akademikArray.length > 0) {
+          prediksiResult = await prediksiAPI.run().catch(async () => {
+            return await prediksiAPI
+              .getLatest()
+              .catch(() => ({ hasilPrediksi: "Aman", skorConfidence: 0 }));
+          });
+        }
+
         setAkademik(akademikArray);
         setSummary(summaryResult);
         setTasks(tasksArray);
         setPrediksi(prediksiResult);
       } catch (err) {
-        console.error('❌ Dashboard fetch error:', err);
+        console.error("❌ Dashboard fetch error:", err);
         setAkademik([]);
-        setSummary({ totalTugas: 0, tenggatWaktuTugas: 0, estimasiBebanKerja: 0, backlog: 0, onProgress: 0, done: 0 });
+        setSummary({
+          totalTugas: 0,
+          tenggatWaktuTugas: 0,
+          estimasiBebanKerja: 0,
+          backlog: 0,
+          onProgress: 0,
+          done: 0,
+        });
         setTasks([]);
-        setPrediksi({ hasilPrediksi: 'Aman', skorConfidence: 0 });
+        setPrediksi({ hasilPrediksi: "Aman", skorConfidence: 0 });
       } finally {
         setLoading(false);
       }
@@ -75,58 +138,215 @@ const DashboardMahasiswa = ({ user }) => {
   }, []);
 
   const latest = akademik[akademik.length - 1] || {};
-  
+
   // Use akademik data if available, otherwise use empty arrays (user needs to input data)
-  const ipkTrend = akademik && akademik.length > 0 
-    ? akademik.map(d => ({ semester: `Sem ${d.semesterKe}`, ip: d.ipSemester }))
-    : [];
-  const sksTrend = akademik && akademik.length > 0
-    ? akademik.map(d => ({ semester: `Sem ${d.semesterKe}`, sks: d.sksPerSemester }))
-    : [];
+  const ipkTrend =
+    akademik && akademik.length > 0
+      ? akademik.map((d) => ({
+          semester: `Sem ${d.semesterKe}`,
+          ip: d.ipSemester,
+        }))
+      : [];
+  const sksTrend =
+    akademik && akademik.length > 0
+      ? akademik.map((d) => ({
+          semester: `Sem ${d.semesterKe}`,
+          sks: d.sksPerSemester,
+        }))
+      : [];
   const taskProgress = [
     { name: "On Progress", value: summary.onProgress || 0, color: "#FF9800" },
     { name: "Backlog", value: summary.backlog || 0, color: "#000000" },
     { name: "Done", value: summary.done || 0, color: "#4CAF50" },
   ];
 
-  const statusColor = { 'Aman': C.green, 'Waspada': C.yellow, 'Perlu perhatian': C.red };
+  const [hoveredPrediksi, setHoveredPrediksi] = useState(false);
 
-  if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
-      <div style={{ color: C.textGray, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <svg style={{ animation: 'spin 1s linear infinite' }} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <circle cx="12" cy="12" r="10" strokeOpacity="0.25"/>
-          <path d="M12 2A10 10 0 0 0 2 12" strokeLinecap="round"/>
-        </svg>
-        Memuat data...
+  const statusConfig = {
+    Aman: {
+      color: C.green,
+      label:
+        "Hasil performa akademikmu berada pada kondisi yang baik. Pertahankan konsistensimu dalam belajar. Sekarang kamu berada di jalur yang tepat untuk menyelesaikan studi tepat waktu.",
+    },
+    Waspada: {
+      color: C.yellow,
+      label:
+        "Kamu sudah berusaha semakismal mungkin dalam belajar, namun ada beberapa indikator yang perlu kamu diperhatikan. Performa akademikmu menunjukkan tanda-tanda yang perlu kamu waspadai. Alangkah baiknya segera diskusikan kendala dalam belajar yang kamu hadapi dengan dosen wali untuk mencegah risiko lebih lanjut.",
+    },
+    "Perlu perhatian": {
+      color: C.red,
+      label:
+        "Semangat, kamu sudah coba bejuang sejauh ini. Saat ini performa akademikmu memerlukan perhatian segera. Berdasarkan data akademikmu, terdapat risiko yang signifikan. Alangkah baiknya segera menghubungi dosen wali untuk mendapatkan pendampingan.",
+    },
+  };
+
+  const status = statusConfig[prediksi.hasilPrediksi] || statusConfig["Aman"];
+  if (loading)
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "60vh",
+        }}
+      >
+        <div
+          style={{
+            color: C.textGray,
+            fontSize: 16,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <svg
+            style={{ animation: "spin 1s linear infinite" }}
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
+            <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+            <path d="M12 2A10 10 0 0 0 2 12" strokeLinecap="round" />
+          </svg>
+          Memuat data...
+        </div>
       </div>
-    </div>
-  );
+    );
 
   return (
-    <div style={{ padding: "24px 16px", background: "#f0ede6", minHeight: "100vh", boxSizing: "border-box" }}>
+    <div
+      style={{
+        padding: "24px 16px",
+        background: "#f0ede6",
+        minHeight: "100vh",
+        boxSizing: "border-box",
+      }}
+    >
       {/* Mahasiswa, Kemajuan Tugas, and Ringkasan Harian - 3 Column Layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24, marginBottom: 32, maxWidth: 1200, margin: "0 auto 32px", boxSizing: "border-box" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: 24,
+          marginBottom: 32,
+          maxWidth: 1200,
+          margin: "0 auto 32px",
+          boxSizing: "border-box",
+        }}
+      >
         {/* Mahasiswa Welcome Card */}
-        <Card style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderRadius: 12, border: "none", padding: "18px 20px", background: "#1B7B6D" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>Mahasiswa</div>
+        <Card
+          style={{
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            borderRadius: 12,
+            border: "none",
+            padding: "18px 20px",
+            background: status.color,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.7)",
+              marginBottom: 8,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Mahasiswa
+          </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 18, color: "#FFFFFF", marginBottom: 4 }}>Selamat Datang, {user.nama?.split(' ')[0]}</div>
-            <div style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Semester ini tetap semangat!</div>
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: 18,
+                color: "#FFFFFF",
+                marginBottom: 4,
+              }}
+            >
+              Selamat Datang, {user.nama?.split(" ")[0]}
+            </div>
+            <div
+              style={{
+                color: "rgba(255,255,255,0.8)",
+                fontSize: 13,
+                fontWeight: 500,
+                marginBottom: 12,
+              }}
+            >
+              Status Akademikmu saat ini :
+            </div>
             {/* Dynamic prediction badge */}
             {prediksi?.hasilPrediksi ? (
               <>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.2)", color: "#FFFFFF", padding: "6px 12px", borderRadius: 16, fontSize: 12, fontWeight: 600 }}>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: "rgba(255,255,255,0.2)",
+                    color: "#FFFFFF",
+                    padding: "6px 12px",
+                    borderRadius: 16,
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                >
                   <CheckCircle size={14} /> {prediksi.hasilPrediksi}
                 </div>
-                {prediksi.skorConfidence > 0 && (
-                  <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 8 }}>
-                    Confidence: {(prediksi.skorConfidence * 100).toFixed(0)}%
-                  </div>
-                )}
+
+                <div
+                  style={{
+                    color: "rgba(255,255,255,0.7)",
+                    fontSize: 11,
+                    marginTop: 8,
+                  }}
+                >
+                  {status.label}
+                </div>
+                <div
+                  onClick={() => navigate("/analytics")}
+                  onMouseEnter={() => setHoveredPrediksi(true)}
+                  onMouseLeave={() => setHoveredPrediksi(false)}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: "rgba(255, 255, 255, 0.56)",
+                    background: hoveredPrediksi
+                      ? "rgba(255,255,255,0.35)"
+                      : "rgba(255,255,255,0.2)",
+
+                    color: "#FFFFFF",
+                    padding: "6px 12px",
+                    borderRadius: 16,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    marginTop: 12,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    transform: hoveredPrediksi ? "scale(1.05)" : "scale(1)",
+                  }}
+                >
+                  <Info size={14} /> {"Detail Analisis Akademik"}
+                </div>
               </>
             ) : (
-              <div style={{ display: "inline-block", background: "rgba(255,255,255,0.2)", color: "#FFFFFF", padding: "6px 12px", borderRadius: 16, fontSize: 12, fontWeight: 600 }}>
+              <div
+                style={{
+                  display: "inline-block",
+                  background: "rgba(255,255,255,0.2)",
+                  color: "#FFFFFF",
+                  padding: "6px 12px",
+                  borderRadius: 16,
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
                 Belum ada prediksi
               </div>
             )}
@@ -134,28 +354,107 @@ const DashboardMahasiswa = ({ user }) => {
         </Card>
 
         {/* Kemajuan Tugas */}
-        <Card style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderRadius: 12, border: "none", padding: "18px", background: "#FFFFFF" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: C.textGray, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>Kemajuan Tugas</div>
+        <Card
+          style={{
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            borderRadius: 12,
+            border: "none",
+            padding: "18px",
+            background: "#FFFFFF",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: C.textGray,
+              marginBottom: 10,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              textAlign: "center",
+            }}
+          >
+            Kemajuan Tugas
+          </div>
           {summary.totalTugas === 0 ? (
-            <div style={{ color: "#a39c94", textAlign: "center", padding: "40px 20px", fontSize: "14px", height: "110px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px" }}>
+            <div
+              style={{
+                color: "#a39c94",
+                textAlign: "center",
+                padding: "40px 20px",
+                fontSize: "14px",
+                height: "110px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+              }}
+            >
               <div>📭 Belum ada tugas</div>
-              <a href="/tasks/create" style={{ color: "#7bbf9e", textDecoration: "none", fontSize: "13px", fontWeight: "600", borderBottom: "1px solid #7bbf9e" }}>Buat tugas sekarang →</a>
+              <a
+                href="/tasks/create"
+                style={{
+                  color: "#7bbf9e",
+                  textDecoration: "none",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  borderBottom: "1px solid #7bbf9e",
+                }}
+              >
+                Buat tugas sekarang →
+              </a>
             </div>
           ) : (
             <>
               <ResponsiveContainer width="100%" height={110}>
                 <PieChart>
-                  <MiniPie data={taskProgress} cx="50%" cy="50%" innerRadius={28} outerRadius={42} dataKey="value">
-                    {taskProgress.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  <MiniPie
+                    data={taskProgress}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={28}
+                    outerRadius={42}
+                    dataKey="value"
+                  >
+                    {taskProgress.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
                   </MiniPie>
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
-              <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginTop: 10 }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                  marginTop: 10,
+                }}
+              >
                 {taskProgress.map((t, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: t.color }} />
-                    <span style={{ color: C.textGray }}>{t.value} {t.name}</span>
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      fontSize: 11,
+                      fontWeight: 600,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: t.color,
+                      }}
+                    />
+                    <span style={{ color: C.textGray }}>
+                      {t.value} {t.name}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -163,32 +462,127 @@ const DashboardMahasiswa = ({ user }) => {
           )}
         </Card>
 
-        <Card style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderRadius: 12, border: "none", padding: "16px", background: "#FFFFFF" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: C.textGray, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>Ringkasan Harian</div>
+        <Card
+          style={{
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            borderRadius: 12,
+            border: "none",
+            padding: "16px",
+            background: "#FFFFFF",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: C.textGray,
+              marginBottom: 12,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              textAlign: "center",
+            }}
+          >
+            Ringkasan Harian
+          </div>
           {summary.totalTugas === 0 ? (
-            <div style={{ color: "#a39c94", textAlign: "center", padding: "30px 20px", fontSize: "14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px" }}>
+            <div
+              style={{
+                color: "#a39c94",
+                textAlign: "center",
+                padding: "30px 20px",
+                fontSize: "14px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+              }}
+            >
               <div style={{ color: "#a39c94" }}>
                 <ListTodo size={32} strokeWidth={1.5} />
               </div>
               <div>Belum ada tugas yang dibuat</div>
-              <a href="/tasks/create" style={{ color: "#7bbf9e", textDecoration: "none", fontSize: "13px", fontWeight: "600", borderBottom: "1px solid #7bbf9e" }}>Mulai buat tugas →</a>
+              <a
+                href="/tasks/create"
+                style={{
+                  color: "#7bbf9e",
+                  textDecoration: "none",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  borderBottom: "1px solid #7bbf9e",
+                }}
+              >
+                Mulai buat tugas →
+              </a>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
-                { val: summary.totalTugas, label: "Total Tugas", bg: C.accent, icon: ListTodo },
-                { val: summary.tenggatWaktuTugas, label: "Tenggat Waktu", bg: C.primary, icon: Clock },
-                { val: summary.estimasiBebanKerja, label: "Estimasi Beban", bg: C.red, icon: Zap },
+                {
+                  val: summary.totalTugas,
+                  label: "Total Tugas",
+                  bg: C.accent,
+                  icon: ListTodo,
+                },
+                {
+                  val: summary.tenggatWaktuTugas,
+                  label: "Tenggat Waktu",
+                  bg: C.primary,
+                  icon: Clock,
+                },
+                {
+                  val: summary.estimasiBebanKerja,
+                  label: "Estimasi Beban",
+                  bg: C.red,
+                  icon: Zap,
+                },
               ].map((item, i) => {
                 const IconComponent = item.icon;
                 return (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 10, borderBottom: i < 2 ? "1px solid #F0F0F0" : "none" }}>
-                    <div style={{ width: 48, height: 48, borderRadius: "8px", background: `${item.bg}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: item.bg }}>
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      paddingBottom: 10,
+                      borderBottom: i < 2 ? "1px solid #F0F0F0" : "none",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: "8px",
+                        background: `${item.bg}20`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        color: item.bg,
+                      }}
+                    >
                       <IconComponent size={24} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 18, color: item.bg }}>{item.val}</div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: C.textGray }}>{item.label}</div>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 18,
+                          color: item.bg,
+                        }}
+                      >
+                        {item.val}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: C.textGray,
+                        }}
+                      >
+                        {item.label}
+                      </div>
                     </div>
                   </div>
                 );
@@ -198,20 +592,56 @@ const DashboardMahasiswa = ({ user }) => {
         </Card>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 1200, margin: "0 auto", boxSizing: "border-box" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 24,
+          maxWidth: 1200,
+          margin: "0 auto",
+          boxSizing: "border-box",
+        }}
+      >
         {/* Bar Chart - Trend Beban SKS */}
-        <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", padding: "20px", border: "none", boxShadow: "none", boxSizing: "border-box" }}>
-          <h2 style={{ fontSize: "14px", fontWeight: "600", color: "#8b8377", marginBottom: "16px", letterSpacing: "0.5px", margin: "0 0 16px 0", textTransform: "uppercase" }}>Trend Beban SKS</h2>
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "12px",
+            padding: "20px",
+            border: "none",
+            boxShadow: "none",
+            boxSizing: "border-box",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "14px",
+              fontWeight: "600",
+              color: "#8b8377",
+              marginBottom: "16px",
+              letterSpacing: "0.5px",
+              margin: "0 0 16px 0",
+              textTransform: "uppercase",
+            }}
+          >
+            Trend Beban SKS
+          </h2>
           {sksTrend && sksTrend.length > 0 ? (
             <>
-              <div style={{ position: "relative", height: "280px", marginBottom: "12px" }}>
+              <div
+                style={{
+                  position: "relative",
+                  height: "280px",
+                  marginBottom: "12px",
+                }}
+              >
                 <BarChart
                   data={{
-                    labels: sksTrend.map(d => d.semester),
+                    labels: sksTrend.map((d) => d.semester),
                     datasets: [
                       {
                         label: "Beban SKS",
-                        data: sksTrend.map(d => d.sks),
+                        data: sksTrend.map((d) => d.sks),
                         backgroundColor: "#7bbf9e",
                         borderRadius: 8,
                         borderSkipped: false,
@@ -262,34 +692,106 @@ const DashboardMahasiswa = ({ user }) => {
                   }}
                 />
               </div>
-              <div style={{ display: "flex", justifyContent: "center", marginTop: "12px", fontSize: "12px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#8b8377" }}>
-                  <div style={{ width: "12px", height: "12px", backgroundColor: "#7bbf9e", borderRadius: "2px" }} />
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  marginTop: "12px",
+                  fontSize: "12px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    color: "#8b8377",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "12px",
+                      height: "12px",
+                      backgroundColor: "#7bbf9e",
+                      borderRadius: "2px",
+                    }}
+                  />
                   <span>Beban SKS</span>
                 </div>
               </div>
             </>
           ) : (
-            <div style={{ color: "#a39c94", textAlign: "center", padding: "40px 20px", fontSize: "14px", height: "280px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px" }}>
+            <div
+              style={{
+                color: "#a39c94",
+                textAlign: "center",
+                padding: "40px 20px",
+                fontSize: "14px",
+                height: "280px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+              }}
+            >
               <div>Belum ada data akademik</div>
-              <a href="/akademik/input" style={{ color: "#7bbf9e", textDecoration: "none", fontSize: "13px", fontWeight: "600", borderBottom: "1px solid #7bbf9e" }}>Input data sekarang →</a>
+              <a
+                href="/akademik/input"
+                style={{
+                  color: "#7bbf9e",
+                  textDecoration: "none",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  borderBottom: "1px solid #7bbf9e",
+                }}
+              >
+                Input data sekarang →
+              </a>
             </div>
           )}
         </div>
 
         {/* Line Chart - Trend IPK */}
-        <div style={{ backgroundColor: "#ffffff", borderRadius: "12px", padding: "20px", border: "none", boxShadow: "none", boxSizing: "border-box" }}>
-          <h2 style={{ fontSize: "14px", fontWeight: "600", color: "#8b8377", marginBottom: "16px", letterSpacing: "0.5px", margin: "0 0 16px 0", textTransform: "uppercase" }}>Trend IPK</h2>
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "12px",
+            padding: "20px",
+            border: "none",
+            boxShadow: "none",
+            boxSizing: "border-box",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "14px",
+              fontWeight: "600",
+              color: "#8b8377",
+              marginBottom: "16px",
+              letterSpacing: "0.5px",
+              margin: "0 0 16px 0",
+              textTransform: "uppercase",
+            }}
+          >
+            Trend IPK
+          </h2>
           {ipkTrend && ipkTrend.length > 0 ? (
             <>
-              <div style={{ position: "relative", height: "280px", marginBottom: "12px" }}>
+              <div
+                style={{
+                  position: "relative",
+                  height: "280px",
+                  marginBottom: "12px",
+                }}
+              >
                 <LineChart
                   data={{
-                    labels: ipkTrend.map(d => d.semester),
+                    labels: ipkTrend.map((d) => d.semester),
                     datasets: [
                       {
                         label: "IP Semester",
-                        data: ipkTrend.map(d => d.ip),
+                        data: ipkTrend.map((d) => d.ip),
                         borderColor: "#e9a84c",
                         borderDash: [5, 5],
                         borderWidth: 2.5,
@@ -354,17 +856,63 @@ const DashboardMahasiswa = ({ user }) => {
                   }}
                 />
               </div>
-              <div style={{ display: "flex", justifyContent: "center", marginTop: "12px", fontSize: "12px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#8b8377" }}>
-                  <div style={{ width: "12px", height: "2.5px", backgroundColor: "#e9a84c", backgroundImage: "linear-gradient(to right, #e9a84c 0%, #e9a84c 60%, transparent 60%)" }} />
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  marginTop: "12px",
+                  fontSize: "12px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    color: "#8b8377",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "12px",
+                      height: "2.5px",
+                      backgroundColor: "#e9a84c",
+                      backgroundImage:
+                        "linear-gradient(to right, #e9a84c 0%, #e9a84c 60%, transparent 60%)",
+                    }}
+                  />
                   <span>IP Semester</span>
                 </div>
               </div>
             </>
           ) : (
-            <div style={{ color: "#a39c94", textAlign: "center", padding: "40px 20px", fontSize: "14px", height: "280px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px" }}>
+            <div
+              style={{
+                color: "#a39c94",
+                textAlign: "center",
+                padding: "40px 20px",
+                fontSize: "14px",
+                height: "280px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+              }}
+            >
               <div>Belum ada data akademik</div>
-              <a href="/akademik/input" style={{ color: "#7bbf9e", textDecoration: "none", fontSize: "13px", fontWeight: "600", borderBottom: "1px solid #7bbf9e" }}>Input data sekarang →</a>
+              <a
+                href="/akademik/input"
+                style={{
+                  color: "#7bbf9e",
+                  textDecoration: "none",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  borderBottom: "1px solid #7bbf9e",
+                }}
+              >
+                Input data sekarang →
+              </a>
             </div>
           )}
         </div>
@@ -372,74 +920,145 @@ const DashboardMahasiswa = ({ user }) => {
 
       {/* Tugas Mendatang */}
       {tasks.length > 0 && (
-        <div style={{ maxWidth: 1200, margin: "24px auto 0 auto", backgroundColor: "#ffffff", borderRadius: "14px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", boxSizing: "border-box" }}>
-          <h2 style={{ fontSize: "13px", fontWeight: "700", color: "#8b8377", marginBottom: "20px", letterSpacing: "0.5px", textTransform: "uppercase" }}>📋 Tugas Mendatang</h2>
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: "24px auto 0 auto",
+            backgroundColor: "#ffffff",
+            borderRadius: "14px",
+            padding: "24px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            boxSizing: "border-box",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "13px",
+              fontWeight: "700",
+              color: "#8b8377",
+              marginBottom: "20px",
+              letterSpacing: "0.5px",
+              textTransform: "uppercase",
+            }}
+          >
+            📋 Tugas Mendatang
+          </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {tasks
-              .filter(t => t.status !== 'Done') // Exclude completed tasks
+              .filter((t) => t.status !== "Done") // Exclude completed tasks
               .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
               .slice(0, 5) // Show only top 5
-              .map(task => {
+              .map((task) => {
                 const deadline = new Date(task.deadline);
                 const today = new Date();
-                const sisaHari = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+                const sisaHari = Math.ceil(
+                  (deadline - today) / (1000 * 60 * 60 * 24),
+                );
                 const isOverdue = sisaHari < 0;
-                
+
                 return (
-                  <div 
+                  <div
                     key={task._id}
                     onClick={() => navigate(`/tasks/edit/${task._id}`)}
                     style={{
-                      display: "flex", 
-                      alignItems: "center", 
-                      justifyContent: "space-between", 
-                      padding: "14px 16px", 
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "14px 16px",
                       background: "#f9f9f9",
                       borderRadius: "10px",
                       border: "1px solid #e8e8e8",
                       transition: "all 0.2s",
-                      cursor: "pointer"
+                      cursor: "pointer",
                     }}
-                    onMouseOver={e => {
+                    onMouseOver={(e) => {
                       e.currentTarget.style.background = "#f0f8f6";
                       e.currentTarget.style.borderColor = "#7bbf9e";
-                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(123,191,158,0.1)";
+                      e.currentTarget.style.boxShadow =
+                        "0 2px 8px rgba(123,191,158,0.1)";
                     }}
-                    onMouseOut={e => {
+                    onMouseOut={(e) => {
                       e.currentTarget.style.background = "#f9f9f9";
                       e.currentTarget.style.borderColor = "#e8e8e8";
                       e.currentTarget.style.boxShadow = "none";
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0 }}>
-                      <input 
-                        type="checkbox" 
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 14,
+                        flex: 1,
+                        minWidth: 0,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
                         disabled
-                        style={{ cursor: "not-allowed", width: 20, height: 20, flexShrink: 0, accentColor: "#7bbf9e", opacity: 0.5 }} 
+                        style={{
+                          cursor: "not-allowed",
+                          width: 20,
+                          height: 20,
+                          flexShrink: 0,
+                          accentColor: "#7bbf9e",
+                          opacity: 0.5,
+                        }}
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "#2c3e50", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "#2c3e50",
+                            marginBottom: 4,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
                           {task.namaTugas}
                         </div>
-                        <div style={{ fontSize: 11, color: "#999", fontWeight: 500 }}>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "#999",
+                            fontWeight: 500,
+                          }}
+                        >
                           {task.kategoriTask}
                         </div>
                       </div>
                     </div>
-                    <div 
+                    <div
                       style={{
-                        fontSize: 11, 
-                        fontWeight: 700, 
-                        padding: "8px 14px", 
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: "8px 14px",
                         borderRadius: "20px",
-                        background: isOverdue ? "#FF6B6B" : (sisaHari === 0 ? "#FF6B6B" : sisaHari === 1 ? "#FFC107" : "#4CAF50"),
-                        color: isOverdue ? "#fff" : (sisaHari <= 1 ? "#fff" : "#fff"),
+                        background: isOverdue
+                          ? "#FF6B6B"
+                          : sisaHari === 0
+                            ? "#FF6B6B"
+                            : sisaHari === 1
+                              ? "#FFC107"
+                              : "#4CAF50",
+                        color: isOverdue
+                          ? "#fff"
+                          : sisaHari <= 1
+                            ? "#fff"
+                            : "#fff",
                         minWidth: "90px",
                         textAlign: "center",
-                        flexShrink: 0
+                        flexShrink: 0,
                       }}
                     >
-                      {isOverdue ? "Besok" : sisaHari === 1 ? "1 hari" : sisaHari === 0 ? "Hari ini" : `${sisaHari} hari`}
+                      {isOverdue
+                        ? "Besok"
+                        : sisaHari === 1
+                          ? "1 hari"
+                          : sisaHari === 0
+                            ? "Hari ini"
+                            : `${sisaHari} hari`}
                     </div>
                   </div>
                 );
