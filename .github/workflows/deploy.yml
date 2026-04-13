@@ -1,0 +1,42 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set deployment target
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "DEPLOY_ENV=prod" >> $GITHUB_ENV
+            echo "DEPLOY_URL=areass.versa.my.id" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_ENV=staging" >> $GITHUB_ENV
+            echo "DEPLOY_URL=dev.areass.versa.my.id" >> $GITHUB_ENV
+          fi
+
+      - name: Connect Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_TS_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: DEPLOY_ENV,DEPLOY_URL
+          script: |
+            cd ${{ secrets.WORKDIR }}
+            git pull origin ${{ github.ref_name }}
+            bash deploy.sh $DEPLOY_ENV
+            echo "Deployed to $DEPLOY_URL"
