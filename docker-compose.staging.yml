@@ -1,0 +1,35 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: areass-staging-frontend
+    networks:
+      - areass-staging-net
+      - proxy
+
+  backend:
+    container_name: areass-staging-backend
+    environment:
+      MONGODB_URI: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-secret}@areass-mongo:27017/${MONGO_STAGING_DB:-areass-staging}?authSource=admin
+      ML_API_URL: http://areass-staging-ml:8000
+    depends_on:
+      - mongodb
+    networks:
+      - areass-staging-net
+      - areass-net        # untuk akses mongodb production container
+      - proxy
+
+  ml:
+    container_name: areass-staging-ml
+    networks:
+      - areass-staging-net
+      - proxy
+
+networks:
+  areass-staging-net:
+    driver: bridge
+  areass-net:
+    external: true   # join network production supaya bisa akses mongodb
+  proxy:
+    external: true
