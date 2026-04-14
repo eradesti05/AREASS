@@ -1,7 +1,6 @@
 services:
   mongodb:
     image: mongo:7
-    container_name: areass-mongo
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
@@ -10,11 +9,10 @@ services:
     volumes:
       - mongo_data:/data/db
     networks:
-      - areass-net
+      - net
 
   backend:
     build: ./backend
-    container_name: areass-backend
     restart: unless-stopped
     environment:
       PORT: 5000
@@ -24,27 +22,25 @@ services:
     depends_on:
       - mongodb
     networks:
-      - areass-net
+      - net
 
   ml:
     build: ./ML
-    container_name: areass-ml
     restart: unless-stopped
     networks:
-      - areass-net
+      - net
 
   frontend:
     build: ./frontend
-    container_name: areass-frontend
     restart: unless-stopped
     depends_on:
       - backend
     networks:
-      - areass-net
+      - net
 
 volumes:
   mongo_data:
 
 networks:
-  areass-net:
+  net:
     driver: bridge
