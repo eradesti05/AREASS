@@ -36,10 +36,11 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           envs: DEPLOY_ENV,DEPLOY_URL
           script: |
-            set -e
-            cd ${{ vars.WORKDIR }}
-            git fetch origin
-            git checkout ${{ github.ref_name }}
-            git pull origin ${{ github.ref_name }}
-            bash deploy.sh $DEPLOY_ENV
-            echo "Deployed to $DEPLOY_URL"
+            bash -e -c '
+              cd ${{ vars.WORKDIR }}
+              git fetch origin
+              git checkout ${{ github.ref_name }}
+              git pull origin ${{ github.ref_name }}
+              bash deploy.sh $DEPLOY_ENV
+              echo "Deployed to $DEPLOY_URL"
+            '

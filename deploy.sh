@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 COMPOSE_BASE="-f docker-compose.yml"
 COMPOSE_DEV="-f docker-compose.dev.yml"
