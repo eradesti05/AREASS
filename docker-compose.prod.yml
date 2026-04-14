@@ -4,17 +4,17 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod     # pakai Dockerfile khusus prod (nginx static)
     networks:
-      - areass-net
+      - net
       - proxy
 
   backend:
     networks:
-      - areass-net
+      - net
       - proxy
 
   ml:
     networks:
-      - areass-net
+      - net
       - proxy 
 
 networks:

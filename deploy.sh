@@ -13,7 +13,7 @@ case "$1" in
   dev)
     echo "Starting development environment..."
     $CMD_DEV down
-    $CMD_DEV build --no-cache
+    $CMD_DEV build
     $CMD_DEV up -d
     echo "Done. Logs: $CMD_DEV logs -f"
     ;;
@@ -21,7 +21,7 @@ case "$1" in
   prod)
     echo "Starting production environment..."
     $CMD_PROD down
-    $CMD_PROD build --no-cache
+    $CMD_PROD build
     $CMD_PROD up -d
     echo "Done. Logs: $CMD_PROD logs -f"
     ;;
@@ -29,7 +29,7 @@ case "$1" in
   staging)
     echo "Starting staging environment..."
     $CMD_STAGING down
-    $CMD_STAGING build --no-cache
+    $CMD_STAGING build
     $CMD_STAGING up -d
     echo "Done. Logs: $CMD_STAGING logs -f"
     ;;
