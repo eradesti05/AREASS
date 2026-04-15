@@ -1,0 +1,25 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    networks:
+      - net
+      - proxy
+
+  backend:
+    environment:
+      MONGODB_URI: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-secret}@mongodb:27017/${MONGO_STAGING_DB:-areass-staging}?authSource=admin
+      ML_API_URL: http://ml:8000
+    networks:
+      - net
+      - proxy
+
+  ml:
+    networks:
+      - net
+      - proxy
+
+networks:
+  proxy:
+    external: true
