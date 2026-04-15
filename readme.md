@@ -24,3 +24,6 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```bash
 docker compose down
 ```
+
+### Figma Link :
+https://www.figma.com/design/UoK558iVvWxHHzB4jO8sOF/AREASS?node-id=88-863&t=fzgUIkgYT9Z4Hvvb-1
