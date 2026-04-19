@@ -995,3 +995,34 @@ app.listen(PORT, async () => {
   await initializeCategories();
   console.log(`🚀 Server jalan di http://localhost:${PORT}`);
 });
+
+// GET tren mahasiswa per semester (untuk kaprodi)
+app.get(
+  "/api/kaprodi/tren-semester",
+  auth,
+  role("kaprodi"),
+  async (req, res) => {
+    try {
+      const kaprodi = await User.findById(req.user.id);
+      const mahasiswaList = await User.find({
+        role: "mahasiswa",
+        prodi: kaprodi.prodi,
+      });
+      const ids = mahasiswaList.map((m) => m._id);
+
+      // Hitung jumlah mahasiswa per semester
+      const tren = await Akademik.aggregate([
+        { $match: { mahasiswaId: { $in: ids } } },
+        {
+          $group: { _id: "$semesterKe", jumlah: { $addToSet: "$mahasiswaId" } },
+        },
+        { $project: { semesterKe: "$_id", jumlah: { $size: "$jumlah" } } },
+        { $sort: { semesterKe: 1 } },
+      ]);
+
+      res.json(tren);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  },
+);

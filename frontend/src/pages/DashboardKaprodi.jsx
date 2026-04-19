@@ -31,24 +31,23 @@ const DashboardKaprodi = () => {
       try {
         setLoading(true);
 
-        const [resMahasiswa, resStats] = await Promise.all([
+        const [resMahasiswa, resStats, resTren] = await Promise.all([
           kaprodiAPI.getMahasiswa(),
           kaprodiAPI.getStatistik(),
+          kaprodiAPI.getTrenSemester(),
         ]);
 
-        // 1. Set List Mahasiswa
+        // Buat bikin list mahasiswa ini
         setMahasiswaList(resMahasiswa || []);
 
-        // 2. Set Trend Data (Pastikan key-nya 'jumlah')
-        const dataPerSemester = [
-          { semester: "Ganjil 23", jumlah: 45 },
-          { semester: "Genap 23", jumlah: 52 },
-          { semester: "Ganjil 24", jumlah: 48 },
-          { semester: "Genap 24", jumlah: resMahasiswa?.length || 0 },
-        ];
+        // buat bikin trend jumlah mhs persemester
+        const dataPerSemester = resTren.map((item) => ({
+          semester: `Sem ${item.semesterKe}`,
+          jumlah: item.jumlah,
+        }));
         setTrendData(dataPerSemester);
 
-        // 3. Mapping data untuk Pie Chart
+        // mapping data buat Pie Chart
         if (resStats && resStats.distribusi) {
           const formattedPie = resStats.distribusi.map((item) => {
             let sliceColor = "#94A3B8";
@@ -81,7 +80,6 @@ const DashboardKaprodi = () => {
     );
   }
 
-  // --- PERBAIKAN: Tambahkan RETURN di sini ---
   return (
     <div style={{ padding: 32 }}>
       <div
@@ -99,15 +97,11 @@ const DashboardKaprodi = () => {
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={trendData}>
               {" "}
-              {/* Pastikan trendData adalah array [{semester: '...', jumlah: 0}] */}
               <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
-              {/* Key untuk sumbu X (Label Semester) */}
               <XAxis dataKey="semester" tick={{ fontSize: 11 }} />
-              {/* Sumbu Y akan otomatis menyesuaikan angka jumlah */}
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend />
-              {/* Garis Grafik */}
               <Line
                 type="monotone"
                 dataKey="jumlah"
@@ -131,11 +125,11 @@ const DashboardKaprodi = () => {
                 data={pieData}
                 cx="50%"
                 cy="50%"
-                innerRadius={60} // Opsional: buat jadi Donut Chart agar lebih modern
+                innerRadius={60}
                 outerRadius={80}
                 paddingAngle={5}
-                dataKey="value" // Properti angka
-                nameKey="name" // Properti label ('Aman', dll)
+                dataKey="value"
+                nameKey="name"
                 label={({ name, percent }) =>
                   `${name} ${(percent * 100).toFixed(0)}%`
                 }
