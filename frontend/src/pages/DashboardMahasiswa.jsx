@@ -1042,18 +1042,14 @@ const DashboardMahasiswa = ({ user }) => {
                             : sisaHari === 1
                               ? "#FFC107"
                               : "#4CAF50",
-                        color: isOverdue
-                          ? "#fff"
-                          : sisaHari <= 1
-                            ? "#fff"
-                            : "#fff",
+                        color: "#fff",
                         minWidth: "90px",
                         textAlign: "center",
                         flexShrink: 0,
                       }}
                     >
                       {isOverdue
-                        ? "Besok"
+                        ? `Terlambat ${Math.abs(sisaHari)} hari`
                         : sisaHari === 1
                           ? "1 hari"
                           : sisaHari === 0
