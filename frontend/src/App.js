@@ -59,6 +59,9 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
 
   const handleLogout = () => {
     setUser(null);
+    // Hapus semua data login dari localStorage
+    localStorage.removeItem("areass_token");
+    localStorage.removeItem("areass_user");
     navigate("/mahasiswa/login");
   };
 
