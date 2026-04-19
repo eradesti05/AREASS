@@ -154,8 +154,10 @@ const DashboardMahasiswa = ({ user }) => {
   // Use akademik data if available, filter by selectedStrata
   const filteredAkademik =
     selectedStrata && akademik.length > 0
-      ? akademik.filter((a) => a.strata === selectedStrata)
-      : akademik;
+      ? akademik
+          .filter((a) => a.strata === selectedStrata)
+          .sort((a, b) => a.semesterKe - b.semesterKe)
+      : akademik.sort((a, b) => a.semesterKe - b.semesterKe);
 
   const ipkTrend =
     filteredAkademik && filteredAkademik.length > 0
@@ -164,6 +166,7 @@ const DashboardMahasiswa = ({ user }) => {
           ip: d.ipSemester,
         }))
       : [];
+  
   const sksTrend =
     filteredAkademik && filteredAkademik.length > 0
       ? filteredAkademik.map((d) => ({
@@ -171,6 +174,15 @@ const DashboardMahasiswa = ({ user }) => {
           sks: d.sksPerSemester,
         }))
       : [];
+
+  // Hitung max SKS otomatis dari data
+  const maxSks =
+    sksTrend.length > 0
+      ? Math.max(
+          24,
+          Math.ceil(Math.max(...sksTrend.map((d) => d.sks || 0)) * 1.1)
+        )
+      : 24;
   const taskProgress = [
     { name: "On Progress", value: summary.onProgress || 0, color: "#FF9800" },
     { name: "Backlog", value: summary.backlog || 0, color: "#000000" },
@@ -720,7 +732,7 @@ const DashboardMahasiswa = ({ user }) => {
                       y: {
                         display: false,
                         beginAtZero: true,
-                        max: 20,
+                        max: maxSks,
                       },
                       x: {
                         grid: {
