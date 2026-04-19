@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../constants/theme";
 import { Card } from "../components/UIComponents";
@@ -69,6 +69,27 @@ const DashboardMahasiswa = ({ user }) => {
   });
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [openStrataSKSDropdown, setOpenStrataSKSDropdown] = useState(false);
+  const [openStrataIPKDropdown, setOpenStrataIPKDropdown] = useState(false);
+  const strataSKSRef = useRef(null);
+  const strataIPKRef = useRef(null);
+
+  // Handle click outside for strata dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (strataSKSRef.current && !strataSKSRef.current.contains(e.target)) {
+        setOpenStrataSKSDropdown(false);
+      }
+      if (strataIPKRef.current && !strataIPKRef.current.contains(e.target)) {
+        setOpenStrataIPKDropdown(false);
+      }
+    };
+
+    if (openStrataSKSDropdown || openStrataIPKDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [openStrataSKSDropdown, openStrataIPKDropdown]);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -183,6 +204,18 @@ const DashboardMahasiswa = ({ user }) => {
           Math.ceil(Math.max(...sksTrend.map((d) => d.sks || 0)) * 1.1)
         )
       : 24;
+
+  // Hitung min dan max IPK otomatis dari data untuk better visualization
+  const minIpk =
+    ipkTrend.length > 0
+      ? Math.max(0, Math.floor(Math.min(...ipkTrend.map((d) => d.ip || 4.0)) * 10) / 10 - 0.2)
+      : 1.0;
+  const maxIpk =
+    ipkTrend.length > 0
+      ? Math.ceil(Math.max(...ipkTrend.map((d) => d.ip || 1.0)) * 10) / 10 + 0.1 <= 4.0
+        ? 4.0 + 0.15
+        : Math.ceil(Math.max(...ipkTrend.map((d) => d.ip || 1.0)) * 10) / 10 + 0.1
+      : 4.0;
   const taskProgress = [
     { name: "On Progress", value: summary.onProgress || 0, color: "#FF9800" },
     { name: "Backlog", value: summary.backlog || 0, color: "#000000" },
@@ -656,32 +689,95 @@ const DashboardMahasiswa = ({ user }) => {
               Trend Beban SKS
             </h2>
             {uniqueStrata.length > 0 && (
-              <select
-                value={selectedStrata}
-                onChange={(e) => setSelectedStrata(e.target.value)}
-                style={{
-                  padding: "10px 36px 10px 14px",
-                  borderRadius: "16px",
-                  border: "2px solid #E0E0E0",
-                  fontSize: "13px",
-                  color: "#333",
-                  cursor: "pointer",
-                  background: "white",
-                  transition: "all 0.3s ease",
-                  appearance: "none",
-                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 10px center",
-                  backgroundSize: "18px",
-                  fontWeight: 500,
-                }}
-              >
-                {uniqueStrata.map((strata) => (
-                  <option key={strata} value={strata}>
-                    {strata}
-                  </option>
-                ))}
-              </select>
+              <div ref={strataSKSRef} style={{ position: 'relative', width: 'fit-content' }}>
+                <div
+                  onClick={() => setOpenStrataSKSDropdown(!openStrataSKSDropdown)}
+                  style={{
+                    border: "2px solid #29B6F6",
+                    borderRadius: 20,
+                    padding: "10px 14px",
+                    fontSize: 13,
+                    minWidth: "80px",
+                    textAlign: "center",
+                    outline: "none",
+                    color: "#29B6F6",
+                    background: "white",
+                    boxSizing: "border-box",
+                    fontWeight: 600,
+                    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!openStrataSKSDropdown) {
+                      e.currentTarget.style.borderColor = "#0D9FE3";
+                      e.currentTarget.style.background = "#E1F5FE";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!openStrataSKSDropdown) {
+                      e.currentTarget.style.borderColor = "#29B6F6";
+                      e.currentTarget.style.background = "white";
+                    }
+                  }}
+                >
+                  <span>{selectedStrata || "Strata"}</span>
+                  <span style={{transform: openStrataSKSDropdown ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", fontSize: 10}}>▼</span>
+                </div>
+                {openStrataSKSDropdown && (
+                  <div style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    right: 0,
+                    marginTop: 6,
+                    background: "white",
+                    border: "2px solid #29B6F6",
+                    borderRadius: 16,
+                    boxShadow: "0 8px 20px rgba(41, 182, 246, 0.15)",
+                    zIndex: 1000,
+                    overflow: "hidden",
+                    minWidth: "80px"
+                  }}>
+                    {uniqueStrata.map((strata) => (
+                      <div
+                        key={strata}
+                        onClick={() => {
+                          setSelectedStrata(strata);
+                          setOpenStrataSKSDropdown(false);
+                        }}
+                        style={{
+                          padding: "10px 12px",
+                          cursor: "pointer",
+                          borderBottom: "1px solid #F0F0F0",
+                          fontSize: 13,
+                          transition: "all 0.15s ease",
+                          background: selectedStrata === strata ? "#E1F5FE" : "transparent",
+                          color: selectedStrata === strata ? "#29B6F6" : "#333",
+                          fontWeight: selectedStrata === strata ? 600 : 500,
+                          textAlign: "center"
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedStrata !== strata) {
+                            e.currentTarget.style.background = "#F9F9F9";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedStrata !== strata) {
+                            e.currentTarget.style.background = "transparent";
+                          }
+                        }}
+                      >
+                        {strata}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
           {sksTrend && sksTrend.length > 0 ? (
@@ -835,32 +931,95 @@ const DashboardMahasiswa = ({ user }) => {
               Trend IPK
             </h2>
             {uniqueStrata.length > 0 && (
-              <select
-                value={selectedStrata}
-                onChange={(e) => setSelectedStrata(e.target.value)}
-                style={{
-                  padding: "10px 36px 10px 14px",
-                  borderRadius: "16px",
-                  border: "2px solid #E0E0E0",
-                  fontSize: "13px",
-                  color: "#333",
-                  cursor: "pointer",
-                  background: "white",
-                  transition: "all 0.3s ease",
-                  appearance: "none",
-                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 10px center",
-                  backgroundSize: "18px",
-                  fontWeight: 500,
-                }}
-              >
-                {uniqueStrata.map((strata) => (
-                  <option key={strata} value={strata}>
-                    {strata}
-                  </option>
-                ))}
-              </select>
+              <div ref={strataIPKRef} style={{ position: 'relative', width: 'fit-content' }}>
+                <div
+                  onClick={() => setOpenStrataIPKDropdown(!openStrataIPKDropdown)}
+                  style={{
+                    border: "2px solid #29B6F6",
+                    borderRadius: 20,
+                    padding: "10px 14px",
+                    fontSize: 13,
+                    minWidth: "80px",
+                    textAlign: "center",
+                    outline: "none",
+                    color: "#29B6F6",
+                    background: "white",
+                    boxSizing: "border-box",
+                    fontWeight: 600,
+                    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!openStrataIPKDropdown) {
+                      e.currentTarget.style.borderColor = "#0D9FE3";
+                      e.currentTarget.style.background = "#E1F5FE";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!openStrataIPKDropdown) {
+                      e.currentTarget.style.borderColor = "#29B6F6";
+                      e.currentTarget.style.background = "white";
+                    }
+                  }}
+                >
+                  <span>{selectedStrata || "Strata"}</span>
+                  <span style={{transform: openStrataIPKDropdown ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", fontSize: 10}}>▼</span>
+                </div>
+                {openStrataIPKDropdown && (
+                  <div style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    right: 0,
+                    marginTop: 6,
+                    background: "white",
+                    border: "2px solid #29B6F6",
+                    borderRadius: 16,
+                    boxShadow: "0 8px 20px rgba(41, 182, 246, 0.15)",
+                    zIndex: 1000,
+                    overflow: "hidden",
+                    minWidth: "80px"
+                  }}>
+                    {uniqueStrata.map((strata) => (
+                      <div
+                        key={strata}
+                        onClick={() => {
+                          setSelectedStrata(strata);
+                          setOpenStrataIPKDropdown(false);
+                        }}
+                        style={{
+                          padding: "10px 12px",
+                          cursor: "pointer",
+                          borderBottom: "1px solid #F0F0F0",
+                          fontSize: 13,
+                          transition: "all 0.15s ease",
+                          background: selectedStrata === strata ? "#E1F5FE" : "transparent",
+                          color: selectedStrata === strata ? "#29B6F6" : "#333",
+                          fontWeight: selectedStrata === strata ? 600 : 500,
+                          textAlign: "center"
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedStrata !== strata) {
+                            e.currentTarget.style.background = "#F9F9F9";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedStrata !== strata) {
+                            e.currentTarget.style.background = "transparent";
+                          }
+                        }}
+                      >
+                        {strata}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
           {ipkTrend && ipkTrend.length > 0 ? (
@@ -913,11 +1072,15 @@ const DashboardMahasiswa = ({ user }) => {
                     },
                     scales: {
                       y: {
-                        min: 1.0,
-                        max: 4.0,
+                        min: minIpk,
+                        max: maxIpk,
                         ticks: {
                           color: "#a39c94",
                           font: { size: 12 },
+                          callback: (value) => {
+                            const rounded = Math.round(value * 10) / 10;
+                            return rounded <= 4.0 && value === rounded ? rounded.toFixed(1) : '';
+                          },
                         },
                         grid: {
                           color: "#e8e0d7",
