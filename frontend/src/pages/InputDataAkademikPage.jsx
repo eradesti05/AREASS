@@ -16,6 +16,7 @@ export default function InputDataAkademikPage({ user }) {
   const [message, setMessage] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [existingAkademik, setExistingAkademik] = useState([]);
   const maxSemesterByJenjang = {
     D3: 10,
     S1: 16,
@@ -25,6 +26,20 @@ export default function InputDataAkademikPage({ user }) {
 
   const maxSemester = maxSemesterByJenjang[strata] || 0;
 
+  // Fetch existing akademik data on component load
+  useEffect(() => {
+    const fetchExistingData = async () => {
+      try {
+        const data = await akademikAPI.getAll();
+        const akademikArray = Array.isArray(data) ? data : (data?.data || []);
+        setExistingAkademik(akademikArray);
+      } catch (err) {
+        console.log("Info: No existing akademik data");
+      }
+    };
+    fetchExistingData();
+  }, []);
+
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
@@ -33,15 +48,24 @@ export default function InputDataAkademikPage({ user }) {
 
   useEffect(() => {
     if (semesterAktif) {
-      const rows = Array.from({ length: parseInt(semesterAktif) }, (_, i) => ({
-        semester: i + 1,
-        ip: "",
-        sks: "",
-        sksLulus: "",
-      }));
+      // Filter out semesters that already have data
+      const existingSemesters = existingAkademik.map(a => a.semesterKe);
+      const rows = Array.from({ length: parseInt(semesterAktif) }, (_, i) => {
+        const semesterNum = i + 1;
+        // Skip if semester already exists
+        if (existingSemesters.includes(semesterNum)) {
+          return null;
+        }
+        return {
+          semester: semesterNum,
+          ip: "",
+          sks: "",
+          sksLulus: "",
+        };
+      }).filter(row => row !== null); // Remove null entries for existing semesters
       setDataSemester(rows);
     }
-  }, [semesterAktif]);
+  }, [semesterAktif, existingAkademik]);
 
   useEffect(() => {
     if (parseInt(semesterAktif) > maxSemester) {
@@ -548,17 +572,49 @@ export default function InputDataAkademikPage({ user }) {
               <span style={S.sectionTitle}>Data Per Semester</span>
               <div style={S.sectionDivider} />
             </div>
+            
+            {/* Info tentang semester yang sudah ada */}
+            {existingAkademik.length > 0 && (
+              <div style={{
+                background: "#E8F5E9",
+                border: "1px solid #4CAF50",
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 13,
+                color: "#2E7D32"
+              }}>
+                ✓ <strong>Semester yang sudah ada:</strong> {
+                  existingAkademik.map(a => `Sem ${a.semesterKe}`).join(", ")
+                }
+              </div>
+            )}
+            
             <div style={S.infoBox}>
               Isi IP Semester dan SKS yang ditempuh untuk setiap semester yang
               sudah kamu jalani.
             </div>
-            <div style={S.tableHeader}>
-              <span style={S.tableHeaderSem}>Semester</span>
-              <span style={S.tableHeaderCol}>IP Semester</span>
-              <span style={S.tableHeaderCol}>SKS Per Semester</span>
-              <span style={S.tableHeaderCol}>SKS Lulus Per Semester</span>
-            </div>
-            {dataSemester.map((row, index) => (
+            
+            {dataSemester.length === 0 && existingAkademik.length > 0 ? (
+              <div style={{
+                background: "#FFF9C4",
+                border: "1px solid #FBC02D",
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 13,
+                color: "#F57F17",
+                textAlign: "center"
+              }}>
+                ℹ️ Semua semester sudah memiliki data. Tidak ada semester baru untuk diinput.
+              </div>
+            ) : (
+              <>
+                <div style={S.tableHeader}>
+                  <span style={S.tableHeaderSem}>Semester</span>
+                  <span style={S.tableHeaderCol}>IP Semester</span>
+                  <span style={S.tableHeaderCol}>SKS Per Semester</span>
+                  <span style={S.tableHeaderCol}>SKS Lulus Per Semester</span>
+                </div>
+                {dataSemester.map((row, index) => (
               <div key={index} style={S.tableRow}>
                 <span style={S.tableRowLabel}>Sem {row.semester}</span>
                 <input
@@ -601,6 +657,8 @@ export default function InputDataAkademikPage({ user }) {
                 />
               </div>
             ))}
+              </>
+            )}
           </div>
         </div>
       )}
