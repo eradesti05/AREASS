@@ -505,46 +505,6 @@ app.put("/api/akademik/:id", auth, role("mahasiswa"), async (req, res) => {
   }
 });
 
-// GET akademik data mahasiswa tertentu (untuk kaprodi/dosen)
-app.get(
-  "/api/akademik/:mahasiswaId",
-  auth,
-  role("kaprodi", "dosen_wali"),
-  async (req, res) => {
-    try {
-      const data = await Akademik.find({
-        mahasiswaId: req.params.mahasiswaId,
-      }).sort({ semesterKe: 1 });
-      res.json(data);
-    } catch (err) {
-      res.status(500).json({ message: err.message });
-    }
-  },
-);
-
-// GET prediksi mahasiswa tertentu (untuk kaprodi/dosen)
-app.get(
-  "/api/prediksi/:mahasiswaId",
-  auth,
-  role("kaprodi", "dosen_wali"),
-  async (req, res) => {
-    try {
-      const latest = await Akademik.findOne({
-        mahasiswaId: req.params.mahasiswaId,
-        hasilPrediksi: { $ne: null },
-      }).sort({ semesterKe: -1 });
-      if (!latest)
-        return res.json({ hasilPrediksi: "Aman", skorConfidence: 0 });
-      res.json({
-        hasilPrediksi: latest.hasilPrediksi,
-        skorConfidence: latest.skorConfidence,
-      });
-    } catch (err) {
-      res.status(500).json({ message: err.message });
-    }
-  },
-);
-
 // ─── PREDIKSI ROUTES ──────────────────────────────────────────────────────────
 app.post("/api/prediksi", auth, role("mahasiswa"), async (req, res) => {
   try {
