@@ -212,7 +212,9 @@ const DashboardMahasiswa = ({ user }) => {
       : 1.0;
   const maxIpk =
     ipkTrend.length > 0
-      ? Math.min(4.0, Math.ceil(Math.max(...ipkTrend.map((d) => d.ip || 1.0)) * 10) / 10 + 0.2)
+      ? Math.ceil(Math.max(...ipkTrend.map((d) => d.ip || 1.0)) * 10) / 10 + 0.1 <= 4.0
+        ? 4.0 + 0.15
+        : Math.ceil(Math.max(...ipkTrend.map((d) => d.ip || 1.0)) * 10) / 10 + 0.1
       : 4.0;
   const taskProgress = [
     { name: "On Progress", value: summary.onProgress || 0, color: "#FF9800" },
@@ -1075,6 +1077,10 @@ const DashboardMahasiswa = ({ user }) => {
                         ticks: {
                           color: "#a39c94",
                           font: { size: 12 },
+                          callback: (value) => {
+                            const rounded = Math.round(value * 10) / 10;
+                            return rounded <= 4.0 && value === rounded ? rounded.toFixed(1) : '';
+                          },
                         },
                         grid: {
                           color: "#e8e0d7",
