@@ -1,13 +1,18 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { akademikAPI } from "../services/api";
 import { X, CheckCircle } from 'lucide-react';
+import { C } from "../constants/theme";
 
 export default function InputDataAkademikPage({ user }) {
   const navigate = useNavigate();
   const { userTypeParam } = useParams();
   const [strata, setStrata] = useState("");
   const [semesterAktif, setSemesterAktif] = useState("");
+  const [openDropdownStrata, setOpenDropdownStrata] = useState(false);
+  const [openDropdownSemester, setOpenDropdownSemester] = useState(false);
+  const dropdownRefStrata = useRef(null);
+  const dropdownRefSemester = useRef(null);
   const [ipk, setIpk] = useState("");
   const [sks, setSks] = useState("");
   const [jumlahSksLulus, setJumlahSksLulus] = useState("");
@@ -40,6 +45,23 @@ export default function InputDataAkademikPage({ user }) {
     };
     fetchExistingData();
   }, []);
+
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRefStrata.current && !dropdownRefStrata.current.contains(e.target)) {
+        setOpenDropdownStrata(false);
+      }
+      if (dropdownRefSemester.current && !dropdownRefSemester.current.contains(e.target)) {
+        setOpenDropdownSemester(false);
+      }
+    };
+    
+    if (openDropdownStrata || openDropdownSemester) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openDropdownStrata, openDropdownSemester]);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -289,12 +311,21 @@ export default function InputDataAkademikPage({ user }) {
       background: "#fff",
       fontSize: isMobile ? 13 : 15,
       padding: isMobile ? "10px 14px" : "14px 20px",
-      borderRadius: 15,
-      border: "1px solid #DFEAF2",
+      borderRadius: 20,
+      border: "2px solid #DFEAF2",
       outline: "none",
       cursor: "pointer",
       boxSizing: "border-box",
-    },
+      transition: "all 0.3s ease",
+      appearance: "none",
+      backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23718EBF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "right 14px center",
+      backgroundSize: "20px",
+      paddingRight: isMobile ? "35px" : "40px",      // Styling untuk option ketika dropdown open
+      WebkitAppearance: "none",
+      MozAppearance: "none",
+      boxShadow: "0 2px 8px rgba(113, 142, 191, 0.1)",    },
     infoBox: {
       color: "#0277BD",
       background: "linear-gradient(135deg, #E1F5FE 0%, #B3E5FC 100%)",
@@ -496,7 +527,36 @@ export default function InputDataAkademikPage({ user }) {
   };
 
   return (
-    <div style={S.page}>
+    <>
+      <style>{`
+        select {
+          font-family: inherit;
+        }
+        select:hover {
+          border-color: #5D9CEC !important;
+          box-shadow: 0 4px 12px rgba(93, 156, 236, 0.2) !important;
+        }
+        select:focus {
+          border-color: #29B6F6 !important;
+          box-shadow: 0 4px 12px rgba(41, 182, 246, 0.3) !important;
+        }
+        select option {
+          padding: 12px 16px;
+          background: white;
+          color: #718EBF;
+          border: none;
+          border-radius: 8px;
+        }
+        select option:hover {
+          background: #E1F5FE;
+        }
+        select option:checked {
+          background: linear-gradient(#29B6F6, #29B6F6);
+          background-color: #29B6F6;
+          color: white;
+        }
+      `}</style>
+      <div style={S.page}>
       <span style={S.pageTitle}>Input Data Akademik</span>
 
       {/* Notifikasi */}
@@ -516,37 +576,173 @@ export default function InputDataAkademikPage({ user }) {
           <div style={S.row}>
             <div style={S.fieldGroup}>
               <span style={S.label}>Strata/Jenjang</span>
-              <select
-                value={strata}
-                onChange={(e) => setStrata(e.target.value)}
-                style={S.select}
-              >
-                <option value="" disabled>
-                  Pilih Strata/Jenjang
-                </option>
-                <option value="D3">D3</option>
-                <option value="S1">S1</option>
-                <option value="S2">S2</option>
-                <option value="S3">S3</option>
-              </select>
+              <div style={{ position: 'relative', zIndex: 100 }} ref={dropdownRefStrata}>
+                <div
+                  onClick={() => setOpenDropdownStrata(!openDropdownStrata)}
+                  style={{
+                    border: "1.5px solid #DFEAF2",
+                    borderRadius: 20,
+                    padding: "14px 20px",
+                    fontSize: 15,
+                    color: strata ? "#718EBF" : "#A0AEC0",
+                    cursor: "pointer",
+                    background: "#fff",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.02)",
+                    transition: "all 0.3s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "#5D9CEC";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(93, 156, 236, 0.2)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "#DFEAF2";
+                    e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.02)";
+                  }}
+                >
+                  <span>{strata || "Pilih Strata/Jenjang"}</span>
+                  <span style={{fontSize: 12, transform: openDropdownStrata ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s ease"}}>▼</span>
+                </div>
+
+                {openDropdownStrata && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      marginTop: 8,
+                      background: "#fff",
+                      border: "1.5px solid #5D9CEC",
+                      borderRadius: 12,
+                      boxShadow: "0 8px 20px rgba(93, 156, 236, 0.15)",
+                      zIndex: 100,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {["D3", "S1", "S2", "S3"].map((opt) => (
+                      <div
+                        key={opt}
+                        onClick={() => {
+                          setStrata(opt);
+                          setOpenDropdownStrata(false);
+                        }}
+                        style={{
+                          padding: "14px 20px",
+                          cursor: "pointer",
+                          borderBottom: "1px solid #F5F6FA",
+                          fontSize: 15,
+                          transition: "all 0.15s ease",
+                          background: strata === opt ? "#E8EAFF" : "transparent",
+                          color: strata === opt ? "#1A23C8" : "#718EBF",
+                          fontWeight: strata === opt ? 600 : 500,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (strata !== opt) {
+                            e.currentTarget.style.background = "#F5F6FA";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (strata !== opt) {
+                            e.currentTarget.style.background = "transparent";
+                          }
+                        }}
+                      >
+                        {opt}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div style={S.fieldGroup}>
               <span style={S.label}>Semester Aktif Saat Ini</span>
-              <select
-                value={semesterAktif}
-                onChange={(e) => setSemesterAktif(e.target.value)}
-                style={S.select}
-                disabled={!strata}
-              >
-                <option value="" disabled>
-                  Pilih semester aktif
-                </option>
-                {Array.from({ length: maxSemester }, (_, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    Semester {i + 1}
-                  </option>
-                ))}
-              </select>
+              <div style={{ position: 'relative', zIndex: 99 }} ref={dropdownRefSemester}>
+                <div
+                  onClick={() => setOpenDropdownSemester(!openDropdownSemester)}
+                  style={{
+                    border: "1.5px solid #DFEAF2",
+                    borderRadius: 20,
+                    padding: "14px 20px",
+                    fontSize: 15,
+                    color: semesterAktif ? "#718EBF" : "#A0AEC0",
+                    cursor: strata ? "pointer" : "not-allowed",
+                    background: strata ? "#fff" : "#F3F4F6",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.02)",
+                    transition: "all 0.3s ease",
+                    opacity: strata ? 1 : 0.6,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (strata) {
+                      e.currentTarget.style.borderColor = "#5D9CEC";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(93, 156, 236, 0.2)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "#DFEAF2";
+                    e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.02)";
+                  }}
+                >
+                  <span>{semesterAktif ? `Semester ${semesterAktif}` : "Pilih semester aktif"}</span>
+                  <span style={{fontSize: 12, transform: openDropdownSemester ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s ease"}}>▼</span>
+                </div>
+
+                {openDropdownSemester && strata && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      marginTop: 8,
+                      background: "#fff",
+                      border: "1.5px solid #5D9CEC",
+                      borderRadius: 12,
+                      boxShadow: "0 8px 20px rgba(93, 156, 236, 0.15)",
+                      zIndex: 99,
+                      maxHeight: 250,
+                      overflowY: "auto",
+                    }}
+                  >
+                    {Array.from({ length: maxSemester }, (_, i) => i + 1).map((sem) => (
+                      <div
+                        key={sem}
+                        onClick={() => {
+                          setSemesterAktif(String(sem));
+                          setOpenDropdownSemester(false);
+                        }}
+                        style={{
+                          padding: "14px 20px",
+                          cursor: "pointer",
+                          borderBottom: "1px solid #F5F6FA",
+                          fontSize: 15,
+                          transition: "all 0.15s ease",
+                          background: semesterAktif === String(sem) ? "#E8EAFF" : "transparent",
+                          color: semesterAktif === String(sem) ? "#1A23C8" : "#718EBF",
+                          fontWeight: semesterAktif === String(sem) ? 600 : 500,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (semesterAktif !== String(sem)) {
+                            e.currentTarget.style.background = "#F5F6FA";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (semesterAktif !== String(sem)) {
+                            e.currentTarget.style.background = "transparent";
+                          }
+                        }}
+                      >
+                        Semester {sem}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             {/* Alert if semester already exists */}
             {selectedSemesterExists && (
@@ -926,6 +1122,7 @@ export default function InputDataAkademikPage({ user }) {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
