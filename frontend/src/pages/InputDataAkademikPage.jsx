@@ -17,6 +17,7 @@ export default function InputDataAkademikPage({ user }) {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [existingAkademik, setExistingAkademik] = useState([]);
+  const [selectedSemesterExists, setSelectedSemesterExists] = useState(false);
   const maxSemesterByJenjang = {
     D3: 10,
     S1: 16,
@@ -82,6 +83,18 @@ export default function InputDataAkademikPage({ user }) {
     setSemesterAktif("");
     setDataSemester([]);
   }, [strata]);
+
+  // Check if selected semester already exists for this strata
+  useEffect(() => {
+    if (strata && semesterAktif) {
+      const exists = existingAkademik.some(
+        a => a.strata === strata && a.semesterKe === parseInt(semesterAktif)
+      );
+      setSelectedSemesterExists(exists);
+    } else {
+      setSelectedSemesterExists(false);
+    }
+  }, [strata, semesterAktif, existingAkademik]);
 
   const updateDataSemester = (index, field, value) => {
     const updated = [...dataSemester];
@@ -283,12 +296,14 @@ export default function InputDataAkademikPage({ user }) {
       boxSizing: "border-box",
     },
     infoBox: {
-      color: "#718EBF",
-      background: "#fff",
-      fontSize: isMobile ? 12 : 15,
-      padding: isMobile ? "10px 12px" : "12px 16px",
-      borderRadius: 15,
-      border: "1px solid #DFEAF2",
+      color: "#0277BD",
+      background: "linear-gradient(135deg, #E1F5FE 0%, #B3E5FC 100%)",
+      fontSize: isMobile ? 13 : 14,
+      padding: isMobile ? "14px 16px" : "16px 20px",
+      borderRadius: 16,
+      border: "2px solid #29B6F6",
+      boxShadow: "0 2px 8px rgba(41, 182, 246, 0.1)",
+      fontWeight: 500,
     },
     tableHeader: {
       display: "flex",
@@ -533,6 +548,66 @@ export default function InputDataAkademikPage({ user }) {
                 ))}
               </select>
             </div>
+            {/* Alert if semester already exists */}
+            {selectedSemesterExists && (
+              <div style={{
+                background: "linear-gradient(135deg, #E3F2FD 0%, #E1F5FE 100%)",
+                border: "2px solid #29B6F6",
+                borderRadius: 16,
+                padding: "20px 24px",
+                fontSize: 15,
+                color: "#01579B",
+                fontWeight: 600,
+                gridColumn: "1 / -1",
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                boxShadow: "0 4px 12px rgba(41, 182, 246, 0.15)",
+              }}>
+                <div style={{display: "flex", alignItems: "center", gap: 12}}>
+                  <span style={{
+                    fontSize: 24,
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 32,
+                    height: 32,
+                    background: "rgba(41, 182, 246, 0.2)",
+                    borderRadius: 8,
+                    lineHeight: 1
+                  }}>✓</span>
+                  <span>Data {strata} Semester {semesterAktif} sudah ada. Tidak perlu input ulang.</span>
+                </div>
+                <div style={{
+                  background: "rgba(255, 255, 255, 0.7)",
+                  borderRadius: 12,
+                  padding: "12px 16px",
+                  fontSize: 13,
+                  color: "#0277BD",
+                  fontWeight: 500
+                }}>
+                  <strong>Semester yang sudah ada untuk {strata}:</strong>
+                  <div style={{marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap"}}>
+                    {existingAkademik
+                      .filter(a => a.strata === strata)
+                      .sort((a, b) => a.semesterKe - b.semesterKe)
+                      .map(a => (
+                        <span key={a._id} style={{
+                          background: "#29B6F6",
+                          color: "#fff",
+                          padding: "6px 12px",
+                          borderRadius: 8,
+                          fontSize: 12,
+                          fontWeight: 600
+                        }}>
+                          Sem {a.semesterKe}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            )}
             <div style={S.fieldGroup}>
               <span style={S.label}>IPK Total (Kumulatif)</span>
               <input
@@ -589,7 +664,7 @@ export default function InputDataAkademikPage({ user }) {
       </div>
 
       {/* Data Per Semester */}
-      {dataUmumLengkap && (
+      {dataUmumLengkap && !selectedSemesterExists && (
         <div style={S.card}>
           <div style={{ ...S.cardBody, gap: 20 }}>
             <div style={S.sectionHeader}>
@@ -597,19 +672,29 @@ export default function InputDataAkademikPage({ user }) {
               <div style={S.sectionDivider} />
             </div>
             
-            {/* Info tentang semester yang sudah ada untuk strata ini */}
+            {/* Info tentang semester yang sudah ada untuk strata ini - PALING ATAS */}
             {existingAkademik.filter(a => a.strata === strata).length > 0 && (
               <div style={{
-                background: "#E8F5E9",
-                border: "1px solid #4CAF50",
-                borderRadius: 8,
-                padding: 12,
-                fontSize: 13,
-                color: "#2E7D32"
+                background: "linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)",
+                border: "2px solid #4CAF50",
+                borderRadius: 16,
+                padding: "20px 24px",
+                fontSize: 15,
+                color: "#1B5E20",
+                fontWeight: 600,
+                marginBottom: 12,
+                boxShadow: "0 4px 12px rgba(76, 175, 80, 0.15)",
+                display: "flex",
+                alignItems: "center",
+                gap: 12
               }}>
-                ✓ <strong>Semester yang sudah ada ({strata}):</strong> {
-                  existingAkademik.filter(a => a.strata === strata).map(a => `Sem ${a.semesterKe}`).join(", ")
-                }
+                <span style={{fontSize: 22}}>✓</span>
+                <div>
+                  <strong>Semester yang sudah ada ({strata}):</strong>
+                  <div style={{marginTop: 4, fontSize: 14, fontWeight: 500}}>
+                    {existingAkademik.filter(a => a.strata === strata).map(a => `Sem ${a.semesterKe}`).join(", ")}
+                  </div>
+                </div>
               </div>
             )}
             
@@ -628,7 +713,7 @@ export default function InputDataAkademikPage({ user }) {
                 color: "#F57F17",
                 textAlign: "center"
               }}>
-                ℹ️ Semua semester sudah memiliki data. Tidak ada semester baru untuk diinput.
+                ℹ️ Semester yang dipilih datanya sudah ada.
               </div>
             ) : (
               <>
@@ -723,7 +808,7 @@ export default function InputDataAkademikPage({ user }) {
       )}
 
       {/* Ringkasan */}
-      {dataUmumLengkap && (
+      {dataUmumLengkap && !selectedSemesterExists && (
         <div style={S.card}>
           <div style={S.cardBody}>
             <div style={S.sectionHeader}>
@@ -765,15 +850,17 @@ export default function InputDataAkademikPage({ user }) {
       )}
 
       {/* Tombol Submit */}
-      <div style={S.submitRow}>
-        <button
-          onClick={handleSubmit}
-          disabled={!dataUmumLengkap || loading}
-          style={dataUmumLengkap && !loading ? S.btnActive : S.btnDisabled}
-        >
-          {loading ? "Menyimpan..." : "Add Data"}
-        </button>
-      </div>
+      {!selectedSemesterExists && (
+        <div style={S.submitRow}>
+          <button
+            onClick={handleSubmit}
+            disabled={!dataUmumLengkap || loading}
+            style={dataUmumLengkap && !loading ? S.btnActive : S.btnDisabled}
+          >
+            {loading ? "Menyimpan..." : "Add Data"}
+          </button>
+        </div>
+      )}
 
       {/* Success Modal */}
       {showSuccessModal && (
