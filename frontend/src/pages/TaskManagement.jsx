@@ -32,6 +32,8 @@ const TaskManagement = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  const [draggedTask, setDraggedTask] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
 
   const columns = ["Backlog", "On Progress", "Done"];
   const colColors = { "Backlog": "#000000", "On Progress": "#FF9800", "Done": "#4CAF50" };
@@ -76,6 +78,43 @@ const TaskManagement = () => {
     } catch (err) {
       alert('Gagal update status: ' + err.message);
     }
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (task, e) => {
+    setDraggedTask(task);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDragEnter = (col, e) => {
+    e.preventDefault();
+    setDragOverColumn(col);
+  };
+
+  const handleDragLeave = (e) => {
+    if (e.currentTarget === e.target) {
+      setDragOverColumn(null);
+    }
+  };
+
+  const handleDrop = async (col, e) => {
+    e.preventDefault();
+    setDragOverColumn(null);
+    
+    if (draggedTask && draggedTask.status !== col) {
+      await moveTask(draggedTask._id, col);
+    }
+    setDraggedTask(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTask(null);
+    setDragOverColumn(null);
   };
 
   const deleteTask = async (taskId) => {
@@ -228,7 +267,22 @@ const TaskManagement = () => {
           // Filter tasks by status and apply filters
           const colTasks = filteredTasks.filter(t => t.status === col);
           return (
-            <div key={col} style={{ background: C.white, borderRadius: 18, padding: 22, boxShadow: cardBoxShadow, transition, minHeight: 420 }}>
+            <div 
+              key={col} 
+              style={{ 
+                background: dragOverColumn === col ? 'rgba(26, 35, 200, 0.05)' : C.white, 
+                borderRadius: 18, 
+                padding: 22, 
+                boxShadow: dragOverColumn === col ? '0 0 0 2px #1A23C8' : cardBoxShadow, 
+                transition: 'all 0.2s',
+                minHeight: 420,
+                border: dragOverColumn === col ? '2px solid #1A23C8' : 'none'
+              }}
+              onDragOver={handleDragOver}
+              onDragEnter={(e) => handleDragEnter(col, e)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(col, e)}
+            >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ width: 12, height: 12, borderRadius: "50%", background: colColors[col] }} />
@@ -263,17 +317,29 @@ const TaskManagement = () => {
 
                   return (
                     <div key={task._id}
+                      draggable
                       style={{
                         background: isOverdue ? '#FFF0F0' : C.bg,
                         borderRadius: 14, padding: 18,
-                        boxShadow: cardBoxShadow,
+                        boxShadow: draggedTask?._id === task._id ? '0 8px 20px rgba(26, 35, 200, 0.25)' : cardBoxShadow,
                         border: isOverdue ? `1.5px solid ${C.red}` : 'none',
                         position: 'relative',
                         transition,
-                        cursor: 'pointer',
+                        cursor: 'grab',
+                        opacity: draggedTask?._id === task._id ? 0.7 : 1,
                       }}
-                      onMouseOver={e => e.currentTarget.style.boxShadow = cardHoverShadow}
-                      onMouseOut={e => e.currentTarget.style.boxShadow = cardBoxShadow}
+                      onDragStart={(e) => handleDragStart(task, e)}
+                      onDragEnd={handleDragEnd}
+                      onMouseOver={e => {
+                        if (draggedTask?._id !== task._id) {
+                          e.currentTarget.style.boxShadow = cardHoverShadow;
+                        }
+                      }}
+                      onMouseOut={e => {
+                        if (draggedTask?._id !== task._id) {
+                          e.currentTarget.style.boxShadow = cardBoxShadow;
+                        }
+                      }}
                     >
                       {/* Nomor urut prioritas */}
                       {col !== 'Done' && (
