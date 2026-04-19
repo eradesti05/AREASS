@@ -48,12 +48,15 @@ export default function InputDataAkademikPage({ user }) {
 
   useEffect(() => {
     if (semesterAktif) {
-      // Filter out semesters that already have data
-      const existingSemesters = existingAkademik.map(a => a.semesterKe);
+      // Filter semesters that already have data for this specific strata
+      const existingSemestersForStrata = existingAkademik
+        .filter(a => a.strata === strata) // Only check current strata
+        .map(a => a.semesterKe);
+      
       const rows = Array.from({ length: parseInt(semesterAktif) }, (_, i) => {
         const semesterNum = i + 1;
-        // Skip if semester already exists
-        if (existingSemesters.includes(semesterNum)) {
+        // Skip if semester already exists for this strata
+        if (existingSemestersForStrata.includes(semesterNum)) {
           return null;
         }
         return {
@@ -65,7 +68,7 @@ export default function InputDataAkademikPage({ user }) {
       }).filter(row => row !== null); // Remove null entries for existing semesters
       setDataSemester(rows);
     }
-  }, [semesterAktif, existingAkademik]);
+  }, [semesterAktif, strata]);
 
   useEffect(() => {
     if (parseInt(semesterAktif) > maxSemester) {
@@ -73,6 +76,12 @@ export default function InputDataAkademikPage({ user }) {
       setDataSemester([]);
     }
   }, [semesterAktif, maxSemester]);
+
+  // Reset data semester when strata changes
+  useEffect(() => {
+    setSemesterAktif("");
+    setDataSemester([]);
+  }, [strata]);
 
   const updateDataSemester = (index, field, value) => {
     const updated = [...dataSemester];
@@ -120,8 +129,28 @@ export default function InputDataAkademikPage({ user }) {
     let latestPrediksi = null;
     
     try {
+      // Refresh existing akademik data before submit untuk memastikan data terbaru
+      const freshData = await akademikAPI.getAll();
+      const freshAkademikArray = Array.isArray(freshData) ? freshData : (freshData?.data || []);
+      setExistingAkademik(freshAkademikArray);
+      
       // Process each semester, skip if already exists
       for (const row of dataSemester) {
+        // Frontend double-check: apakah semester+strata sudah ada?
+        const isDuplicate = freshAkademikArray.some(
+          a => a.strata === strata && a.semesterKe === row.semester
+        );
+        
+        if (isDuplicate) {
+          console.log(`❌ Semester ${row.semester} untuk ${strata} sudah ada (ditolak di frontend)`);
+          setMessage({
+            type: "error",
+            text: `Data ${strata} Semester ${row.semester} sudah ada. Silakan refresh halaman.`,
+          });
+          setLoading(false);
+          return;
+        }
+        
         const payload = {
           strata,
           semesterKe: row.semester,
@@ -135,6 +164,7 @@ export default function InputDataAkademikPage({ user }) {
         
         try {
           const data = await akademikAPI.create(payload);
+          console.log(`✅ Data ${strata} semester ${row.semester} berhasil disimpan/diupdate`);
           
           // Save the latest prediction from backend
           if (data.prediksi) {
@@ -142,18 +172,12 @@ export default function InputDataAkademikPage({ user }) {
             localStorage.setItem(`prediksi_${user._id}`, JSON.stringify(data.prediksi));
           }
         } catch (error) {
-          // Skip if semester already exists, continue to next semester
-          if (error.message?.includes("sudah ada")) {
-            console.log(`Semester ${row.semester} sudah ada, skip...`);
-            continue;
-          } else {
-            setMessage({
-              type: "error",
-              text: error.message || "Gagal menyimpan data",
-            });
-            setLoading(false);
-            return;
-          }
+          setMessage({
+            type: "error",
+            text: error.message || "Gagal menyimpan data",
+          });
+          setLoading(false);
+          return;
         }
       }
       
@@ -573,8 +597,8 @@ export default function InputDataAkademikPage({ user }) {
               <div style={S.sectionDivider} />
             </div>
             
-            {/* Info tentang semester yang sudah ada */}
-            {existingAkademik.length > 0 && (
+            {/* Info tentang semester yang sudah ada untuk strata ini */}
+            {existingAkademik.filter(a => a.strata === strata).length > 0 && (
               <div style={{
                 background: "#E8F5E9",
                 border: "1px solid #4CAF50",
@@ -583,18 +607,18 @@ export default function InputDataAkademikPage({ user }) {
                 fontSize: 13,
                 color: "#2E7D32"
               }}>
-                ✓ <strong>Semester yang sudah ada:</strong> {
-                  existingAkademik.map(a => `Sem ${a.semesterKe}`).join(", ")
+                ✓ <strong>Semester yang sudah ada ({strata}):</strong> {
+                  existingAkademik.filter(a => a.strata === strata).map(a => `Sem ${a.semesterKe}`).join(", ")
                 }
               </div>
             )}
             
             <div style={S.infoBox}>
               Isi IP Semester dan SKS yang ditempuh untuk setiap semester yang
-              sudah kamu jalani.
+              sudah kamu jalani. Data per strata disimpan terpisah.
             </div>
             
-            {dataSemester.length === 0 && existingAkademik.length > 0 ? (
+            {dataSemester.length === 0 ? (
               <div style={{
                 background: "#FFF9C4",
                 border: "1px solid #FBC02D",
@@ -615,48 +639,83 @@ export default function InputDataAkademikPage({ user }) {
                   <span style={S.tableHeaderCol}>SKS Lulus Per Semester</span>
                 </div>
                 {dataSemester.map((row, index) => (
-              <div key={index} style={S.tableRow}>
-                <span style={S.tableRowLabel}>Sem {row.semester}</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="4"
-                  step="0.01"
-                  placeholder="0.00 - 4.00"
-                  value={row.ip}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    if (e.target.value === "" || (val >= 0 && val <= 4))
-                      updateDataSemester(index, "ip", e.target.value);
-                  }}
-                  style={S.tableInput}
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="contoh: 20"
-                  value={row.sks}
-                  onChange={(e) => {
-                    if (e.target.value === "" || /^\d+$/.test(e.target.value))
-                      updateDataSemester(index, "sks", e.target.value);
-                  }}
-                  style={S.tableInput}
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="contoh: 20"
-                  value={row.sksLulus}
-                  onChange={(e) => {
-                    if (e.target.value === "" || /^\d+$/.test(e.target.value))
-                      updateDataSemester(index, "sksLulus", e.target.value);
-                  }}
-                  style={S.tableInput}
-                />
-              </div>
-            ))}
+                  <div key={`sem-${row.semester}-${strata}`} style={S.tableRow}>
+                    <span style={S.tableRowLabel}>Sem {row.semester}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="4"
+                      step="0.01"
+                      placeholder="0.00 - 4.00"
+                      value={row.ip}
+                      onChange={(e) => {
+                        updateDataSemester(index, "ip", e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        const val = e.target.value.trim();
+                        if (val === "") {
+                          updateDataSemester(index, "ip", "");
+                        } else {
+                          const numVal = parseFloat(val);
+                          if (!isNaN(numVal) && numVal >= 0 && numVal <= 4) {
+                            updateDataSemester(index, "ip", numVal.toFixed(2));
+                          } else {
+                            updateDataSemester(index, "ip", "");
+                          }
+                        }
+                      }}
+                      style={S.tableInput}
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="contoh: 20"
+                      value={row.sks}
+                      onChange={(e) => {
+                        updateDataSemester(index, "sks", e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        const val = e.target.value.trim();
+                        if (val === "") {
+                          updateDataSemester(index, "sks", "");
+                        } else {
+                          const numVal = parseInt(val);
+                          if (!isNaN(numVal) && numVal >= 0) {
+                            updateDataSemester(index, "sks", numVal.toString());
+                          } else {
+                            updateDataSemester(index, "sks", "");
+                          }
+                        }
+                      }}
+                      style={S.tableInput}
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="contoh: 20"
+                      value={row.sksLulus}
+                      onChange={(e) => {
+                        updateDataSemester(index, "sksLulus", e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        const val = e.target.value.trim();
+                        if (val === "") {
+                          updateDataSemester(index, "sksLulus", "");
+                        } else {
+                          const numVal = parseInt(val);
+                          if (!isNaN(numVal) && numVal >= 0) {
+                            updateDataSemester(index, "sksLulus", numVal.toString());
+                          } else {
+                            updateDataSemester(index, "sksLulus", "");
+                          }
+                        }
+                      }}
+                      style={S.tableInput}
+                    />
+                  </div>
+                ))}
               </>
             )}
           </div>
