@@ -183,6 +183,16 @@ const DashboardMahasiswa = ({ user }) => {
           Math.ceil(Math.max(...sksTrend.map((d) => d.sks || 0)) * 1.1)
         )
       : 24;
+
+  // Hitung min dan max IPK otomatis dari data untuk better visualization
+  const minIpk =
+    ipkTrend.length > 0
+      ? Math.max(0, Math.floor(Math.min(...ipkTrend.map((d) => d.ip || 4.0)) * 10) / 10 - 0.2)
+      : 1.0;
+  const maxIpk =
+    ipkTrend.length > 0
+      ? Math.min(4.0, Math.ceil(Math.max(...ipkTrend.map((d) => d.ip || 1.0)) * 10) / 10 + 0.2)
+      : 4.0;
   const taskProgress = [
     { name: "On Progress", value: summary.onProgress || 0, color: "#FF9800" },
     { name: "Backlog", value: summary.backlog || 0, color: "#000000" },
@@ -913,8 +923,8 @@ const DashboardMahasiswa = ({ user }) => {
                     },
                     scales: {
                       y: {
-                        min: 1.0,
-                        max: 4.0,
+                        min: minIpk,
+                        max: maxIpk,
                         ticks: {
                           color: "#a39c94",
                           font: { size: 12 },
