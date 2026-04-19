@@ -54,6 +54,7 @@ ChartJS2.register(
 const DashboardMahasiswa = ({ user }) => {
   const navigate = useNavigate();
   const [akademik, setAkademik] = useState([]);
+  const [selectedStrata, setSelectedStrata] = useState("");
   const [summary, setSummary] = useState({
     totalTugas: 0,
     tenggatWaktuTugas: 0,
@@ -117,6 +118,12 @@ const DashboardMahasiswa = ({ user }) => {
         setSummary(summaryResult);
         setTasks(tasksArray);
         setPrediksi(prediksiResult);
+        
+        // Set default selectedStrata ke strata pertama
+        if (akademikArray.length > 0) {
+          const firstStrata = akademikArray[0].strata || "";
+          setSelectedStrata(firstStrata);
+        }
       } catch (err) {
         console.error("❌ Dashboard fetch error:", err);
         setAkademik([]);
@@ -139,17 +146,27 @@ const DashboardMahasiswa = ({ user }) => {
 
   const latest = akademik[akademik.length - 1] || {};
 
-  // Use akademik data if available, otherwise use empty arrays (user needs to input data)
+  // Get unique strata from akademik data
+  const uniqueStrata = Array.from(
+    new Set(akademik.map((a) => a.strata).filter(Boolean))
+  ).sort();
+
+  // Use akademik data if available, filter by selectedStrata
+  const filteredAkademik =
+    selectedStrata && akademik.length > 0
+      ? akademik.filter((a) => a.strata === selectedStrata)
+      : akademik;
+
   const ipkTrend =
-    akademik && akademik.length > 0
-      ? akademik.map((d) => ({
+    filteredAkademik && filteredAkademik.length > 0
+      ? filteredAkademik.map((d) => ({
           semester: `Sem ${d.semesterKe}`,
           ip: d.ipSemester,
         }))
       : [];
   const sksTrend =
-    akademik && akademik.length > 0
-      ? akademik.map((d) => ({
+    filteredAkademik && filteredAkademik.length > 0
+      ? filteredAkademik.map((d) => ({
           semester: `Sem ${d.semesterKe}`,
           sks: d.sksPerSemester,
         }))
@@ -613,19 +630,48 @@ const DashboardMahasiswa = ({ user }) => {
             boxSizing: "border-box",
           }}
         >
-          <h2
-            style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "#8b8377",
-              marginBottom: "16px",
-              letterSpacing: "0.5px",
-              margin: "0 0 16px 0",
-              textTransform: "uppercase",
-            }}
-          >
-            Trend Beban SKS
-          </h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <h2
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                color: "#8b8377",
+                letterSpacing: "0.5px",
+                margin: 0,
+                textTransform: "uppercase",
+              }}
+            >
+              Trend Beban SKS
+            </h2>
+            {uniqueStrata.length > 0 && (
+              <select
+                value={selectedStrata}
+                onChange={(e) => setSelectedStrata(e.target.value)}
+                style={{
+                  padding: "10px 36px 10px 14px",
+                  borderRadius: "16px",
+                  border: "2px solid #E0E0E0",
+                  fontSize: "13px",
+                  color: "#333",
+                  cursor: "pointer",
+                  background: "white",
+                  transition: "all 0.3s ease",
+                  appearance: "none",
+                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 10px center",
+                  backgroundSize: "18px",
+                  fontWeight: 500,
+                }}
+              >
+                {uniqueStrata.map((strata) => (
+                  <option key={strata} value={strata}>
+                    {strata}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
           {sksTrend && sksTrend.length > 0 ? (
             <>
               <div
@@ -763,19 +809,48 @@ const DashboardMahasiswa = ({ user }) => {
             boxSizing: "border-box",
           }}
         >
-          <h2
-            style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "#8b8377",
-              marginBottom: "16px",
-              letterSpacing: "0.5px",
-              margin: "0 0 16px 0",
-              textTransform: "uppercase",
-            }}
-          >
-            Trend IPK
-          </h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <h2
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                color: "#8b8377",
+                letterSpacing: "0.5px",
+                margin: 0,
+                textTransform: "uppercase",
+              }}
+            >
+              Trend IPK
+            </h2>
+            {uniqueStrata.length > 0 && (
+              <select
+                value={selectedStrata}
+                onChange={(e) => setSelectedStrata(e.target.value)}
+                style={{
+                  padding: "10px 36px 10px 14px",
+                  borderRadius: "16px",
+                  border: "2px solid #E0E0E0",
+                  fontSize: "13px",
+                  color: "#333",
+                  cursor: "pointer",
+                  background: "white",
+                  transition: "all 0.3s ease",
+                  appearance: "none",
+                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 10px center",
+                  backgroundSize: "18px",
+                  fontWeight: 500,
+                }}
+              >
+                {uniqueStrata.map((strata) => (
+                  <option key={strata} value={strata}>
+                    {strata}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
           {ipkTrend && ipkTrend.length > 0 ? (
             <>
               <div

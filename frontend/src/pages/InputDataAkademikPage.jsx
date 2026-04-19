@@ -1,13 +1,18 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { akademikAPI } from "../services/api";
 import { X, CheckCircle } from 'lucide-react';
+import { C } from "../constants/theme";
 
 export default function InputDataAkademikPage({ user }) {
   const navigate = useNavigate();
   const { userTypeParam } = useParams();
   const [strata, setStrata] = useState("");
   const [semesterAktif, setSemesterAktif] = useState("");
+  const [openDropdownStrata, setOpenDropdownStrata] = useState(false);
+  const [openDropdownSemester, setOpenDropdownSemester] = useState(false);
+  const dropdownRefStrata = useRef(null);
+  const dropdownRefSemester = useRef(null);
   const [ipk, setIpk] = useState("");
   const [sks, setSks] = useState("");
   const [jumlahSksLulus, setJumlahSksLulus] = useState("");
@@ -16,6 +21,8 @@ export default function InputDataAkademikPage({ user }) {
   const [message, setMessage] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [existingAkademik, setExistingAkademik] = useState([]);
+  const [selectedSemesterExists, setSelectedSemesterExists] = useState(false);
   const maxSemesterByJenjang = {
     D3: 10,
     S1: 16,
@@ -25,6 +32,37 @@ export default function InputDataAkademikPage({ user }) {
 
   const maxSemester = maxSemesterByJenjang[strata] || 0;
 
+  // Fetch existing akademik data on component load
+  useEffect(() => {
+    const fetchExistingData = async () => {
+      try {
+        const data = await akademikAPI.getAll();
+        const akademikArray = Array.isArray(data) ? data : (data?.data || []);
+        setExistingAkademik(akademikArray);
+      } catch (err) {
+        console.log("Info: No existing akademik data");
+      }
+    };
+    fetchExistingData();
+  }, []);
+
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRefStrata.current && !dropdownRefStrata.current.contains(e.target)) {
+        setOpenDropdownStrata(false);
+      }
+      if (dropdownRefSemester.current && !dropdownRefSemester.current.contains(e.target)) {
+        setOpenDropdownSemester(false);
+      }
+    };
+    
+    if (openDropdownStrata || openDropdownSemester) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openDropdownStrata, openDropdownSemester]);
+
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
@@ -33,15 +71,27 @@ export default function InputDataAkademikPage({ user }) {
 
   useEffect(() => {
     if (semesterAktif) {
-      const rows = Array.from({ length: parseInt(semesterAktif) }, (_, i) => ({
-        semester: i + 1,
-        ip: "",
-        sks: "",
-        sksLulus: "",
-      }));
+      // Filter semesters that already have data for this specific strata
+      const existingSemestersForStrata = existingAkademik
+        .filter(a => a.strata === strata) // Only check current strata
+        .map(a => a.semesterKe);
+      
+      const rows = Array.from({ length: parseInt(semesterAktif) }, (_, i) => {
+        const semesterNum = i + 1;
+        // Skip if semester already exists for this strata
+        if (existingSemestersForStrata.includes(semesterNum)) {
+          return null;
+        }
+        return {
+          semester: semesterNum,
+          ip: "",
+          sks: "",
+          sksLulus: "",
+        };
+      }).filter(row => row !== null); // Remove null entries for existing semesters
       setDataSemester(rows);
     }
-  }, [semesterAktif]);
+  }, [semesterAktif, strata]);
 
   useEffect(() => {
     if (parseInt(semesterAktif) > maxSemester) {
@@ -49,6 +99,24 @@ export default function InputDataAkademikPage({ user }) {
       setDataSemester([]);
     }
   }, [semesterAktif, maxSemester]);
+
+  // Reset data semester when strata changes
+  useEffect(() => {
+    setSemesterAktif("");
+    setDataSemester([]);
+  }, [strata]);
+
+  // Check if selected semester already exists for this strata
+  useEffect(() => {
+    if (strata && semesterAktif) {
+      const exists = existingAkademik.some(
+        a => a.strata === strata && a.semesterKe === parseInt(semesterAktif)
+      );
+      setSelectedSemesterExists(exists);
+    } else {
+      setSelectedSemesterExists(false);
+    }
+  }, [strata, semesterAktif, existingAkademik]);
 
   const updateDataSemester = (index, field, value) => {
     const updated = [...dataSemester];
@@ -96,8 +164,28 @@ export default function InputDataAkademikPage({ user }) {
     let latestPrediksi = null;
     
     try {
+      // Refresh existing akademik data before submit untuk memastikan data terbaru
+      const freshData = await akademikAPI.getAll();
+      const freshAkademikArray = Array.isArray(freshData) ? freshData : (freshData?.data || []);
+      setExistingAkademik(freshAkademikArray);
+      
       // Process each semester, skip if already exists
       for (const row of dataSemester) {
+        // Frontend double-check: apakah semester+strata sudah ada?
+        const isDuplicate = freshAkademikArray.some(
+          a => a.strata === strata && a.semesterKe === row.semester
+        );
+        
+        if (isDuplicate) {
+          console.log(`❌ Semester ${row.semester} untuk ${strata} sudah ada (ditolak di frontend)`);
+          setMessage({
+            type: "error",
+            text: `Data ${strata} Semester ${row.semester} sudah ada. Silakan refresh halaman.`,
+          });
+          setLoading(false);
+          return;
+        }
+        
         const payload = {
           strata,
           semesterKe: row.semester,
@@ -111,6 +199,7 @@ export default function InputDataAkademikPage({ user }) {
         
         try {
           const data = await akademikAPI.create(payload);
+          console.log(`✅ Data ${strata} semester ${row.semester} berhasil disimpan/diupdate`);
           
           // Save the latest prediction from backend
           if (data.prediksi) {
@@ -118,18 +207,12 @@ export default function InputDataAkademikPage({ user }) {
             localStorage.setItem(`prediksi_${user._id}`, JSON.stringify(data.prediksi));
           }
         } catch (error) {
-          // Skip if semester already exists, continue to next semester
-          if (error.message?.includes("sudah ada")) {
-            console.log(`Semester ${row.semester} sudah ada, skip...`);
-            continue;
-          } else {
-            setMessage({
-              type: "error",
-              text: error.message || "Gagal menyimpan data",
-            });
-            setLoading(false);
-            return;
-          }
+          setMessage({
+            type: "error",
+            text: error.message || "Gagal menyimpan data",
+          });
+          setLoading(false);
+          return;
         }
       }
       
@@ -228,19 +311,30 @@ export default function InputDataAkademikPage({ user }) {
       background: "#fff",
       fontSize: isMobile ? 13 : 15,
       padding: isMobile ? "10px 14px" : "14px 20px",
-      borderRadius: 15,
-      border: "1px solid #DFEAF2",
+      borderRadius: 20,
+      border: "2px solid #DFEAF2",
       outline: "none",
       cursor: "pointer",
       boxSizing: "border-box",
-    },
+      transition: "all 0.3s ease",
+      appearance: "none",
+      backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23718EBF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "right 14px center",
+      backgroundSize: "20px",
+      paddingRight: isMobile ? "35px" : "40px",      // Styling untuk option ketika dropdown open
+      WebkitAppearance: "none",
+      MozAppearance: "none",
+      boxShadow: "0 2px 8px rgba(113, 142, 191, 0.1)",    },
     infoBox: {
-      color: "#718EBF",
-      background: "#fff",
-      fontSize: isMobile ? 12 : 15,
-      padding: isMobile ? "10px 12px" : "12px 16px",
-      borderRadius: 15,
-      border: "1px solid #DFEAF2",
+      color: "#0277BD",
+      background: "linear-gradient(135deg, #E1F5FE 0%, #B3E5FC 100%)",
+      fontSize: isMobile ? 13 : 14,
+      padding: isMobile ? "14px 16px" : "16px 20px",
+      borderRadius: 16,
+      border: "2px solid #29B6F6",
+      boxShadow: "0 2px 8px rgba(41, 182, 246, 0.1)",
+      fontWeight: 500,
     },
     tableHeader: {
       display: "flex",
@@ -433,7 +527,36 @@ export default function InputDataAkademikPage({ user }) {
   };
 
   return (
-    <div style={S.page}>
+    <>
+      <style>{`
+        select {
+          font-family: inherit;
+        }
+        select:hover {
+          border-color: #5D9CEC !important;
+          box-shadow: 0 4px 12px rgba(93, 156, 236, 0.2) !important;
+        }
+        select:focus {
+          border-color: #29B6F6 !important;
+          box-shadow: 0 4px 12px rgba(41, 182, 246, 0.3) !important;
+        }
+        select option {
+          padding: 12px 16px;
+          background: white;
+          color: #718EBF;
+          border: none;
+          border-radius: 8px;
+        }
+        select option:hover {
+          background: #E1F5FE;
+        }
+        select option:checked {
+          background: linear-gradient(#29B6F6, #29B6F6);
+          background-color: #29B6F6;
+          color: white;
+        }
+      `}</style>
+      <div style={S.page}>
       <span style={S.pageTitle}>Input Data Akademik</span>
 
       {/* Notifikasi */}
@@ -453,38 +576,234 @@ export default function InputDataAkademikPage({ user }) {
           <div style={S.row}>
             <div style={S.fieldGroup}>
               <span style={S.label}>Strata/Jenjang</span>
-              <select
-                value={strata}
-                onChange={(e) => setStrata(e.target.value)}
-                style={S.select}
-              >
-                <option value="" disabled>
-                  Pilih Strata/Jenjang
-                </option>
-                <option value="D3">D3</option>
-                <option value="S1">S1</option>
-                <option value="S2">S2</option>
-                <option value="S3">S3</option>
-              </select>
+              <div style={{ position: 'relative', zIndex: 100 }} ref={dropdownRefStrata}>
+                <div
+                  onClick={() => setOpenDropdownStrata(!openDropdownStrata)}
+                  style={{
+                    border: "1.5px solid #DFEAF2",
+                    borderRadius: 20,
+                    padding: "14px 20px",
+                    fontSize: 15,
+                    color: strata ? "#718EBF" : "#A0AEC0",
+                    cursor: "pointer",
+                    background: "#fff",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.02)",
+                    transition: "all 0.3s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "#5D9CEC";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(93, 156, 236, 0.2)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "#DFEAF2";
+                    e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.02)";
+                  }}
+                >
+                  <span>{strata || "Pilih Strata/Jenjang"}</span>
+                  <span style={{fontSize: 12, transform: openDropdownStrata ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s ease"}}>▼</span>
+                </div>
+
+                {openDropdownStrata && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      marginTop: 8,
+                      background: "#fff",
+                      border: "1.5px solid #5D9CEC",
+                      borderRadius: 12,
+                      boxShadow: "0 8px 20px rgba(93, 156, 236, 0.15)",
+                      zIndex: 100,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {["D3", "S1", "S2", "S3"].map((opt) => (
+                      <div
+                        key={opt}
+                        onClick={() => {
+                          setStrata(opt);
+                          setOpenDropdownStrata(false);
+                        }}
+                        style={{
+                          padding: "14px 20px",
+                          cursor: "pointer",
+                          borderBottom: "1px solid #F5F6FA",
+                          fontSize: 15,
+                          transition: "all 0.15s ease",
+                          background: strata === opt ? "#E8EAFF" : "transparent",
+                          color: strata === opt ? "#1A23C8" : "#718EBF",
+                          fontWeight: strata === opt ? 600 : 500,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (strata !== opt) {
+                            e.currentTarget.style.background = "#F5F6FA";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (strata !== opt) {
+                            e.currentTarget.style.background = "transparent";
+                          }
+                        }}
+                      >
+                        {opt}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div style={S.fieldGroup}>
               <span style={S.label}>Semester Aktif Saat Ini</span>
-              <select
-                value={semesterAktif}
-                onChange={(e) => setSemesterAktif(e.target.value)}
-                style={S.select}
-                disabled={!strata}
-              >
-                <option value="" disabled>
-                  Pilih semester aktif
-                </option>
-                {Array.from({ length: maxSemester }, (_, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    Semester {i + 1}
-                  </option>
-                ))}
-              </select>
+              <div style={{ position: 'relative', zIndex: 99 }} ref={dropdownRefSemester}>
+                <div
+                  onClick={() => setOpenDropdownSemester(!openDropdownSemester)}
+                  style={{
+                    border: "1.5px solid #DFEAF2",
+                    borderRadius: 20,
+                    padding: "14px 20px",
+                    fontSize: 15,
+                    color: semesterAktif ? "#718EBF" : "#A0AEC0",
+                    cursor: strata ? "pointer" : "not-allowed",
+                    background: strata ? "#fff" : "#F3F4F6",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.02)",
+                    transition: "all 0.3s ease",
+                    opacity: strata ? 1 : 0.6,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (strata) {
+                      e.currentTarget.style.borderColor = "#5D9CEC";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(93, 156, 236, 0.2)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "#DFEAF2";
+                    e.currentTarget.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.02)";
+                  }}
+                >
+                  <span>{semesterAktif ? `Semester ${semesterAktif}` : "Pilih semester aktif"}</span>
+                  <span style={{fontSize: 12, transform: openDropdownSemester ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s ease"}}>▼</span>
+                </div>
+
+                {openDropdownSemester && strata && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      marginTop: 8,
+                      background: "#fff",
+                      border: "1.5px solid #5D9CEC",
+                      borderRadius: 12,
+                      boxShadow: "0 8px 20px rgba(93, 156, 236, 0.15)",
+                      zIndex: 99,
+                      maxHeight: 250,
+                      overflowY: "auto",
+                    }}
+                  >
+                    {Array.from({ length: maxSemester }, (_, i) => i + 1).map((sem) => (
+                      <div
+                        key={sem}
+                        onClick={() => {
+                          setSemesterAktif(String(sem));
+                          setOpenDropdownSemester(false);
+                        }}
+                        style={{
+                          padding: "14px 20px",
+                          cursor: "pointer",
+                          borderBottom: "1px solid #F5F6FA",
+                          fontSize: 15,
+                          transition: "all 0.15s ease",
+                          background: semesterAktif === String(sem) ? "#E8EAFF" : "transparent",
+                          color: semesterAktif === String(sem) ? "#1A23C8" : "#718EBF",
+                          fontWeight: semesterAktif === String(sem) ? 600 : 500,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (semesterAktif !== String(sem)) {
+                            e.currentTarget.style.background = "#F5F6FA";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (semesterAktif !== String(sem)) {
+                            e.currentTarget.style.background = "transparent";
+                          }
+                        }}
+                      >
+                        Semester {sem}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+            {/* Alert if semester already exists */}
+            {selectedSemesterExists && (
+              <div style={{
+                background: "linear-gradient(135deg, #E3F2FD 0%, #E1F5FE 100%)",
+                border: "2px solid #29B6F6",
+                borderRadius: 16,
+                padding: "20px 24px",
+                fontSize: 15,
+                color: "#01579B",
+                fontWeight: 600,
+                gridColumn: "1 / -1",
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                boxShadow: "0 4px 12px rgba(41, 182, 246, 0.15)",
+              }}>
+                <div style={{display: "flex", alignItems: "center", gap: 12}}>
+                  <span style={{
+                    fontSize: 24,
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 32,
+                    height: 32,
+                    background: "rgba(41, 182, 246, 0.2)",
+                    borderRadius: 8,
+                    lineHeight: 1
+                  }}>✓</span>
+                  <span>Data {strata} Semester {semesterAktif} sudah ada. Tidak perlu input ulang.</span>
+                </div>
+                <div style={{
+                  background: "rgba(255, 255, 255, 0.7)",
+                  borderRadius: 12,
+                  padding: "12px 16px",
+                  fontSize: 13,
+                  color: "#0277BD",
+                  fontWeight: 500
+                }}>
+                  <strong>Semester yang sudah ada untuk {strata}:</strong>
+                  <div style={{marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap"}}>
+                    {existingAkademik
+                      .filter(a => a.strata === strata)
+                      .sort((a, b) => a.semesterKe - b.semesterKe)
+                      .map(a => (
+                        <span key={a._id} style={{
+                          background: "#29B6F6",
+                          color: "#fff",
+                          padding: "6px 12px",
+                          borderRadius: 8,
+                          fontSize: 12,
+                          fontWeight: 600
+                        }}>
+                          Sem {a.semesterKe}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            )}
             <div style={S.fieldGroup}>
               <span style={S.label}>IPK Total (Kumulatif)</span>
               <input
@@ -541,72 +860,151 @@ export default function InputDataAkademikPage({ user }) {
       </div>
 
       {/* Data Per Semester */}
-      {dataUmumLengkap && (
+      {dataUmumLengkap && !selectedSemesterExists && (
         <div style={S.card}>
           <div style={{ ...S.cardBody, gap: 20 }}>
             <div style={S.sectionHeader}>
               <span style={S.sectionTitle}>Data Per Semester</span>
               <div style={S.sectionDivider} />
             </div>
+            
+            {/* Info tentang semester yang sudah ada untuk strata ini - PALING ATAS */}
+            {existingAkademik.filter(a => a.strata === strata).length > 0 && (
+              <div style={{
+                background: "linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)",
+                border: "2px solid #4CAF50",
+                borderRadius: 16,
+                padding: "20px 24px",
+                fontSize: 15,
+                color: "#1B5E20",
+                fontWeight: 600,
+                marginBottom: 12,
+                boxShadow: "0 4px 12px rgba(76, 175, 80, 0.15)",
+                display: "flex",
+                alignItems: "center",
+                gap: 12
+              }}>
+                <span style={{fontSize: 22}}>✓</span>
+                <div>
+                  <strong>Semester yang sudah ada ({strata}):</strong>
+                  <div style={{marginTop: 4, fontSize: 14, fontWeight: 500}}>
+                    {existingAkademik.filter(a => a.strata === strata).map(a => `Sem ${a.semesterKe}`).join(", ")}
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div style={S.infoBox}>
               Isi IP Semester dan SKS yang ditempuh untuk setiap semester yang
-              sudah kamu jalani.
+              sudah kamu jalani. Data per strata disimpan terpisah.
             </div>
-            <div style={S.tableHeader}>
-              <span style={S.tableHeaderSem}>Semester</span>
-              <span style={S.tableHeaderCol}>IP Semester</span>
-              <span style={S.tableHeaderCol}>SKS Per Semester</span>
-              <span style={S.tableHeaderCol}>SKS Lulus Per Semester</span>
-            </div>
-            {dataSemester.map((row, index) => (
-              <div key={index} style={S.tableRow}>
-                <span style={S.tableRowLabel}>Sem {row.semester}</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="4"
-                  step="0.01"
-                  placeholder="0.00 - 4.00"
-                  value={row.ip}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    if (e.target.value === "" || (val >= 0 && val <= 4))
-                      updateDataSemester(index, "ip", e.target.value);
-                  }}
-                  style={S.tableInput}
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="contoh: 20"
-                  value={row.sks}
-                  onChange={(e) => {
-                    if (e.target.value === "" || /^\d+$/.test(e.target.value))
-                      updateDataSemester(index, "sks", e.target.value);
-                  }}
-                  style={S.tableInput}
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="contoh: 20"
-                  value={row.sksLulus}
-                  onChange={(e) => {
-                    if (e.target.value === "" || /^\d+$/.test(e.target.value))
-                      updateDataSemester(index, "sksLulus", e.target.value);
-                  }}
-                  style={S.tableInput}
-                />
+            
+            {dataSemester.length === 0 ? (
+              <div style={{
+                background: "#FFF9C4",
+                border: "1px solid #FBC02D",
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 13,
+                color: "#F57F17",
+                textAlign: "center"
+              }}>
+                ℹ️ Semester yang dipilih datanya sudah ada.
               </div>
-            ))}
+            ) : (
+              <>
+                <div style={S.tableHeader}>
+                  <span style={S.tableHeaderSem}>Semester</span>
+                  <span style={S.tableHeaderCol}>IP Semester</span>
+                  <span style={S.tableHeaderCol}>SKS Per Semester</span>
+                  <span style={S.tableHeaderCol}>SKS Lulus Per Semester</span>
+                </div>
+                {dataSemester.map((row, index) => (
+                  <div key={`sem-${row.semester}-${strata}`} style={S.tableRow}>
+                    <span style={S.tableRowLabel}>Sem {row.semester}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="4"
+                      step="0.01"
+                      placeholder="0.00 - 4.00"
+                      value={row.ip}
+                      onChange={(e) => {
+                        updateDataSemester(index, "ip", e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        const val = e.target.value.trim();
+                        if (val === "") {
+                          updateDataSemester(index, "ip", "");
+                        } else {
+                          const numVal = parseFloat(val);
+                          if (!isNaN(numVal) && numVal >= 0 && numVal <= 4) {
+                            updateDataSemester(index, "ip", numVal.toFixed(2));
+                          } else {
+                            updateDataSemester(index, "ip", "");
+                          }
+                        }
+                      }}
+                      style={S.tableInput}
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="contoh: 20"
+                      value={row.sks}
+                      onChange={(e) => {
+                        updateDataSemester(index, "sks", e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        const val = e.target.value.trim();
+                        if (val === "") {
+                          updateDataSemester(index, "sks", "");
+                        } else {
+                          const numVal = parseInt(val);
+                          if (!isNaN(numVal) && numVal >= 0) {
+                            updateDataSemester(index, "sks", numVal.toString());
+                          } else {
+                            updateDataSemester(index, "sks", "");
+                          }
+                        }
+                      }}
+                      style={S.tableInput}
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="contoh: 20"
+                      value={row.sksLulus}
+                      onChange={(e) => {
+                        updateDataSemester(index, "sksLulus", e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        const val = e.target.value.trim();
+                        if (val === "") {
+                          updateDataSemester(index, "sksLulus", "");
+                        } else {
+                          const numVal = parseInt(val);
+                          if (!isNaN(numVal) && numVal >= 0) {
+                            updateDataSemester(index, "sksLulus", numVal.toString());
+                          } else {
+                            updateDataSemester(index, "sksLulus", "");
+                          }
+                        }
+                      }}
+                      style={S.tableInput}
+                    />
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
       )}
 
       {/* Ringkasan */}
-      {dataUmumLengkap && (
+      {dataUmumLengkap && !selectedSemesterExists && (
         <div style={S.card}>
           <div style={S.cardBody}>
             <div style={S.sectionHeader}>
@@ -648,15 +1046,17 @@ export default function InputDataAkademikPage({ user }) {
       )}
 
       {/* Tombol Submit */}
-      <div style={S.submitRow}>
-        <button
-          onClick={handleSubmit}
-          disabled={!dataUmumLengkap || loading}
-          style={dataUmumLengkap && !loading ? S.btnActive : S.btnDisabled}
-        >
-          {loading ? "Menyimpan..." : "Add Data"}
-        </button>
-      </div>
+      {!selectedSemesterExists && (
+        <div style={S.submitRow}>
+          <button
+            onClick={handleSubmit}
+            disabled={!dataUmumLengkap || loading}
+            style={dataUmumLengkap && !loading ? S.btnActive : S.btnDisabled}
+          >
+            {loading ? "Menyimpan..." : "Add Data"}
+          </button>
+        </div>
+      )}
 
       {/* Success Modal */}
       {showSuccessModal && (
@@ -722,6 +1122,7 @@ export default function InputDataAkademikPage({ user }) {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

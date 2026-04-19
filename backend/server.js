@@ -401,12 +401,13 @@ app.post("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
   try {
     const existing = await Akademik.findOne({
       mahasiswaId: req.user.id,
+      strata: req.body.strata,
       semesterKe: req.body.semesterKe,
     });
     if (existing)
       return res
         .status(400)
-        .json({ message: `Data semester ${req.body.semesterKe} sudah ada` });
+        .json({ message: `Data semester ${req.body.semesterKe} untuk ${req.body.strata} sudah ada` });
 
     const data = await Akademik.create({
       mahasiswaId: req.user.id,
