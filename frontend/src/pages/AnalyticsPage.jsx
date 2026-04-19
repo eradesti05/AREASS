@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Clock,
 } from "lucide-react";
+import { useParams } from "react-router-dom";
 
 const AnalyticsPage = () => {
   const [akademik, setAkademik] = useState([]);
@@ -19,24 +20,47 @@ const AnalyticsPage = () => {
     skorConfidence: 0,
   });
   const [loading, setLoading] = useState(true);
+  const { mahasiswaId } = useParams();
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [akademikData, prediksiData] = await Promise.all([
-          akademikAPI.getAll(),
-          prediksiAPI.getLatest(),
-        ]);
+        let akademikData, prediksiData;
+
+        if (mahasiswaId) {
+          akademikData = await fetch(
+            `http://localhost:5000/api/akademik/${mahasiswaId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("areass_token")}`,
+              },
+            },
+          ).then((r) => r.json());
+          prediksiData = await fetch(
+            `http://localhost:5000/api/prediksi/${mahasiswaId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("areass_token")}`,
+              },
+            },
+          ).then((r) => r.json());
+        } else {
+          [akademikData, prediksiData] = await Promise.all([
+            akademikAPI.getAll(),
+            prediksiAPI.getLatest(),
+          ]);
+        }
+
         setAkademik(Array.isArray(akademikData) ? akademikData : []);
         setPrediksi(prediksiData);
       } catch (err) {
-        console.error("Error fetching analytics:", err);
+        console.error("Error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchAll();
-  }, []);
+  }, [mahasiswaId]);
 
   const latest = akademik[akademik.length - 1] || {};
 

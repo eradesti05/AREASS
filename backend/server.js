@@ -1,42 +1,51 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const cors = require('cors');
-const cron = require('node-cron');
-require('dotenv').config();
+const express = require("express");
+const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const cors = require("cors");
+const cron = require("node-cron");
+require("dotenv").config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const JWT_SECRET = process.env.JWT_SECRET || 'areass_secret_2026';
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/areass';
-const ML_API_URL = process.env.ML_API_URL || 'http://localhost:8000';
-console.log('🔧 Configured ML API URL:', ML_API_URL);
+const JWT_SECRET = process.env.JWT_SECRET || "areass_secret_2026";
+const MONGO_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/areass";
+const ML_API_URL = process.env.ML_API_URL || "http://localhost:8000";
+console.log("🔧 Configured ML API URL:", ML_API_URL);
 
 // ─── CONNECT DB ───────────────────────────────────────────────────────────────
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('❌ MongoDB error:', err));
+mongoose
+  .connect(MONGO_URI)
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB error:", err));
 
 // ─── MODELS ───────────────────────────────────────────────────────────────────
 const userSchema = new mongoose.Schema({
   nama: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['mahasiswa', 'dosen_wali', 'kaprodi'], required: true },
+  role: {
+    type: String,
+    enum: ["mahasiswa", "dosen_wali", "kaprodi"],
+    required: true,
+  },
   nim: String,
   prodi: String,
-  dosenWaliId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  createdAt: { type: Date, default: Date.now }
+  dosenWaliId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  createdAt: { type: Date, default: Date.now },
 });
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
 
 const akademikSchema = new mongoose.Schema({
-  mahasiswaId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  mahasiswaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   nim: String,
-  strata: { type: String, default: 'S2' },
+  strata: { type: String, default: "S2" },
   semesterKe: Number,
   ipSemester: Number,
   ipkTotal: Number,
@@ -44,64 +53,86 @@ const akademikSchema = new mongoose.Schema({
   totalSks: Number,
   jumlahSksLulus: Number,
   jumlahMkDiulang: { type: Number, default: 0 },
-  hasilPrediksi: { type: String, enum: ['Aman', 'Waspada', 'Perlu perhatian'], default: null },
+  hasilPrediksi: {
+    type: String,
+    enum: ["Aman", "Waspada", "Perlu perhatian"],
+    default: null,
+  },
   skorConfidence: Number,
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
 });
-const Akademik = mongoose.model('Akademik', akademikSchema);
+const Akademik = mongoose.model("Akademik", akademikSchema);
 
 const taskSchema = new mongoose.Schema({
-  mahasiswaId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  mahasiswaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   namaTugas: { type: String, required: true },
   kategoriTask: { type: String, required: true },
   deadline: { type: Date, required: true },
-  tingkatKesulitan: { type: String, enum: ['Rendah', 'Sedang', 'Tinggi'], required: true },
+  tingkatKesulitan: {
+    type: String,
+    enum: ["Rendah", "Sedang", "Tinggi"],
+    required: true,
+  },
   estimasiPengerjaan: { type: String, required: true },
-  status: { type: String, enum: ['Backlog', 'On Progress', 'Done'], default: 'Backlog' },
+  status: {
+    type: String,
+    enum: ["Backlog", "On Progress", "Done"],
+    default: "Backlog",
+  },
   priorityScore: { type: Number, default: 0 },
-  priorityLabel: { type: String, default: '' },
+  priorityLabel: { type: String, default: "" },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
 });
-const Task = mongoose.model('Task', taskSchema);
+const Task = mongoose.model("Task", taskSchema);
 
 // ─── NOTIFICATION SCHEMA ──────────────────────────────────────────────────────
 const notificationSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  type: { type: String, enum: ['urgent', 'warning', 'summary'], required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  type: {
+    type: String,
+    enum: ["urgent", "warning", "summary"],
+    required: true,
+  },
   title: { type: String, required: true },
   message: { type: String, required: true },
-  relatedTaskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task' },
+  relatedTaskId: { type: mongoose.Schema.Types.ObjectId, ref: "Task" },
   isRead: { type: Boolean, default: false },
   sentAt: { type: Date, default: Date.now },
-  readAt: { type: Date }
+  readAt: { type: Date },
 });
-const Notification = mongoose.model('Notification', notificationSchema);
+const Notification = mongoose.model("Notification", notificationSchema);
 
 // ─── CATEGORY SCHEMA ──────────────────────────────────────────────────────────
 const categorySchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
 });
-const Category = mongoose.model('Category', categorySchema);
+const Category = mongoose.model("Category", categorySchema);
 
 // ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
 const auth = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'Token tidak ditemukan' });
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token tidak ditemukan" });
   try {
     req.user = jwt.verify(token, JWT_SECRET);
     next();
   } catch {
-    res.status(401).json({ message: 'Token tidak valid' });
+    res.status(401).json({ message: "Token tidak valid" });
   }
 };
 
-const role = (...roles) => (req, res, next) => {
-  if (!roles.includes(req.user.role))
-    return res.status(403).json({ message: 'Akses ditolak' });
-  next();
-};
+const role =
+  (...roles) =>
+  (req, res, next) => {
+    if (!roles.includes(req.user.role))
+      return res.status(403).json({ message: "Akses ditolak" });
+    next();
+  };
 
 // ─── RULE-BASED PRIORITY SCORE ────────────────────────────────────────────────
 // Formula: Score = (urgensi × 3) + (kesulitan × 1.5) + estimasi + (status_backlog × 2)
@@ -110,94 +141,130 @@ const role = (...roles) => (req, res, next) => {
 const hitungPriority = (task) => {
   const now = new Date();
   const deadline = new Date(task.deadline);
-  const sisaHari = Math.max(0, Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)));
+  const sisaHari = Math.max(
+    0,
+    Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)),
+  );
 
   // Skor urgensi berdasarkan sisa hari — ini faktor paling penting
   let skorUrgensi = 1;
-  if (sisaHari <= 1) skorUrgensi = 5;      // Hari ini atau lusa
-  else if (sisaHari <= 3) skorUrgensi = 4; // 2-3 hari
-  else if (sisaHari <= 7) skorUrgensi = 3; // 4-7 hari
-  else if (sisaHari <= 14) skorUrgensi = 2;// 8-14 hari
+  if (sisaHari <= 1)
+    skorUrgensi = 5; // Hari ini atau lusa
+  else if (sisaHari <= 3)
+    skorUrgensi = 4; // 2-3 hari
+  else if (sisaHari <= 7)
+    skorUrgensi = 3; // 4-7 hari
+  else if (sisaHari <= 14) skorUrgensi = 2; // 8-14 hari
   // else skorUrgensi = 1 (lebih dari 2 minggu)
 
   // Skor kesulitan
-  const skorKesulitan = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
+  const skorKesulitan = { Tinggi: 3, Sedang: 2, Rendah: 1 };
 
   // Skor estimasi pengerjaan
   const jam = parseInt(task.estimasiPengerjaan) || 1;
   const skorEstimasi = jam >= 6 ? 3 : jam >= 3 ? 2 : 1;
 
   // Skor status — backlog lebih prioritas karena belum dimulai
-  const skorStatus = task.status === 'Backlog' ? 2 : (task.status === 'On Progress' ? 1 : 0);
+  const skorStatus =
+    task.status === "Backlog" ? 2 : task.status === "On Progress" ? 1 : 0;
 
   // Total dengan bobot yang lebih jelas
-  const totalScore = (skorUrgensi * 3) +
+  const totalScore =
+    skorUrgensi * 3 +
     (skorKesulitan[task.tingkatKesulitan] || 1) * 1.5 +
     skorEstimasi +
     skorStatus;
 
   // Label prioritas — threshold yang lebih variatif
-  let label = 'Rendah';
-  if (totalScore >= 18) label = 'Kritis';      // ~86-100% dari max
-  else if (totalScore >= 13) label = 'Tinggi'; // ~62-85% dari max
-  else if (totalScore >= 8) label = 'Sedang';  // ~38-61% dari max
-  else label = 'Rendah';                       // ~10-37% dari max
+  let label = "Rendah";
+  if (totalScore >= 18)
+    label = "Kritis"; // ~86-100% dari max
+  else if (totalScore >= 13)
+    label = "Tinggi"; // ~62-85% dari max
+  else if (totalScore >= 8)
+    label = "Sedang"; // ~38-61% dari max
+  else label = "Rendah"; // ~10-37% dari max
 
   return { score: totalScore, label, sisaHari };
 };
 
 // ─── AUTH ROUTES ──────────────────────────────────────────────────────────────
-app.post('/api/auth/register', async (req, res) => {
+
+app.post("/api/auth/register", async (req, res) => {
   try {
-    const { nama, email, password, role: userRole, nim, prodi } = req.body;
+    const { nama, email, password, role: userRole, prodi } = req.body; // ← hapus nim dari sini
+
     if (await User.findOne({ email }))
-      return res.status(400).json({ message: 'Email sudah terdaftar' });
+      return res.status(400).json({ message: "Email sudah terdaftar" });
+
+    const nim = email.split("@")[0]; // ← nim diambil dari email
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ nama, email, password: hashed, role: userRole, nim, prodi });
-    res.status(201).json({ message: 'Registrasi berhasil', userId: user._id });
+    const user = await User.create({
+      nama,
+      email,
+      password: hashed,
+      role: userRole,
+      nim,
+      prodi,
+    });
+    res.status(201).json({ message: "Registrasi berhasil", userId: user._id });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password)))
-      return res.status(401).json({ message: 'Email atau password salah' });
+      return res.status(401).json({ message: "Email atau password salah" });
 
     const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role, nama: user.nama, nim: user.nim },
-      JWT_SECRET, { expiresIn: '7d' }
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        nama: user.nama,
+        nim: user.nim,
+      },
+      JWT_SECRET,
+      { expiresIn: "7d" },
     );
     res.json({
       token,
-      user: { id: user._id, nama: user.nama, email: user.email, role: user.role, nim: user.nim, prodi: user.prodi }
+      user: {
+        id: user._id,
+        nama: user.nama,
+        email: user.email,
+        role: user.role,
+        nim: user.nim,
+        prodi: user.prodi,
+      },
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-app.get('/api/auth/me', auth, async (req, res) => {
+app.get("/api/auth/me", auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user.id).select("-password");
     res.json(user);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-app.put('/api/auth/profile', auth, async (req, res) => {
+app.put("/api/auth/profile", auth, async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { nama: req.body.nama, nim: req.body.nim, prodi: req.body.prodi },
-      { new: true }
-    ).select('-password');
-    res.json({ message: 'Profil diperbarui', user });
+      { new: true },
+    ).select("-password");
+    res.json({ message: "Profil diperbarui", user });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -205,10 +272,12 @@ app.put('/api/auth/profile', auth, async (req, res) => {
 
 // ─── TASK ROUTES ──────────────────────────────────────────────────────────────
 // GET semua task — otomatis diurutkan berdasarkan priority score (rule-based)
-app.get('/api/tasks', auth, role('mahasiswa'), async (req, res) => {
+app.get("/api/tasks", auth, role("mahasiswa"), async (req, res) => {
   try {
-    const tasks = await Task.find({ mahasiswaId: req.user.id })
-      .sort({ priorityScore: -1, deadline: 1 });
+    const tasks = await Task.find({ mahasiswaId: req.user.id }).sort({
+      priorityScore: -1,
+      deadline: 1,
+    });
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -216,21 +285,23 @@ app.get('/api/tasks', auth, role('mahasiswa'), async (req, res) => {
 });
 
 // GET summary harian
-app.get('/api/tasks/summary', auth, role('mahasiswa'), async (req, res) => {
+app.get("/api/tasks/summary", auth, role("mahasiswa"), async (req, res) => {
   try {
     const tasks = await Task.find({ mahasiswaId: req.user.id });
     const now = new Date();
-    const tenggatDekat = tasks.filter(t => {
-      const sisa = Math.ceil((new Date(t.deadline) - now) / (1000 * 60 * 60 * 24));
-      return sisa <= 7 && t.status !== 'Done';
+    const tenggatDekat = tasks.filter((t) => {
+      const sisa = Math.ceil(
+        (new Date(t.deadline) - now) / (1000 * 60 * 60 * 24),
+      );
+      return sisa <= 7 && t.status !== "Done";
     });
     res.json({
       totalTugas: tasks.length,
       tenggatWaktuTugas: tenggatDekat.length,
-      estimasiBebanKerja: tasks.filter(t => t.status !== 'Done').length,
-      backlog: tasks.filter(t => t.status === 'Backlog').length,
-      onProgress: tasks.filter(t => t.status === 'On Progress').length,
-      done: tasks.filter(t => t.status === 'Done').length,
+      estimasiBebanKerja: tasks.filter((t) => t.status !== "Done").length,
+      backlog: tasks.filter((t) => t.status === "Backlog").length,
+      onProgress: tasks.filter((t) => t.status === "On Progress").length,
+      done: tasks.filter((t) => t.status === "Done").length,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -238,21 +309,33 @@ app.get('/api/tasks/summary', auth, role('mahasiswa'), async (req, res) => {
 });
 
 // POST buat task baru — langsung hitung priority score
-app.post('/api/tasks', auth, role('mahasiswa'), async (req, res) => {
+app.post("/api/tasks", auth, role("mahasiswa"), async (req, res) => {
   try {
-    const { namaTugas, kategoriTask, deadline, tingkatKesulitan, estimasiPengerjaan } = req.body;
-    
-    if (!namaTugas || !kategoriTask || !deadline || !tingkatKesulitan || !estimasiPengerjaan) {
-      return res.status(400).json({ message: 'Semua field harus diisi' });
+    const {
+      namaTugas,
+      kategoriTask,
+      deadline,
+      tingkatKesulitan,
+      estimasiPengerjaan,
+    } = req.body;
+
+    if (
+      !namaTugas ||
+      !kategoriTask ||
+      !deadline ||
+      !tingkatKesulitan ||
+      !estimasiPengerjaan
+    ) {
+      return res.status(400).json({ message: "Semua field harus diisi" });
     }
 
-    const taskData = { 
-      mahasiswaId: req.user.id, 
-      namaTugas, 
-      kategoriTask, 
-      deadline, 
-      tingkatKesulitan, 
-      estimasiPengerjaan: String(estimasiPengerjaan)
+    const taskData = {
+      mahasiswaId: req.user.id,
+      namaTugas,
+      kategoriTask,
+      deadline,
+      tingkatKesulitan,
+      estimasiPengerjaan: String(estimasiPengerjaan),
     };
 
     const { score, label } = hitungPriority(taskData);
@@ -260,17 +343,20 @@ app.post('/api/tasks', auth, role('mahasiswa'), async (req, res) => {
     taskData.priorityLabel = label;
 
     const task = await Task.create(taskData);
-    res.status(201).json({ message: 'Task berhasil dibuat', task, data: task });
+    res.status(201).json({ message: "Task berhasil dibuat", task, data: task });
   } catch (err) {
-    res.status(500).json({ message: 'Error membuat task: ' + err.message });
+    res.status(500).json({ message: "Error membuat task: " + err.message });
   }
 });
 
 // PUT update task (status, dll) — recalculate priority score
-app.put('/api/tasks/:id', auth, role('mahasiswa'), async (req, res) => {
+app.put("/api/tasks/:id", auth, role("mahasiswa"), async (req, res) => {
   try {
-    const task = await Task.findOne({ _id: req.params.id, mahasiswaId: req.user.id });
-    if (!task) return res.status(404).json({ message: 'Task tidak ditemukan' });
+    const task = await Task.findOne({
+      _id: req.params.id,
+      mahasiswaId: req.user.id,
+    });
+    if (!task) return res.status(404).json({ message: "Task tidak ditemukan" });
 
     Object.assign(task, req.body);
     const { score, label } = hitungPriority(task);
@@ -279,52 +365,69 @@ app.put('/api/tasks/:id', auth, role('mahasiswa'), async (req, res) => {
     task.updatedAt = new Date();
     await task.save();
 
-    res.json({ message: 'Task diperbarui', task });
+    res.json({ message: "Task diperbarui", task });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
 // DELETE task
-app.delete('/api/tasks/:id', auth, role('mahasiswa'), async (req, res) => {
+app.delete("/api/tasks/:id", auth, role("mahasiswa"), async (req, res) => {
   try {
-    const task = await Task.findOneAndDelete({ _id: req.params.id, mahasiswaId: req.user.id });
-    if (!task) return res.status(404).json({ message: 'Task tidak ditemukan' });
-    res.json({ message: 'Task dihapus' });
+    const task = await Task.findOneAndDelete({
+      _id: req.params.id,
+      mahasiswaId: req.user.id,
+    });
+    if (!task) return res.status(404).json({ message: "Task tidak ditemukan" });
+    res.json({ message: "Task dihapus" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
 // ─── AKADEMIK ROUTES ──────────────────────────────────────────────────────────
-app.get('/api/akademik', auth, role('mahasiswa'), async (req, res) => {
+app.get("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
   try {
-    const data = await Akademik.find({ mahasiswaId: req.user.id }).sort({ semesterKe: 1 });
+    const data = await Akademik.find({ mahasiswaId: req.user.id }).sort({
+      semesterKe: 1,
+    });
     res.json(data);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-app.post('/api/akademik', auth, role('mahasiswa'), async (req, res) => {
+app.post("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
   try {
-    const existing = await Akademik.findOne({ mahasiswaId: req.user.id, semesterKe: req.body.semesterKe });
-    if (existing) return res.status(400).json({ message: `Data semester ${req.body.semesterKe} sudah ada` });
+    const existing = await Akademik.findOne({
+      mahasiswaId: req.user.id,
+      semesterKe: req.body.semesterKe,
+    });
+    if (existing)
+      return res
+        .status(400)
+        .json({ message: `Data semester ${req.body.semesterKe} sudah ada` });
 
-    const data = await Akademik.create({ mahasiswaId: req.user.id, nim: req.user.nim, ...req.body });
-    
+    const data = await Akademik.create({
+      mahasiswaId: req.user.id,
+      nim: req.user.nim,
+      ...req.body,
+    });
+
     // After saving, try to get prediction from ML API
     let prediksi = null;
     try {
-      const allAkademik = await Akademik.find({ mahasiswaId: req.user.id }).sort({ semesterKe: 1 });
-      
+      const allAkademik = await Akademik.find({
+        mahasiswaId: req.user.id,
+      }).sort({ semesterKe: 1 });
+
       if (allAkademik.length === 0) {
-        console.warn('⚠️ No akademik data found for student', req.user.id);
+        console.warn("⚠️ No akademik data found for student", req.user.id);
       } else {
         const mlPayload = {
           student_id: req.user.id,
           ipk_total: req.body.ipkTotal,
-          history: allAkademik.map(row => ({
+          history: allAkademik.map((row) => ({
             strata: row.strata,
             semester: row.semesterKe,
             ip_semester: row.ipSemester,
@@ -333,149 +436,253 @@ app.post('/api/akademik', auth, role('mahasiswa'), async (req, res) => {
             sks_lulus: row.jumlahSksLulus,
           })),
         };
-        
-        console.log('📤 Sending to ML API with', allAkademik.length, 'semesters:', JSON.stringify(mlPayload, null, 2));
+
+        console.log(
+          "📤 Sending to ML API with",
+          allAkademik.length,
+          "semesters:",
+          JSON.stringify(mlPayload, null, 2),
+        );
 
         const mlRes = await fetch(`${ML_API_URL}/predict`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(mlPayload),
         });
 
         if (mlRes.ok) {
           prediksi = await mlRes.json();
-          console.log('✅ ML Prediction received:', prediksi);
-          
+          console.log("✅ ML Prediction received:", prediksi);
+
           // Update akademik data dengan hasil prediksi
-          const skorConfidence = prediksi.probability ? prediksi.probability[prediksi.prediction] || 0.5 : 0.5;
-          console.log('📊 Storing prediction:', { prediction: prediksi.prediction, skorConfidence });
-          
+          const skorConfidence = prediksi.probability
+            ? prediksi.probability[prediksi.prediction] || 0.5
+            : 0.5;
+          console.log("📊 Storing prediction:", {
+            prediction: prediksi.prediction,
+            skorConfidence,
+          });
+
           await Akademik.updateMany(
             { mahasiswaId: req.user.id },
-            { 
+            {
               hasilPrediksi: prediksi.prediction,
-              skorConfidence: skorConfidence
-            }
+              skorConfidence: skorConfidence,
+            },
           );
         } else {
-          console.error('❌ ML API Error:', mlRes.status, mlRes.statusText);
+          console.error("❌ ML API Error:", mlRes.status, mlRes.statusText);
           const errorText = await mlRes.text();
-          console.error('ML API Response:', errorText);
+          console.error("ML API Response:", errorText);
         }
       }
     } catch (mlErr) {
-      console.error('ML Prediction Error:', mlErr.message);
+      console.error("ML Prediction Error:", mlErr.message);
       // Don't block - prediction is optional
     }
 
-    res.status(201).json({ 
-      message: 'Data akademik disimpan', 
+    res.status(201).json({
+      message: "Data akademik disimpan",
       data,
-      prediksi: prediksi || null
+      prediksi: prediksi || null,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-app.put('/api/akademik/:id', auth, role('mahasiswa'), async (req, res) => {
+app.put("/api/akademik/:id", auth, role("mahasiswa"), async (req, res) => {
   try {
     const data = await Akademik.findOneAndUpdate(
       { _id: req.params.id, mahasiswaId: req.user.id },
       { ...req.body, updatedAt: new Date() },
-      { new: true }
+      { new: true },
     );
-    if (!data) return res.status(404).json({ message: 'Data tidak ditemukan' });
-    res.json({ message: 'Data akademik diperbarui', data });
+    if (!data) return res.status(404).json({ message: "Data tidak ditemukan" });
+    res.json({ message: "Data akademik diperbarui", data });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
+// GET akademik data mahasiswa tertentu (untuk kaprodi/dosen)
+app.get(
+  "/api/akademik/:mahasiswaId",
+  auth,
+  role("kaprodi", "dosen_wali"),
+  async (req, res) => {
+    try {
+      const data = await Akademik.find({
+        mahasiswaId: req.params.mahasiswaId,
+      }).sort({ semesterKe: 1 });
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  },
+);
+
+// GET prediksi mahasiswa tertentu (untuk kaprodi/dosen)
+app.get(
+  "/api/prediksi/:mahasiswaId",
+  auth,
+  role("kaprodi", "dosen_wali"),
+  async (req, res) => {
+    try {
+      const latest = await Akademik.findOne({
+        mahasiswaId: req.params.mahasiswaId,
+        hasilPrediksi: { $ne: null },
+      }).sort({ semesterKe: -1 });
+      if (!latest)
+        return res.json({ hasilPrediksi: "Aman", skorConfidence: 0 });
+      res.json({
+        hasilPrediksi: latest.hasilPrediksi,
+        skorConfidence: latest.skorConfidence,
+      });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  },
+);
+
 // ─── PREDIKSI ROUTES ──────────────────────────────────────────────────────────
-app.post('/api/prediksi', auth, role('mahasiswa'), async (req, res) => {
+app.post("/api/prediksi", auth, role("mahasiswa"), async (req, res) => {
   try {
-    const data = await Akademik.find({ mahasiswaId: req.user.id }).sort({ semesterKe: -1 });
-    if (!data.length) return res.status(400).json({ message: 'Data akademik belum ada' });
+    const data = await Akademik.find({ mahasiswaId: req.user.id }).sort({
+      semesterKe: -1,
+    });
+    if (!data.length)
+      return res.status(400).json({ message: "Data akademik belum ada" });
 
     const latest = data[0];
 
     // Rule-based fallback (sementara sebelum ML Python siap)
-    let hasilPrediksi = 'Aman';
+    let hasilPrediksi = "Aman";
     let skorConfidence = 0.85;
 
     if (latest.ipkTotal < 2.0 || latest.jumlahMkDiulang >= 3) {
-      hasilPrediksi = 'Perlu perhatian'; skorConfidence = 0.90;
+      hasilPrediksi = "Perlu perhatian";
+      skorConfidence = 0.9;
     } else if (latest.ipkTotal < 2.75 || latest.jumlahMkDiulang >= 1) {
-      hasilPrediksi = 'Waspada'; skorConfidence = 0.78;
+      hasilPrediksi = "Waspada";
+      skorConfidence = 0.78;
     }
 
-    await Akademik.updateMany({ mahasiswaId: req.user.id }, { hasilPrediksi, skorConfidence });
+    await Akademik.updateMany(
+      { mahasiswaId: req.user.id },
+      { hasilPrediksi, skorConfidence },
+    );
     res.json({ hasilPrediksi, skorConfidence });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-app.get('/api/prediksi/latest', auth, role('mahasiswa'), async (req, res) => {
+app.get("/api/prediksi/latest", auth, role("mahasiswa"), async (req, res) => {
   try {
-    const latest = await Akademik.findOne({ mahasiswaId: req.user.id, hasilPrediksi: { $ne: null } })
-      .sort({ semesterKe: -1 });
-    if (!latest) return res.json({ hasilPrediksi: 'Aman', skorConfidence: 0 });
-    res.json({ hasilPrediksi: latest.hasilPrediksi, skorConfidence: latest.skorConfidence });
+    const latest = await Akademik.findOne({
+      mahasiswaId: req.user.id,
+      hasilPrediksi: { $ne: null },
+    }).sort({ semesterKe: -1 });
+    if (!latest) return res.json({ hasilPrediksi: "Aman", skorConfidence: 0 });
+    res.json({
+      hasilPrediksi: latest.hasilPrediksi,
+      skorConfidence: latest.skorConfidence,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
 // ─── DOSEN WALI ROUTES ────────────────────────────────────────────────────────
-app.get('/api/dosen/mahasiswa', auth, role('dosen_wali'), async (req, res) => {
+app.get("/api/dosen/mahasiswa", auth, role("dosen_wali"), async (req, res) => {
   try {
-    const list = await User.find({ dosenWaliId: req.user.id, role: 'mahasiswa' }).select('-password');
-    const result = await Promise.all(list.map(async (m) => {
-      const ak = await Akademik.findOne({ mahasiswaId: m._id }).sort({ semesterKe: -1 });
-      return { id: m._id, nama: m.nama, nim: m.nim, prodi: m.prodi, ipkTotal: ak?.ipkTotal || 0, semesterKe: ak?.semesterKe || 0, hasilPrediksi: ak?.hasilPrediksi || 'Belum ada data' };
-    }));
+    const list = await User.find({
+      dosenWaliId: req.user.id,
+      role: "mahasiswa",
+    }).select("-password");
+    const result = await Promise.all(
+      list.map(async (m) => {
+        const ak = await Akademik.findOne({ mahasiswaId: m._id }).sort({
+          semesterKe: -1,
+        });
+        return {
+          id: m._id,
+          nama: m.nama,
+          nim: m.nim,
+          prodi: m.prodi,
+          ipkTotal: ak?.ipkTotal || 0,
+          semesterKe: ak?.semesterKe || 0,
+          hasilPrediksi: ak?.hasilPrediksi || "Belum ada data",
+        };
+      }),
+    );
     res.json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-app.get('/api/dosen/mahasiswa/:id/akademik', auth, role('dosen_wali'), async (req, res) => {
-  try {
-    const data = await Akademik.find({ mahasiswaId: req.params.id }).sort({ semesterKe: 1 });
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+app.get(
+  "/api/dosen/mahasiswa/:id/akademik",
+  auth,
+  role("dosen_wali"),
+  async (req, res) => {
+    try {
+      const data = await Akademik.find({ mahasiswaId: req.params.id }).sort({
+        semesterKe: 1,
+      });
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  },
+);
 
 // ─── KAPRODI ROUTES ───────────────────────────────────────────────────────────
-app.get('/api/kaprodi/mahasiswa', auth, role('kaprodi'), async (req, res) => {
+app.get("/api/kaprodi/mahasiswa", auth, role("kaprodi"), async (req, res) => {
   try {
     const kaprodi = await User.findById(req.user.id);
-    const list = await User.find({ role: 'mahasiswa', prodi: kaprodi.prodi }).select('-password');
-    const result = await Promise.all(list.map(async (m) => {
-      const ak = await Akademik.findOne({ mahasiswaId: m._id }).sort({ semesterKe: -1 });
-      return { id: m._id, nama: m.nama, nim: m.nim, ipkTotal: ak?.ipkTotal || 0, semesterKe: ak?.semesterKe || 0, hasilPrediksi: ak?.hasilPrediksi || 'Belum ada data' };
-    }));
+    const list = await User.find({
+      role: "mahasiswa",
+      prodi: kaprodi.prodi,
+    }).select("-password");
+    const result = await Promise.all(
+      list.map(async (m) => {
+        const ak = await Akademik.findOne({ mahasiswaId: m._id }).sort({
+          semesterKe: -1,
+        });
+        return {
+          id: m._id,
+          nama: m.nama,
+          nim: m.nim,
+          ipkTotal: ak?.ipkTotal || 0,
+          semesterKe: ak?.semesterKe || 0,
+          hasilPrediksi: ak?.hasilPrediksi || "Belum ada data",
+        };
+      }),
+    );
     res.json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-app.get('/api/kaprodi/statistik', auth, role('kaprodi'), async (req, res) => {
+app.get("/api/kaprodi/statistik", auth, role("kaprodi"), async (req, res) => {
   try {
     const kaprodi = await User.findById(req.user.id);
-    const list = await User.find({ role: 'mahasiswa', prodi: kaprodi.prodi });
-    const ids = list.map(m => m._id);
+    const list = await User.find({ role: "mahasiswa", prodi: kaprodi.prodi });
+    const ids = list.map((m) => m._id);
     const stats = await Akademik.aggregate([
       { $match: { mahasiswaId: { $in: ids }, hasilPrediksi: { $ne: null } } },
       { $sort: { semesterKe: -1 } },
-      { $group: { _id: '$mahasiswaId', hasilPrediksi: { $first: '$hasilPrediksi' } } },
-      { $group: { _id: '$hasilPrediksi', jumlah: { $sum: 1 } } }
+      {
+        $group: {
+          _id: "$mahasiswaId",
+          hasilPrediksi: { $first: "$hasilPrediksi" },
+        },
+      },
+      { $group: { _id: "$hasilPrediksi", jumlah: { $sum: 1 } } },
     ]);
     res.json({ totalMahasiswa: list.length, distribusi: stats });
   } catch (err) {
@@ -484,44 +691,134 @@ app.get('/api/kaprodi/statistik', auth, role('kaprodi'), async (req, res) => {
 });
 
 // ─── SEED DATA ────────────────────────────────────────────────────────────────
-app.post('/api/seed', async (req, res) => {
+app.post("/api/seed", async (req, res) => {
   try {
     await User.deleteMany({});
     await Akademik.deleteMany({});
     await Task.deleteMany({});
 
-    const pass = await bcrypt.hash('password', 10);
+    const pass = await bcrypt.hash("password", 10);
 
-    const mahasiswa = await User.create({ nama: 'Ahmad Muhklis', email: '23525789@mahasiswa.itb.ac.id', password: pass, role: 'mahasiswa', nim: '23525789', prodi: 'Magister Informatika' });
-    const dosen = await User.create({ nama: 'Dr. Budi Santoso', email: 'dosenwali@itb.ac.id', password: pass, role: 'dosen_wali', prodi: 'Magister Informatika' });
-    await User.create({ nama: 'Prof. Siti Rahma', email: 'kaprodi@itb.ac.id', password: pass, role: 'kaprodi', prodi: 'Magister Informatika' });
+    const mahasiswa = await User.create({
+      nama: "Ahmad Muhklis",
+      email: "23525789@mahasiswa.itb.ac.id",
+      password: pass,
+      role: "mahasiswa",
+      nim: "23525789",
+      prodi: "Magister Informatika",
+    });
+    const dosen = await User.create({
+      nama: "Dr. Budi Santoso",
+      email: "dosenwali@itb.ac.id",
+      password: pass,
+      role: "dosen_wali",
+      prodi: "Magister Informatika",
+    });
+    await User.create({
+      nama: "Prof. Siti Rahma",
+      email: "kaprodi@itb.ac.id",
+      password: pass,
+      role: "kaprodi",
+      prodi: "Magister Informatika",
+    });
     await User.findByIdAndUpdate(mahasiswa._id, { dosenWaliId: dosen._id });
 
     // Seed data akademik per semester
     const semData = [
-      { semesterKe: 1, ipSemester: 3.2, ipkTotal: 3.2, sksPerSemester: 13, totalSks: 13, jumlahSksLulus: 13 },
-      { semesterKe: 2, ipSemester: 3.5, ipkTotal: 3.35, sksPerSemester: 14, totalSks: 27, jumlahSksLulus: 27 },
-      { semesterKe: 3, ipSemester: 3.1, ipkTotal: 3.27, sksPerSemester: 12, totalSks: 39, jumlahSksLulus: 39 },
-      { semesterKe: 4, ipSemester: 3.78, ipkTotal: 3.38, sksPerSemester: 20, totalSks: 59, jumlahSksLulus: 59 },
+      {
+        semesterKe: 1,
+        ipSemester: 3.2,
+        ipkTotal: 3.2,
+        sksPerSemester: 13,
+        totalSks: 13,
+        jumlahSksLulus: 13,
+      },
+      {
+        semesterKe: 2,
+        ipSemester: 3.5,
+        ipkTotal: 3.35,
+        sksPerSemester: 14,
+        totalSks: 27,
+        jumlahSksLulus: 27,
+      },
+      {
+        semesterKe: 3,
+        ipSemester: 3.1,
+        ipkTotal: 3.27,
+        sksPerSemester: 12,
+        totalSks: 39,
+        jumlahSksLulus: 39,
+      },
+      {
+        semesterKe: 4,
+        ipSemester: 3.78,
+        ipkTotal: 3.38,
+        sksPerSemester: 20,
+        totalSks: 59,
+        jumlahSksLulus: 59,
+      },
     ];
     for (const d of semData) {
-      await Akademik.create({ mahasiswaId: mahasiswa._id, nim: mahasiswa.nim, strata: 'S2', ...d, jumlahMkDiulang: 0, hasilPrediksi: 'Aman', skorConfidence: 0.87 });
+      await Akademik.create({
+        mahasiswaId: mahasiswa._id,
+        nim: mahasiswa.nim,
+        strata: "S2",
+        ...d,
+        jumlahMkDiulang: 0,
+        hasilPrediksi: "Aman",
+        skorConfidence: 0.87,
+      });
     }
 
     // Seed tasks dengan priority score otomatis
     const tasksData = [
-      { namaTugas: 'Analisis Data', kategoriTask: 'Statistika', deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), tingkatKesulitan: 'Tinggi', estimasiPengerjaan: '5 jam', status: 'Backlog' },
-      { namaTugas: 'Brainstorming', kategoriTask: 'Penelitian', deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), tingkatKesulitan: 'Rendah', estimasiPengerjaan: '2 jam', status: 'Backlog' },
-      { namaTugas: 'Wireframes', kategoriTask: 'IF5200', deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), tingkatKesulitan: 'Tinggi', estimasiPengerjaan: '4 jam', status: 'On Progress' },
-      { namaTugas: 'Design System', kategoriTask: 'IF5300', deadline: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), tingkatKesulitan: 'Sedang', estimasiPengerjaan: '3 jam', status: 'Done' },
+      {
+        namaTugas: "Analisis Data",
+        kategoriTask: "Statistika",
+        deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        tingkatKesulitan: "Tinggi",
+        estimasiPengerjaan: "5 jam",
+        status: "Backlog",
+      },
+      {
+        namaTugas: "Brainstorming",
+        kategoriTask: "Penelitian",
+        deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+        tingkatKesulitan: "Rendah",
+        estimasiPengerjaan: "2 jam",
+        status: "Backlog",
+      },
+      {
+        namaTugas: "Wireframes",
+        kategoriTask: "IF5200",
+        deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        tingkatKesulitan: "Tinggi",
+        estimasiPengerjaan: "4 jam",
+        status: "On Progress",
+      },
+      {
+        namaTugas: "Design System",
+        kategoriTask: "IF5300",
+        deadline: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        tingkatKesulitan: "Sedang",
+        estimasiPengerjaan: "3 jam",
+        status: "Done",
+      },
     ];
     for (const t of tasksData) {
       const taskData = { mahasiswaId: mahasiswa._id, ...t };
       const { score, label } = hitungPriority(taskData);
-      await Task.create({ ...taskData, priorityScore: score, priorityLabel: label });
+      await Task.create({
+        ...taskData,
+        priorityScore: score,
+        priorityLabel: label,
+      });
     }
 
-    res.json({ message: '✅ Seed berhasil! Akun: 23525789@mahasiswa.itb.ac.id / password' });
+    res.json({
+      message:
+        "✅ Seed berhasil! Akun: 23525789@mahasiswa.itb.ac.id / password",
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -529,7 +826,7 @@ app.post('/api/seed', async (req, res) => {
 
 // ─── NOTIFICATION ROUTES ──────────────────────────────────────────────────────
 // GET notifications untuk user
-app.get('/api/notifications', auth, async (req, res) => {
+app.get("/api/notifications", auth, async (req, res) => {
   try {
     const notifications = await Notification.find({ userId: req.user.id })
       .sort({ sentAt: -1 })
@@ -541,14 +838,15 @@ app.get('/api/notifications', auth, async (req, res) => {
 });
 
 // Mark notification as read
-app.put('/api/notifications/:id/read', auth, async (req, res) => {
+app.put("/api/notifications/:id/read", auth, async (req, res) => {
   try {
     const notif = await Notification.findByIdAndUpdate(
       req.params.id,
       { isRead: true, readAt: new Date() },
-      { new: true }
+      { new: true },
     );
-    if (!notif) return res.status(404).json({ message: 'Notifikasi tidak ditemukan' });
+    if (!notif)
+      return res.status(404).json({ message: "Notifikasi tidak ditemukan" });
     res.json(notif);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -556,42 +854,49 @@ app.put('/api/notifications/:id/read', auth, async (req, res) => {
 });
 
 // Manual trigger for testing (DELETE this in production)
-app.post('/api/notifications/trigger-test', auth, async (req, res) => {
+app.post("/api/notifications/trigger-test", auth, async (req, res) => {
   try {
     await generateDailyNotifications();
-    const notifs = await Notification.find({ userId: req.user.id }).sort({ sentAt: -1 }).limit(10);
-    res.json({ message: '✅ Notifications generated untuk testing', data: notifs });
+    const notifs = await Notification.find({ userId: req.user.id })
+      .sort({ sentAt: -1 })
+      .limit(10);
+    res.json({
+      message: "✅ Notifications generated untuk testing",
+      data: notifs,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
 // ─── CATEGORY ROUTES ──────────────────────────────────────────────────────────
-app.get('/api/categories', async (req, res) => {
+app.get("/api/categories", async (req, res) => {
   try {
     const categories = await Category.find().sort({ name: 1 });
     // Return array of names for frontend compatibility
-    res.json(categories.map(cat => cat.name));
+    res.json(categories.map((cat) => cat.name));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-app.post('/api/categories', auth, async (req, res) => {
+app.post("/api/categories", auth, async (req, res) => {
   try {
     const { name } = req.body;
-    if (!name || name.trim() === '') {
-      return res.status(400).json({ message: 'Nama kategori harus diisi' });
+    if (!name || name.trim() === "") {
+      return res.status(400).json({ message: "Nama kategori harus diisi" });
     }
 
     // Check if category already exists
     const exists = await Category.findOne({ name: name.trim() });
     if (exists) {
-      return res.json({ message: 'Kategori sudah ada', data: exists });
+      return res.json({ message: "Kategori sudah ada", data: exists });
     }
 
     const category = await Category.create({ name: name.trim() });
-    res.status(201).json({ message: '✅ Kategori berhasil ditambahkan', data: category });
+    res
+      .status(201)
+      .json({ message: "✅ Kategori berhasil ditambahkan", data: category });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -600,30 +905,36 @@ app.post('/api/categories', auth, async (req, res) => {
 // ─── NOTIFICATION GENERATION LOGIC ────────────────────────────────────────────
 const generateDailyNotifications = async () => {
   try {
-    const mahasiswas = await User.find({ role: 'mahasiswa' });
-    
+    const mahasiswas = await User.find({ role: "mahasiswa" });
+
     for (const mahasiswa of mahasiswas) {
       const tasks = await Task.find({ mahasiswaId: mahasiswa._id });
       const now = new Date();
 
       // Rule 1: Urgent tasks (deadline <= 1 hari)
-      const urgentTasks = tasks.filter(t => {
-        if (t.status === 'Done') return false;
-        const sisa = Math.ceil((new Date(t.deadline) - now) / (1000 * 60 * 60 * 24));
+      const urgentTasks = tasks.filter((t) => {
+        if (t.status === "Done") return false;
+        const sisa = Math.ceil(
+          (new Date(t.deadline) - now) / (1000 * 60 * 60 * 24),
+        );
         return sisa <= 1 && sisa > 0;
       });
 
       // Rule 2: Warning tasks (deadline 3-7 hari & status Backlog)
-      const warningTasks = tasks.filter(t => {
-        if (t.status !== 'Backlog') return false;
-        const sisa = Math.ceil((new Date(t.deadline) - now) / (1000 * 60 * 60 * 24));
+      const warningTasks = tasks.filter((t) => {
+        if (t.status !== "Backlog") return false;
+        const sisa = Math.ceil(
+          (new Date(t.deadline) - now) / (1000 * 60 * 60 * 24),
+        );
         return sisa > 1 && sisa <= 7;
       });
 
       // Rule 3: Overdue tasks
-      const overdueTasks = tasks.filter(t => {
-        if (t.status === 'Done') return false;
-        const sisa = Math.ceil((new Date(t.deadline) - now) / (1000 * 60 * 60 * 24));
+      const overdueTasks = tasks.filter((t) => {
+        if (t.status === "Done") return false;
+        const sisa = Math.ceil(
+          (new Date(t.deadline) - now) / (1000 * 60 * 60 * 24),
+        );
         return sisa < 0;
       });
 
@@ -632,62 +943,69 @@ const generateDailyNotifications = async () => {
         for (const task of urgentTasks) {
           await Notification.create({
             userId: mahasiswa._id,
-            type: 'urgent',
-            title: '🚨 URGENT: Deadline Besok!',
+            type: "urgent",
+            title: "🚨 URGENT: Deadline Besok!",
             message: `Task "${task.namaTugas}" deadline hari besok jam 23:59`,
-            relatedTaskId: task._id
+            relatedTaskId: task._id,
           });
         }
       }
 
       if (warningTasks.length > 0) {
         for (const task of warningTasks) {
-          const sisa = Math.ceil((new Date(task.deadline) - now) / (1000 * 60 * 60 * 24));
+          const sisa = Math.ceil(
+            (new Date(task.deadline) - now) / (1000 * 60 * 60 * 24),
+          );
           await Notification.create({
             userId: mahasiswa._id,
-            type: 'warning',
-            title: '⚠️ Task Alert',
+            type: "warning",
+            title: "⚠️ Task Alert",
             message: `Task "${task.namaTugas}" deadline ${sisa} hari lagi. Status: Backlog (belum dikerjakan)`,
-            relatedTaskId: task._id
+            relatedTaskId: task._id,
           });
         }
       }
 
       if (overdueTasks.length > 0) {
         for (const task of overdueTasks) {
-          const sisa = Math.abs(Math.ceil((new Date(task.deadline) - now) / (1000 * 60 * 60 * 24)));
+          const sisa = Math.abs(
+            Math.ceil((new Date(task.deadline) - now) / (1000 * 60 * 60 * 24)),
+          );
           await Notification.create({
             userId: mahasiswa._id,
-            type: 'urgent',
-            title: '❌ Task Overdue!',
+            type: "urgent",
+            title: "❌ Task Overdue!",
             message: `Task "${task.namaTugas}" sudah ${sisa} hari terlamabat!`,
-            relatedTaskId: task._id
+            relatedTaskId: task._id,
           });
         }
       }
 
       // Rule 4: Daily summary
       const totalTasks = tasks.length;
-      const onProgress = tasks.filter(t => t.status === 'On Progress').length;
-      const done = tasks.filter(t => t.status === 'Done').length;
-      
+      const onProgress = tasks.filter((t) => t.status === "On Progress").length;
+      const done = tasks.filter((t) => t.status === "Done").length;
+
       await Notification.create({
         userId: mahasiswa._id,
-        type: 'summary',
-        title: '📊 Daily Summary',
-        message: `Hari ini: ${totalTasks} total tugas | ${onProgress} progres | ${done} selesai | ${urgentTasks.length} urgent | ${overdueTasks.length} overdue`
+        type: "summary",
+        title: "📊 Daily Summary",
+        message: `Hari ini: ${totalTasks} total tugas | ${onProgress} progres | ${done} selesai | ${urgentTasks.length} urgent | ${overdueTasks.length} overdue`,
       });
     }
 
-    console.log('✅ Daily notifications generated at', new Date().toLocaleTimeString());
+    console.log(
+      "✅ Daily notifications generated at",
+      new Date().toLocaleTimeString(),
+    );
   } catch (err) {
-    console.error('❌ Error generating notifications:', err);
+    console.error("❌ Error generating notifications:", err);
   }
 };
 
 // ─── CRON JOB SCHEDULER (Run setiap hari pukul 08:00) ─────────────────────────
-cron.schedule('0 8 * * *', () => {
-  console.log('🔔 Running daily notification scheduler...');
+cron.schedule("0 8 * * *", () => {
+  console.log("🔔 Running daily notification scheduler...");
   generateDailyNotifications();
 });
 
@@ -697,18 +1015,18 @@ const initializeCategories = async () => {
     const count = await Category.countDocuments();
     if (count === 0) {
       const defaultCategories = [
-        { name: 'IF5100' },
-        { name: 'IF5200' },
-        { name: 'IF5300' },
-        { name: 'Penelitian' },
-        { name: 'Statistika' },
-        { name: 'UKM' }
+        { name: "IF5100" },
+        { name: "IF5200" },
+        { name: "IF5300" },
+        { name: "Penelitian" },
+        { name: "Statistika" },
+        { name: "UKM" },
       ];
       await Category.insertMany(defaultCategories);
-      console.log('✅ Default categories initialized');
+      console.log("✅ Default categories initialized");
     }
   } catch (err) {
-    console.error('❌ Error initializing categories:', err);
+    console.error("❌ Error initializing categories:", err);
   }
 };
 

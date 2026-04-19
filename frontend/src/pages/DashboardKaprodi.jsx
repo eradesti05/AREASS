@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { C } from "../constants/theme";
-import { Card, StatusBadge } from "../components/UIComponents"; // Digabung agar rapi
+import { Card, StatusBadge } from "../components/UIComponents";
 import { kaprodiAPI } from "../services/api";
 import {
   LineChart,
@@ -15,8 +16,11 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { Info } from "lucide-react";
 
 const DashboardKaprodi = () => {
+  const navigate = useNavigate();
+  const [hoveredPrediksi, setHoveredPrediksi] = useState(false);
   const [mahasiswaList, setMahasiswaList] = useState([]);
   const [trendData, setTrendData] = useState([]);
   const [pieData, setPieData] = useState([]);
@@ -92,7 +96,7 @@ const DashboardKaprodi = () => {
           <div style={{ fontWeight: 700, marginBottom: 16, color: C.textDark }}>
             Prediksi Tren Jumlah Mahasiswa
           </div>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={300}>
             <LineChart data={trendData}>
               {" "}
               {/* Pastikan trendData adalah array [{semester: '...', jumlah: 0}] */}
@@ -121,7 +125,7 @@ const DashboardKaprodi = () => {
           <div style={{ fontWeight: 700, marginBottom: 16, color: C.textDark }}>
             Distribusi Prediksi Kelulusan
           </div>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
                 data={pieData}
@@ -161,7 +165,13 @@ const DashboardKaprodi = () => {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              {["NIM", "Nama", "IPK", "Prediksi Status"].map((h) => (
+              {[
+                "NIM",
+                "Nama",
+                "IPK",
+                "Prediksi Status",
+                "Detail Analisis Akademik",
+              ].map((h) => (
                 <th
                   key={h}
                   style={{
@@ -214,6 +224,35 @@ const DashboardKaprodi = () => {
                 </td>
                 <td style={{ padding: "14px 16px" }}>
                   <StatusBadge status={m.hasilPrediksi} />
+                </td>
+                <td>
+                  {" "}
+                  <div
+                    onClick={() => navigate("/analytics/${m.id}")}
+                    onMouseEnter={() => setHoveredPrediksi(true)}
+                    onMouseLeave={() => setHoveredPrediksi(false)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      background: "rgba(22, 20, 20, 0.56)",
+                      background: hoveredPrediksi
+                        ? "rgba(5, 5, 5, 0.35)"
+                        : "rgba(255,255,255,0.2)",
+
+                      color: "#040404",
+                      padding: "6px 12px",
+                      borderRadius: 16,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      marginTop: 12,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      transform: hoveredPrediksi ? "scale(1.05)" : "scale(1)",
+                    }}
+                  >
+                    <Info size={14} style={{ color: "#040404" }} /> {"Lihat"}
+                  </div>
                 </td>
               </tr>
             ))}

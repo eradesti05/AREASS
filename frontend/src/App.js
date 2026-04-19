@@ -250,6 +250,16 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
             )
           }
         />
+        <Route
+          path="/analytics/:mahasiswaId"
+          element={
+            user?.role === "kaprodi" || user?.role === "dosen_wali" ? (
+              <AnalyticsPage />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
