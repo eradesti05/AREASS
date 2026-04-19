@@ -167,7 +167,7 @@ const Navbar = ({ user, onLogout, currentPath }) => {
           )}
         </button>
         
-        <Bell size={20} color="#718EBF" />
+        <NotificationCenter />
 
         {/* Profile Avatar with Dropdown */}
         <div style={{ position: "relative" }}>
