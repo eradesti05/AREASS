@@ -25,7 +25,7 @@ const request = async (method, endpoint, body = null) => {
 export const authAPI = {
   login: (email, password, userType) =>
     request("POST", "/auth/login", { email, password, userType }),
-  register: (data, userType) => 
+  register: (data, userType) =>
     request("POST", "/auth/register", { ...data, userType }),
   getMe: () => request("GET", "/auth/me"),
   updateProfile: (data) => request("PUT", "/auth/profile", data),
