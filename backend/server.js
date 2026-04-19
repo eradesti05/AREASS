@@ -817,12 +817,20 @@ app.put("/api/notifications/:id/read", auth, async (req, res) => {
 // Manual trigger for testing (DELETE this in production)
 app.post("/api/notifications/trigger-test", auth, async (req, res) => {
   try {
-    await generateDailyNotifications();
+    // Buat notifikasi test langsung
+    const testNotif = await Notification.create({
+      userId: req.user.id,
+      type: "summary",
+      title: "🧪 Notifikasi Test",
+      message: "Ini notifikasi test dari Postman. Notifikasi sistem berhasil terhubung!",
+    });
+
     const notifs = await Notification.find({ userId: req.user.id })
       .sort({ sentAt: -1 })
       .limit(10);
+    
     res.json({
-      message: "✅ Notifications generated untuk testing",
+      message: "✅ Test notification created successfully",
       data: notifs,
     });
   } catch (err) {
@@ -964,8 +972,8 @@ const generateDailyNotifications = async () => {
   }
 };
 
-// ─── CRON JOB SCHEDULER (Run setiap hari pukul 08:00) ─────────────────────────
-cron.schedule("0 8 * * *", () => {
+// ─── CRON JOB SCHEDULER (Run setiap hari pukul 23:59) ─────────────────────────
+cron.schedule("59 23 * * *", () => {
   console.log("🔔 Running daily notification scheduler...");
   generateDailyNotifications();
 });
