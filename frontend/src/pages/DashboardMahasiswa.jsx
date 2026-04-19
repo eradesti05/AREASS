@@ -219,7 +219,7 @@ const DashboardMahasiswa = ({ user }) => {
   return (
     <div
       style={{
-        padding: "24px 16px",
+        padding: "clamp(12px, 4vw, 24px) clamp(8px, 3vw, 16px)",
         background: "#f0ede6",
         minHeight: "100vh",
         boxSizing: "border-box",
@@ -229,8 +229,8 @@ const DashboardMahasiswa = ({ user }) => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 24,
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: "clamp(12px, 3vw, 24px)",
           marginBottom: 32,
           maxWidth: 1200,
           margin: "0 auto 32px",
@@ -595,8 +595,8 @@ const DashboardMahasiswa = ({ user }) => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 24,
+          gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
+          gap: "clamp(12px, 3vw, 24px)",
           maxWidth: 1200,
           margin: "0 auto",
           boxSizing: "border-box",
@@ -923,27 +923,27 @@ const DashboardMahasiswa = ({ user }) => {
         <div
           style={{
             maxWidth: 1200,
-            margin: "24px auto 0 auto",
+            margin: "clamp(16px, 4vw, 24px) auto 0 auto",
             backgroundColor: "#ffffff",
             borderRadius: "14px",
-            padding: "24px",
+            padding: "clamp(12px, 4vw, 24px)",
             boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
             boxSizing: "border-box",
           }}
         >
           <h2
             style={{
-              fontSize: "13px",
+              fontSize: "clamp(11px, 2.5vw, 13px)",
               fontWeight: "700",
               color: "#8b8377",
-              marginBottom: "20px",
+              marginBottom: "clamp(12px, 3vw, 20px)",
               letterSpacing: "0.5px",
               textTransform: "uppercase",
             }}
           >
             📋 Tugas Mendatang
           </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "clamp(8px, 2vw, 10px)" }}>
             {tasks
               .filter((t) => t.status !== "Done") // Exclude completed tasks
               .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
@@ -964,12 +964,14 @@ const DashboardMahasiswa = ({ user }) => {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      padding: "14px 16px",
+                      padding: "clamp(10px, 3vw, 14px) clamp(12px, 3vw, 16px)",
                       background: "#f9f9f9",
                       borderRadius: "10px",
                       border: "1px solid #e8e8e8",
                       transition: "all 0.2s",
                       cursor: "pointer",
+                      gap: "clamp(8px, 2vw, 12px)",
+                      flexWrap: "wrap",
                     }}
                     onMouseOver={(e) => {
                       e.currentTarget.style.background = "#f0f8f6";
@@ -987,7 +989,7 @@ const DashboardMahasiswa = ({ user }) => {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 14,
+                        gap: "clamp(10px, 2vw, 14px)",
                         flex: 1,
                         minWidth: 0,
                       }}
@@ -1007,7 +1009,7 @@ const DashboardMahasiswa = ({ user }) => {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div
                           style={{
-                            fontSize: 13,
+                            fontSize: "clamp(12px, 2.5vw, 13px)",
                             fontWeight: 600,
                             color: "#2c3e50",
                             marginBottom: 4,
@@ -1020,7 +1022,7 @@ const DashboardMahasiswa = ({ user }) => {
                         </div>
                         <div
                           style={{
-                            fontSize: 11,
+                            fontSize: "clamp(10px, 2vw, 11px)",
                             color: "#999",
                             fontWeight: 500,
                           }}
@@ -1031,9 +1033,9 @@ const DashboardMahasiswa = ({ user }) => {
                     </div>
                     <div
                       style={{
-                        fontSize: 11,
+                        fontSize: "clamp(10px, 2vw, 11px)",
                         fontWeight: 700,
-                        padding: "8px 14px",
+                        padding: "clamp(6px, 2vw, 8px) clamp(10px, 2vw, 14px)",
                         borderRadius: "20px",
                         background: isOverdue
                           ? "#FF6B6B"
@@ -1043,7 +1045,7 @@ const DashboardMahasiswa = ({ user }) => {
                               ? "#FFC107"
                               : "#4CAF50",
                         color: "#fff",
-                        minWidth: "90px",
+                        minWidth: "clamp(70px, 20vw, 90px)",
                         textAlign: "center",
                         flexShrink: 0,
                       }}
