@@ -77,4 +77,5 @@ export const kaprodiAPI = {
   getMahasiswa: () => request("GET", "/kaprodi/mahasiswa"),
   getStatistik: () => request("GET", "/kaprodi/statistik"),
   getTrenSemester: () => request("GET", "/kaprodi/tren-semester"),
+  getAkademik: () => request("GET", "/kaprodi/akademik"),
 };

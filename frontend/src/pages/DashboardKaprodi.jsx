@@ -20,25 +20,51 @@ import { Info } from "lucide-react";
 
 const DashboardKaprodi = () => {
   const navigate = useNavigate();
-  const [hoveredPrediksi, setHoveredPrediksi] = useState(false);
+  const [hoveredId, setHoveredId] = useState(null);
   const [mahasiswaList, setMahasiswaList] = useState([]);
   const [trendData, setTrendData] = useState([]);
   const [pieData, setPieData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState("Semua");
+  const [selectedStrata, setSelectedStrata] = useState("Semua");
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
 
-        const [resMahasiswa, resStats, resTren] = await Promise.all([
-          kaprodiAPI.getMahasiswa(),
-          kaprodiAPI.getStatistik(),
-          kaprodiAPI.getTrenSemester(),
-        ]);
+        const [resMahasiswa, resStats, resTren, resAkademik] =
+          await Promise.all([
+            kaprodiAPI.getMahasiswa(),
+            kaprodiAPI.getStatistik(),
+            kaprodiAPI.getTrenSemester(),
+            kaprodiAPI.getAkademik(),
+          ]);
+
+        const mahasiswaArray = Array.isArray(resMahasiswa)
+          ? resMahasiswa
+          : resMahasiswa?.data || [];
+
+        const akademikArray = Array.isArray(resAkademik)
+          ? resAkademik
+          : resAkademik?.data || [];
+
+        //bikin mapping mahasiswaId -> strata
+        const strataMap = {};
+
+        akademikArray.forEach((a) => {
+          if (a.mahasiswaId && a.strata) {
+            strataMap[a.mahasiswaId] = a.strata.toUpperCase();
+          }
+        });
+        //inject ke mahasiswa
+        const mahasiswaWithStrata = mahasiswaArray.map((m) => ({
+          ...m,
+          strata: strataMap[m.id] || "Tidak diketahui",
+        }));
 
         // Buat bikin list mahasiswa ini
-        setMahasiswaList(resMahasiswa || []);
+        setMahasiswaList(mahasiswaWithStrata);
 
         // buat bikin trend jumlah mhs persemester
         const dataPerSemester = resTren.map((item) => ({
@@ -79,6 +105,17 @@ const DashboardKaprodi = () => {
       </div>
     );
   }
+
+  const uniqueStrata = ["D3", "S1", "S2", "S3"];
+  const filteredMahasiswa = mahasiswaList.filter((m) => {
+    const statusMatch =
+      filterStatus === "Semua" || m.hasilPrediksi === filterStatus;
+
+    const strataMatch =
+      selectedStrata === "Semua" || m.strata === selectedStrata;
+
+    return statusMatch && strataMatch;
+  });
 
   return (
     <div style={{ padding: 32 }}>
@@ -156,6 +193,39 @@ const DashboardKaprodi = () => {
         Tabel Mahasiswa dan Prediksi Status
       </div>
       <Card>
+        <div style={{ marginBottom: 16, display: "flex", gap: 8 }}>
+          {["Semua", "Aman", "Waspada", "Perlu perhatian"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 12,
+                border: "none",
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 600,
+                background:
+                  filterStatus === status ? C.primary : "rgba(0,0,0,0.05)",
+                color: filterStatus === status ? "#fff" : "#333",
+              }}
+            >
+              {status}
+            </button>
+          ))}
+          <select
+            value={selectedStrata}
+            onChange={(e) => setSelectedStrata(e.target.value)}
+            style={{ padding: "6px 10px", borderRadius: 8 }}
+          >
+            <option value="Semua">Semua</option>
+            {uniqueStrata.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -183,7 +253,7 @@ const DashboardKaprodi = () => {
             </tr>
           </thead>
           <tbody>
-            {mahasiswaList.map((m, i) => (
+            {filteredMahasiswa.map((m, i) => (
               <tr
                 key={m._id || i}
                 style={{ borderBottom: "1px solid #F8F8F8" }}
@@ -222,17 +292,24 @@ const DashboardKaprodi = () => {
                 <td>
                   {" "}
                   <div
-                    onClick={() => navigate("/analytics/${m.id}")}
-                    onMouseEnter={() => setHoveredPrediksi(true)}
-                    onMouseLeave={() => setHoveredPrediksi(false)}
+                    onClick={() => {
+                      if (!m || !m.id) {
+                        console.error("ID tidak ditemukan:", m);
+                        return;
+                      }
+                      navigate(`/analytics/${m.id}`);
+                    }}
+                    onMouseEnter={() => setHoveredId(m.id)}
+                    onMouseLeave={() => setHoveredId(null)}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 6,
                       background: "rgba(22, 20, 20, 0.56)",
-                      background: hoveredPrediksi
-                        ? "rgba(5, 5, 5, 0.35)"
-                        : "rgba(255,255,255,0.2)",
+                      background:
+                        hoveredId === m.id
+                          ? "rgba(5, 5, 5, 0.35)"
+                          : "rgba(255,255,255,0.2)",
 
                       color: "#040404",
                       padding: "6px 12px",
@@ -242,7 +319,8 @@ const DashboardKaprodi = () => {
                       marginTop: 12,
                       cursor: "pointer",
                       transition: "all 0.2s",
-                      transform: hoveredPrediksi ? "scale(1.05)" : "scale(1)",
+                      transform:
+                        hoveredId === m.id ? "scale(1.05)" : "scale(1)",
                     }}
                   >
                     <Info size={14} style={{ color: "#040404" }} /> {"Lihat"}

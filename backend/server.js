@@ -405,9 +405,9 @@ app.post("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
       semesterKe: req.body.semesterKe,
     });
     if (existing)
-      return res
-        .status(400)
-        .json({ message: `Data semester ${req.body.semesterKe} untuk ${req.body.strata} sudah ada` });
+      return res.status(400).json({
+        message: `Data semester ${req.body.semesterKe} untuk ${req.body.strata} sudah ada`,
+      });
 
     const data = await Akademik.create({
       mahasiswaId: req.user.id,
@@ -1035,3 +1035,69 @@ app.get(
     }
   },
 );
+
+app.get(
+  "/api/akademik/:id",
+  auth,
+  role("kaprodi", "dosen_wali"),
+  async (req, res) => {
+    try {
+      const data = await Akademik.find({
+        mahasiswaId: req.params.id,
+      }).sort({ semesterKe: 1 });
+
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  },
+);
+
+app.get(
+  "/api/prediksi/:id",
+  auth,
+  role("kaprodi", "dosen_wali"),
+  async (req, res) => {
+    try {
+      const latest = await Akademik.findOne({
+        mahasiswaId: req.params.id,
+        hasilPrediksi: { $ne: null },
+      }).sort({ semesterKe: -1 });
+
+      if (!latest) {
+        return res.json({
+          hasilPrediksi: "Belum ada data",
+          skorConfidence: 0,
+        });
+      }
+
+      res.json({
+        hasilPrediksi: latest.hasilPrediksi,
+        skorConfidence: latest.skorConfidence,
+      });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  },
+);
+
+app.get("/api/kaprodi/akademik", auth, role("kaprodi"), async (req, res) => {
+  try {
+    const kaprodi = await User.findById(req.user.id);
+
+    const mahasiswaList = await User.find({
+      role: "mahasiswa",
+      prodi: kaprodi.prodi,
+    });
+
+    const ids = mahasiswaList.map((m) => m._id);
+
+    const data = await Akademik.find({
+      mahasiswaId: { $in: ids },
+    });
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});

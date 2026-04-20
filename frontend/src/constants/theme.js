@@ -8,6 +8,6 @@ export const C = {
   textGray: "#8A94A6",
   green: "#1B7C6B",
   yellow: "#F5A623",
-  red: "#FF6B8A",
+  red: " #C0392B",
   navy: "#1A2050",
 };

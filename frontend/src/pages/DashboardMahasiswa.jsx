@@ -139,7 +139,7 @@ const DashboardMahasiswa = ({ user }) => {
         setSummary(summaryResult);
         setTasks(tasksArray);
         setPrediksi(prediksiResult);
-        
+
         // Set default selectedStrata ke strata pertama
         if (akademikArray.length > 0) {
           const firstStrata = akademikArray[0].strata || "";
@@ -169,7 +169,7 @@ const DashboardMahasiswa = ({ user }) => {
 
   // Get unique strata from akademik data
   const uniqueStrata = Array.from(
-    new Set(akademik.map((a) => a.strata).filter(Boolean))
+    new Set(akademik.map((a) => a.strata).filter(Boolean)),
   ).sort();
 
   // Use akademik data if available, filter by selectedStrata
@@ -187,7 +187,7 @@ const DashboardMahasiswa = ({ user }) => {
           ip: d.ipSemester,
         }))
       : [];
-  
+
   const sksTrend =
     filteredAkademik && filteredAkademik.length > 0
       ? filteredAkademik.map((d) => ({
@@ -201,7 +201,7 @@ const DashboardMahasiswa = ({ user }) => {
     sksTrend.length > 0
       ? Math.max(
           24,
-          Math.ceil(Math.max(...sksTrend.map((d) => d.sks || 0)) * 1.1)
+          Math.ceil(Math.max(...sksTrend.map((d) => d.sks || 0)) * 1.1),
         )
       : 24;
 
@@ -306,7 +306,7 @@ const DashboardMahasiswa = ({ user }) => {
             borderRadius: 12,
             border: "none",
             padding: "18px 20px",
-            background: status.color,
+            background: "#FFFFFF",
           }}
         >
           <div
@@ -326,7 +326,7 @@ const DashboardMahasiswa = ({ user }) => {
               style={{
                 fontWeight: 700,
                 fontSize: 18,
-                color: "#FFFFFF",
+                color: C.textGray,
                 marginBottom: 4,
               }}
             >
@@ -334,7 +334,7 @@ const DashboardMahasiswa = ({ user }) => {
             </div>
             <div
               style={{
-                color: "rgba(255,255,255,0.8)",
+                color: C.textGray,
                 fontSize: 13,
                 fontWeight: 500,
                 marginBottom: 12,
@@ -350,7 +350,7 @@ const DashboardMahasiswa = ({ user }) => {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: "rgba(255,255,255,0.2)",
+                    background: status.color,
                     color: "#FFFFFF",
                     padding: "6px 12px",
                     borderRadius: 16,
@@ -363,7 +363,7 @@ const DashboardMahasiswa = ({ user }) => {
 
                 <div
                   style={{
-                    color: "rgba(255,255,255,0.7)",
+                    color: C.textGray,
                     fontSize: 11,
                     marginTop: 8,
                   }}
@@ -378,12 +378,13 @@ const DashboardMahasiswa = ({ user }) => {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: "rgba(255, 255, 255, 0.56)",
+                    background: C.textGray,
                     background: hoveredPrediksi
-                      ? "rgba(255,255,255,0.35)"
-                      : "rgba(255,255,255,0.2)",
+                      ? "rgba(100, 91, 91, 0.92)"
+                      : "rgba(224, 217, 207, 0.84)",
 
-                    color: "#FFFFFF",
+                    color: C.textGray,
+                    color: hoveredPrediksi ? C.white : C.textGray,
                     padding: "6px 12px",
                     borderRadius: 16,
                     fontSize: 12,
@@ -453,7 +454,7 @@ const DashboardMahasiswa = ({ user }) => {
                 gap: "12px",
               }}
             >
-              <div>📭 Belum ada tugas</div>
+              <div> Belum ada tugas</div>
               <a
                 href="/tasks/create"
                 style={{
@@ -675,7 +676,14 @@ const DashboardMahasiswa = ({ user }) => {
             boxSizing: "border-box",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "16px",
+            }}
+          >
             <h2
               style={{
                 fontSize: "14px",
@@ -917,7 +925,14 @@ const DashboardMahasiswa = ({ user }) => {
             boxSizing: "border-box",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "16px",
+            }}
+          >
             <h2
               style={{
                 fontSize: "14px",
@@ -1193,7 +1208,7 @@ const DashboardMahasiswa = ({ user }) => {
           >
             📋 Tugas Mendatang
           </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "clamp(8px, 2vw, 10px)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {tasks
               .filter((t) => t.status !== "Done") // Exclude completed tasks
               .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))

@@ -14,45 +14,41 @@ import {
 import { useParams } from "react-router-dom";
 
 const AnalyticsPage = () => {
+  const { mahasiswaId } = useParams();
   const [akademik, setAkademik] = useState([]);
   const [prediksi, setPrediksi] = useState({
     hasilPrediksi: "Aman",
     skorConfidence: 0,
   });
   const [loading, setLoading] = useState(true);
-  const { mahasiswaId } = useParams();
-
   useEffect(() => {
     const fetchAll = async () => {
       try {
         let akademikData, prediksiData;
+        const token = localStorage.getItem("areass_token");
+        const headers = { Authorization: `Bearer ${token}` };
 
         if (mahasiswaId) {
-          akademikData = await fetch(
-            `http://localhost:5000/api/akademik/${mahasiswaId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem("areass_token")}`,
-              },
-            },
-          ).then((r) => r.json());
-          prediksiData = await fetch(
-            `http://localhost:5000/api/prediksi/${mahasiswaId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem("areass_token")}`,
-              },
-            },
-          ).then((r) => r.json());
+          const [akademikRes, prediksiRes] = await Promise.all([
+            fetch(`http://localhost:5000/api/akademik/${mahasiswaId}`, {
+              headers,
+            }).then((r) => r.json()),
+            fetch(`http://localhost:5000/api/prediksi/${mahasiswaId}`, {
+              headers,
+            }).then((r) => r.json()),
+          ]);
+
+          setAkademik(Array.isArray(akademikRes) ? akademikRes : []);
+          setPrediksi(prediksiRes);
         } else {
-          [akademikData, prediksiData] = await Promise.all([
+          const [akademikData, prediksiData] = await Promise.all([
             akademikAPI.getAll(),
             prediksiAPI.getLatest(),
           ]);
-        }
 
-        setAkademik(Array.isArray(akademikData) ? akademikData : []);
-        setPrediksi(prediksiData);
+          setAkademik(Array.isArray(akademikData) ? akademikData : []);
+          setPrediksi(prediksiData);
+        }
       } catch (err) {
         console.error("Error:", err);
       } finally {
@@ -108,7 +104,7 @@ const AnalyticsPage = () => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3,1fr)",
+          gridTemplateColumns: "repeat(6,1fr)",
           gap: 16,
           marginBottom: 32,
         }}
@@ -162,54 +158,94 @@ const AnalyticsPage = () => {
       >
         Penjelasan Prediksi
       </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 2fr",
-          gap: 16,
-          marginBottom: 32,
-        }}
-      >
-        {/*hasil prediksi */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <StatCard
-            icon={<ShieldCheck size={20} color="#F59E0B" />}
-            label="Hasil Prediksi"
-            value={prediksi.hasilPrediksi}
-            iconBg="#FFF0CC"
-          />
-        </div>
 
-        {/* rekomendasi */}
-        <Card>
+      <Card>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+          }}
+        >
+          {/* Hasil Prediksi */}
           <div
             style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: C.textDark,
-              marginBottom: 12,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "12px 16px",
+              borderRadius: 12,
+              background: "#F9FAFB",
             }}
           >
-            Rekomendasi
+            <div
+              style={{
+                background: "#FFF0CC",
+                padding: 10,
+                borderRadius: 10,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <ShieldCheck size={20} color="#F59E0B" />
+            </div>
+
+            <div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: C.textGray,
+                  marginBottom: 2,
+                }}
+              >
+                Hasil Prediksi
+              </div>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: prediksiColor,
+                }}
+              >
+                {prediksi.hasilPrediksi}
+              </div>
+            </div>
           </div>
-          <p
-            style={{
-              color: C.textGray,
-              lineHeight: 1.8,
-              margin: 0,
-              fontSize: 14,
-            }}
-          >
-            Berdasarkan analisis data akademik Anda, performa akademik Anda saat
-            ini berada dalam kondisi{" "}
-            <strong style={{ color: prediksiColor }}>
-              {prediksi.hasilPrediksi}
-            </strong>
-            .{" "}
-            {rekomendasiText[prediksi.hasilPrediksi] || rekomendasiText["Aman"]}
-          </p>
-        </Card>
-      </div>
+
+          {/* Rekomendasi */}
+          <div>
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 700,
+                color: C.textDark,
+                marginBottom: 8,
+              }}
+            >
+              Rekomendasi
+            </div>
+
+            <p
+              style={{
+                color: C.textGray,
+                lineHeight: 1.8,
+                margin: 0,
+                fontSize: 14,
+              }}
+            >
+              Berdasarkan analisis data akademik Anda, performa akademik Anda
+              saat ini berada dalam kondisi{" "}
+              <strong style={{ color: prediksiColor }}>
+                {prediksi.hasilPrediksi}
+              </strong>
+              .{" "}
+              {rekomendasiText[prediksi.hasilPrediksi] ||
+                rekomendasiText["Aman"]}
+            </p>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 };

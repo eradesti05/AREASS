@@ -1,68 +1,209 @@
-import { C } from '../constants/theme';
-import { Card, StatusBadge } from '../components/UIComponents';
-import { mahasiswaList, nilaiMahasiswaBimbingan } from '../data/dummyData';
-import { Edit2 } from 'lucide-react';
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer
-} from "recharts";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { C } from "../constants/theme";
+import { Card, StatusBadge } from "../components/UIComponents";
+import { dosenAPI } from "../services/api";
+import { Info } from "lucide-react";
 
-const DashboardDosenWali = () => (
-  <div style={{ padding: 32 }}>
-    <div style={{ fontWeight: 700, fontSize: 18, color: C.textDark, marginBottom: 20 }}>
-      Tren Nilai Mahasiswa Bimbingan
-    </div>
-    <Card style={{ marginBottom: 32 }}>
-      <ResponsiveContainer width="100%" height={260}>
-        <LineChart data={nilaiMahasiswaBimbingan}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
-          <XAxis dataKey="semester" tick={{ fontSize: 12 }} />
-          <YAxis domain={[0, 4]} tick={{ fontSize: 12 }} />
-          <Tooltip />
-          <Legend />
-          <Line type="monotone" dataKey="nilai" name="Rata-rata Nilai"
-            stroke={C.primary} strokeWidth={2} dot={{ fill: C.primary, r: 5 }} />
-        </LineChart>
-      </ResponsiveContainer>
-    </Card>
+const DashboardDosen = () => {
+  const navigate = useNavigate();
+  const [hoveredId, setHoveredId] = useState(null);
+  const [mahasiswaList, setMahasiswaList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState("Semua");
+  const [selectedStrata, setSelectedStrata] = useState("Semua");
 
-    <div style={{ fontWeight: 700, fontSize: 16, color: C.textDark, marginBottom: 16 }}>
-      Tabel Mahasiswa dan Prediksi Status
-    </div>
-    <Card>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            {["NIM", "Nama", "IPK", "Prediksi Status", "Akademik dan Risiko"].map(h => (
-              <th key={h} style={{
-                textAlign: "left", padding: "10px 16px",
-                color: C.primary, fontSize: 13, fontWeight: 600,
-                borderBottom: "1px solid #F0F0F0"
-              }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {mahasiswaList.map((m, i) => (
-            <tr key={i} style={{ borderBottom: "1px solid #F8F8F8" }}>
-              <td style={{ padding: "14px 16px", fontSize: 14, color: C.textGray }}>{m.nim}</td>
-              <td style={{ padding: "14px 16px", fontSize: 14, color: C.textDark, fontWeight: 500 }}>{m.nama}</td>
-              <td style={{ padding: "14px 16px", fontSize: 14, color: C.textDark }}>{m.ipk}</td>
-              <td style={{ padding: "14px 16px" }}><StatusBadge status={m.status} /></td>
-              <td style={{ padding: "14px 16px" }}>
-                <button style={{
-                  background: "transparent", border: "1.5px solid #E0E4F0",
-                  borderRadius: 8, padding: "4px 10px", cursor: "pointer", display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textGray
-                }}>
-                  <Edit2 size={16} />
-                </button>
-              </td>
-            </tr>
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+
+        const resMahasiswa = await dosenAPI.getMahasiswa();
+
+        const mahasiswaArray = Array.isArray(resMahasiswa)
+          ? resMahasiswa
+          : resMahasiswa?.data || [];
+
+        // ambil strata dari akademik tiap mahasiswa
+        const mahasiswaWithStrata = await Promise.all(
+          mahasiswaArray.map(async (m) => {
+            try {
+              const resAkademik = await dosenAPI.getAkademikById(m.id);
+
+              const akademikArray = Array.isArray(resAkademik)
+                ? resAkademik
+                : resAkademik?.data || [];
+
+              return {
+                ...m,
+                strata:
+                  akademikArray.length > 0
+                    ? akademikArray[0].strata?.toUpperCase()
+                    : "Tidak diketahui",
+              };
+            } catch (err) {
+              return { ...m, strata: "Tidak diketahui" };
+            }
+          }),
+        );
+
+        setMahasiswaList(mahasiswaWithStrata);
+      } catch (error) {
+        console.error("Error:", error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ padding: 32, textAlign: "center" }}>
+        Memproses data mahasiswa...
+      </div>
+    );
+  }
+
+  const uniqueStrata = ["D3", "S1", "S2", "S3"];
+
+  const filteredMahasiswa = mahasiswaList.filter((m) => {
+    const statusMatch =
+      filterStatus === "Semua" || m.hasilPrediksi === filterStatus;
+
+    const strataMatch =
+      selectedStrata === "Semua" || m.strata === selectedStrata;
+
+    return statusMatch && strataMatch;
+  });
+
+  return (
+    <div style={{ padding: 32 }}>
+      <div
+        style={{
+          fontWeight: 700,
+          fontSize: 16,
+          color: C.textDark,
+          marginBottom: 16,
+        }}
+      >
+        Tabel Mahasiswa dan Prediksi Status
+      </div>
+
+      <Card>
+        {/* FILTER */}
+        <div style={{ marginBottom: 16, display: "flex", gap: 8 }}>
+          {["Semua", "Aman", "Waspada", "Perlu perhatian"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 12,
+                border: "none",
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 600,
+                background:
+                  filterStatus === status ? C.primary : "rgba(0,0,0,0.05)",
+                color: filterStatus === status ? "#fff" : "#333",
+              }}
+            >
+              {status}
+            </button>
           ))}
-        </tbody>
-      </table>
-    </Card>
-  </div>
-);
 
-export default DashboardDosenWali;
+          <select
+            value={selectedStrata}
+            onChange={(e) => setSelectedStrata(e.target.value)}
+            style={{ padding: "6px 10px", borderRadius: 8 }}
+          >
+            <option value="Semua">Semua</option>
+            {uniqueStrata.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* TABLE */}
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              {["NIM", "Nama", "IPK", "Prediksi Status", "Detail"].map((h) => (
+                <th
+                  key={h}
+                  style={{
+                    textAlign: "left",
+                    padding: "10px 16px",
+                    color: C.primary,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    borderBottom: "1px solid #F0F0F0",
+                  }}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {filteredMahasiswa.map((m, i) => (
+              <tr key={m.id || i}>
+                <td style={{ padding: "14px 16px" }}>{m.nim}</td>
+                <td style={{ padding: "14px 16px" }}>{m.nama}</td>
+                <td style={{ padding: "14px 16px" }}>{m.ipkTotal}</td>
+
+                <td style={{ padding: "14px 16px" }}>
+                  <StatusBadge status={m.hasilPrediksi} />
+                </td>
+                <td>
+                  {" "}
+                  <div
+                    onClick={() => {
+                      if (!m || !m.id) {
+                        console.error("ID tidak ditemukan:", m);
+                        return;
+                      }
+                      navigate(`/analytics/${m.id}`);
+                    }}
+                    onMouseEnter={() => setHoveredId(m.id)}
+                    onMouseLeave={() => setHoveredId(null)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      background: "rgba(22, 20, 20, 0.56)",
+                      background:
+                        hoveredId === m.id
+                          ? "rgba(5, 5, 5, 0.35)"
+                          : "rgba(255,255,255,0.2)",
+
+                      color: "#040404",
+                      padding: "6px 12px",
+                      borderRadius: 16,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      marginTop: 12,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      transform:
+                        hoveredId === m.id ? "scale(1.05)" : "scale(1)",
+                    }}
+                  >
+                    <Info size={14} style={{ color: "#040404" }} /> {"Lihat"}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+};
+
+export default DashboardDosen;

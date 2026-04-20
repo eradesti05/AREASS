@@ -24,7 +24,6 @@ import DashboardKaprodi from "./pages/DashboardKaprodi";
 import DashboardDosenWali from "./pages/DashboardDosenWali";
 import InputDataAkademikPage from "./pages/InputDataAkademikPage";
 
-// ─── INNER APP ───────────────────────────────────────────────────────────────
 function InnerApp({ user, setUser, tasks, setTasks }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,8 +31,6 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
   const handleLogin = (u) => {
     setUser(u);
 
-    // ─── TAMBAHKAN BARIS INI ───
-    // Pastikan backend Anda mengirim property 'token' saat login
     if (u.token) {
       localStorage.setItem("areass_token", u.token);
     }
@@ -253,12 +250,22 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
 
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="*" element={<Navigate to="/login" />} />
+
+        <Route
+          path="/analytics/:mahasiswaId"
+          element={
+            user?.role === "kaprodi" || user?.role === "dosen_wali" ? (
+              <AnalyticsPage />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
       </Routes>
     </div>
   );
 }
 
-// ─── ROOT APP ────────────────────────────────────────────────────────────────
 function App() {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem("areass_user");
