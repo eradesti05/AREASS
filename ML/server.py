@@ -49,25 +49,34 @@ class SemesterEntry(BaseModel):
             )
         return self
 
-class PredictRequest(BaseModel):
-    student_id: str
+class StrataEntry(BaseModel):
+    strata: Literal["S1", "S2", "S3"]
+
     ipk_total:  float = Field(ge=0.0, le=4.0)
     history:    list[SemesterEntry] = Field(min_length=1)
 
-    @field_validator("history")
-    @classmethod
-    def history_same_strata(cls, v):
-        strata_set = {entry.strata for entry in v}
-        if len(strata_set) > 1:
-            raise ValueError("semua semester harus memiliki strata yang sama")
+    # validate strata harus S1, S2, atau S3
+    @field_validator("strata")
+    def validate_strata(cls, v):
+        if v not in {"S1", "S2", "S3"}:
+            raise ValueError("strata harus salah satu dari 'S1', 'S2', atau 'S3'")
         return v
+    
+class PredictRequest(BaseModel):
+    student_id: str
+    predictions: list[StrataEntry] = Field(min_length=1, max_length=3)
+
+
+class StrataResponse(BaseModel):
+    prediction: str
+    probability: dict[str, float]
 
 class PredictResponse(BaseModel):
     student_id: str
-    prediction: str
-    probability: dict[str, float]
-    from_model: Optional[str] = None 
-
+    S1: Optional[StrataResponse] = None
+    S2: Optional[StrataResponse] = None
+    S3: Optional[StrataResponse] = None
+    from_model: Optional[str] = None
 
 @app.get("/", response_model=HealthResponse)
 async def root():
@@ -101,24 +110,29 @@ async def predict(request: PredictRequest, model_name: ModelName = DEFAULT_MODEL
     }
     ```
     """
-    X = preprocess_for_inference(
-        history=[entry.model_dump() for entry in request.history],
-        scaler=app.state.scaler,
-    )
-    model = app.state.models.get(model_name)
-    pred_encoded  = model.predict(X)[0]
-    pred_proba    = model.predict_proba(X)[0]
-    pred_label    = LABEL_DECODING[pred_encoded]
+    response = PredictResponse(student_id=request.student_id, from_model=model_name)
+    for entry in request.predictions:
+        X = preprocess_for_inference(
+            history=[entry.model_dump() for entry in entry.history],
+            scaler=app.state.scaler,
+        )
+        model = app.state.models.get(model_name)
+        pred_encoded  = model.predict(X)[0]
+        pred_proba    = model.predict_proba(X)[0]
+        pred_label    = LABEL_DECODING[pred_encoded]
 
-    return PredictResponse(
-        student_id=request.student_id,
-        prediction=pred_label,
-        probability={
-            LABEL_DECODING[i]: round(float(p), 4)
-            for i, p in enumerate(pred_proba)
-        },
-        from_model=model_name,
-    )
+        response_entry = StrataResponse(
+            prediction=pred_label,
+            probability={LABEL_DECODING[i]: float(prob) for i, prob in enumerate(pred_proba)}
+        )
+        if entry.strata == "S1":
+            response.S1 = response_entry
+        elif entry.strata == "S2":
+            response.S2 = response_entry
+        elif entry.strata == "S3":
+            response.S3 = response_entry
+
+    return response
 
 
 # To run:
