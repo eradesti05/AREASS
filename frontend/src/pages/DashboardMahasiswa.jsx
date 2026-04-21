@@ -54,6 +54,7 @@ ChartJS2.register(
 const DashboardMahasiswa = ({ user }) => {
   const navigate = useNavigate();
   const [akademik, setAkademik] = useState([]);
+  const [uniqueStrata, setUniqueStrata] = useState([]);
   const [selectedStrata, setSelectedStrata] = useState("");
   const [summary, setSummary] = useState({
     totalTugas: 0,
@@ -71,8 +72,10 @@ const DashboardMahasiswa = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [openStrataSKSDropdown, setOpenStrataSKSDropdown] = useState(false);
   const [openStrataIPKDropdown, setOpenStrataIPKDropdown] = useState(false);
+  const [openStrataCardDropdown, setOpenStrataCardDropdown] = useState(false);
   const strataSKSRef = useRef(null);
   const strataIPKRef = useRef(null);
+  const strataCardRef = useRef(null);
 
   // Handle click outside for strata dropdowns
   useEffect(() => {
@@ -83,13 +86,16 @@ const DashboardMahasiswa = ({ user }) => {
       if (strataIPKRef.current && !strataIPKRef.current.contains(e.target)) {
         setOpenStrataIPKDropdown(false);
       }
+      if (strataCardRef.current && !strataCardRef.current.contains(e.target)) {
+        setOpenStrataCardDropdown(false);
+      }
     };
 
-    if (openStrataSKSDropdown || openStrataIPKDropdown) {
+    if (openStrataSKSDropdown || openStrataIPKDropdown || openStrataCardDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [openStrataSKSDropdown, openStrataIPKDropdown]);
+  }, [openStrataSKSDropdown, openStrataIPKDropdown, openStrataCardDropdown]);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -128,9 +134,13 @@ const DashboardMahasiswa = ({ user }) => {
         // ─── Auto run prediksi jika ada data akademik ───
         let prediksiResult = { hasilPrediksi: "Aman", skorConfidence: 0 };
         if (akademikArray.length > 0) {
+          // Extract unique strata dulu untuk determine strata pertama
+          const strata = [...new Set(akademikArray.map((item) => item.strata))].filter(Boolean);
+          const firstStrata = strata[0] || "S1";
+          
           prediksiResult = await prediksiAPI.run().catch(async () => {
             return await prediksiAPI
-              .getLatest()
+              .getLatest(firstStrata)
               .catch(() => ({ hasilPrediksi: "Aman", skorConfidence: 0 }));
           });
         }
@@ -139,6 +149,10 @@ const DashboardMahasiswa = ({ user }) => {
         setSummary(summaryResult);
         setTasks(tasksArray);
         setPrediksi(prediksiResult);
+
+        // Extract unique strata dari akademik data
+        const strata = [...new Set(akademikArray.map((item) => item.strata))];
+        setUniqueStrata(strata.filter(Boolean)); // filter out null/undefined
 
         // Set default selectedStrata ke strata pertama
         if (akademikArray.length > 0) {
@@ -165,20 +179,30 @@ const DashboardMahasiswa = ({ user }) => {
     fetchAll();
   }, []);
 
-  const latest = akademik[akademik.length - 1] || {};
+  // ─── Fetch prediksi berdasarkan selectedStrata ───
+  useEffect(() => {
+    if (selectedStrata) {
+      prediksiAPI
+        .getLatest(selectedStrata)
+        .then((result) => {
+          console.log(`✅ Prediksi untuk ${selectedStrata}:`, result);
+          setPrediksi(result);
+        })
+        .catch((err) => {
+          console.error(`❌ Error fetching prediksi for ${selectedStrata}:`, err);
+        });
+    }
+  }, [selectedStrata]);
 
-  // Get unique strata from akademik data
-  const uniqueStrata = Array.from(
-    new Set(akademik.map((a) => a.strata).filter(Boolean)),
-  ).sort();
-
-  // Use akademik data if available, filter by selectedStrata
+  // Filter akademik by selected strata
   const filteredAkademik =
     selectedStrata && akademik.length > 0
       ? akademik
           .filter((a) => a.strata === selectedStrata)
           .sort((a, b) => a.semesterKe - b.semesterKe)
       : akademik.sort((a, b) => a.semesterKe - b.semesterKe);
+
+  const latest = filteredAkademik[filteredAkademik.length - 1] || {};
 
   const ipkTrend =
     filteredAkademik && filteredAkademik.length > 0
@@ -328,9 +352,103 @@ const DashboardMahasiswa = ({ user }) => {
                 fontSize: 18,
                 color: C.textGray,
                 marginBottom: 4,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
               }}
             >
-              Selamat Datang, {user.nama?.split(" ")[0]}
+              <span>Selamat Datang, {user.nama?.split(" ")[0]}</span>
+              {/* Filter Strata - Custom Dropdown */}
+              {uniqueStrata.length > 0 && (
+                <div ref={strataCardRef} style={{ position: "relative", width: "fit-content" }}>
+                  <div
+                    onClick={() => setOpenStrataCardDropdown(!openStrataCardDropdown)}
+                    style={{
+                      border: "2px solid #5D9CEC",
+                      borderRadius: 20,
+                      padding: "10px 14px",
+                      fontSize: 13,
+                      minWidth: "80px",
+                      textAlign: "center",
+                      outline: "none",
+                      color: "#5D9CEC",
+                      background: "white",
+                      boxSizing: "border-box",
+                      fontWeight: 600,
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+                      transition: "all 0.3s ease",
+                      cursor: "pointer",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!openStrataCardDropdown) {
+                        e.currentTarget.style.borderColor = "#0D9FE3";
+                        e.currentTarget.style.background = "#E1F5FE";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!openStrataCardDropdown) {
+                        e.currentTarget.style.borderColor = "#5D9CEC";
+                        e.currentTarget.style.background = "white";
+                      }
+                    }}
+                  >
+                    <span>{selectedStrata}</span>
+                    <span style={{ transform: openStrataCardDropdown ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", fontSize: 10 }}>▼</span>
+                  </div>
+                  {openStrataCardDropdown && (
+                    <div style={{
+                      position: "absolute",
+                      top: "100%",
+                      right: 0,
+                      marginTop: 6,
+                      background: "white",
+                      border: "2px solid #5D9CEC",
+                      borderRadius: 20,
+                      boxShadow: "0 8px 20px rgba(93, 156, 236, 0.15)",
+                      zIndex: 1000,
+                      overflow: "hidden",
+                      minWidth: "80px"
+                    }}>
+                      {uniqueStrata.map((strata) => (
+                        <div
+                          key={strata}
+                          onClick={() => {
+                            setSelectedStrata(strata);
+                            setOpenStrataCardDropdown(false);
+                          }}
+                          style={{
+                            padding: "10px 14px",
+                            cursor: "pointer",
+                            borderBottom: strata === uniqueStrata[uniqueStrata.length - 1] ? "none" : "1px solid #F0F0F0",
+                            fontSize: 13,
+                            transition: "all 0.15s ease",
+                            background: selectedStrata === strata ? "#E3F2FD" : "transparent",
+                            color: selectedStrata === strata ? "#5D9CEC" : "#333",
+                            fontWeight: selectedStrata === strata ? 600 : 500,
+                            textAlign: "center"
+                          }}
+                          onMouseEnter={(e) => {
+                            if (selectedStrata !== strata) {
+                              e.currentTarget.style.background = "#F9F9F9";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (selectedStrata !== strata) {
+                              e.currentTarget.style.background = "transparent";
+                            }
+                          }}
+                        >
+                          {strata}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div
               style={{
@@ -371,7 +489,7 @@ const DashboardMahasiswa = ({ user }) => {
                   {status.label}
                 </div>
                 <div
-                  onClick={() => navigate("/analytics")}
+                  onClick={() => navigate(`/analytics?strata=${selectedStrata}`)}
                   onMouseEnter={() => setHoveredPrediksi(true)}
                   onMouseLeave={() => setHoveredPrediksi(false)}
                   style={{

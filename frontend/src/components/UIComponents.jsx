@@ -29,16 +29,48 @@ export const Card = ({ children, style = {} }) => (
   }}>{children}</div>
 );
 
-export const StatCard = ({ icon, label, value, iconBg }) => (
-  <Card style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, minWidth: 160 }}>
+export const StatCard = ({ icon, label, value, secondary, secondaryColor, iconBg }) => (
+  <Card style={{ 
+    display: "flex", 
+    alignItems: "center", 
+    gap: 16, 
+    flex: 1, 
+    minWidth: 180,
+    padding: "18px 20px",
+    borderRadius: 12,
+    border: "1px solid #F0F0F0",
+    transition: "all 0.3s ease",
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.08)";
+    e.currentTarget.style.transform = "translateY(-2px)";
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)";
+    e.currentTarget.style.transform = "translateY(0)";
+  }}
+  >
     <div style={{
-      width: 52, height: 52, borderRadius: "50%", background: iconBg,
+      width: 56, height: 56, borderRadius: "12px", background: iconBg,
       display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: 22, flexShrink: 0
+      fontSize: 24, flexShrink: 0
     }}>{icon}</div>
-    <div>
-      <div style={{ fontSize: 12, color: C.textGray, marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: C.textDark }}>{value}</div>
+    <div style={{ flex: 1 }}>
+      <div style={{ fontSize: 12, color: C.textGray, marginBottom: 2, fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark, marginBottom: 4 }}>{value}</div>
+      {secondary && (
+        <div style={{ 
+          fontSize: 11, 
+          fontWeight: 600,
+          color: secondaryColor || "#10B981",
+          background: `${secondaryColor || "#10B981"}15`,
+          padding: "2px 8px",
+          borderRadius: 4,
+          display: "inline-block"
+        }}>
+          {secondary}
+        </div>
+      )}
     </div>
   </Card>
 );

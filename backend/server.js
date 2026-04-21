@@ -134,6 +134,23 @@ const role =
     next();
   };
 
+// ─── MAP ML PREDICTION TO VALID ENUM ──────────────────────────────────────────
+// ML API return: lulus_tepat_waktu, lulus_terlambat, dropout, etc
+// Database enum: Aman, Waspada, Perlu perhatian
+const mapMLPredictionToEnum = (mlPrediction) => {
+  const predictionMap = {
+    lulus_tepat_waktu: "Aman",
+    lulus_on_time: "Aman",
+    lulus_terlambat: "Waspada",
+    lulus_late: "Waspada",
+    at_risk: "Waspada",
+    dropout: "Perlu perhatian",
+    at_risk_dropout: "Perlu perhatian",
+  };
+
+  return predictionMap[mlPrediction?.toLowerCase()] || "Aman"; // Default to Aman
+};
+
 // ─── RULE-BASED PRIORITY SCORE ────────────────────────────────────────────────
 // Formula: Score = (urgensi × 3) + (kesulitan × 1.5) + estimasi + (status_backlog × 2)
 // Semakin tinggi score = semakin prioritas
@@ -416,32 +433,50 @@ app.post("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
     });
 
     // After saving, try to get prediction from ML API
-    let prediksi = null;
+    let mlPredictions = {};
     try {
       const allAkademik = await Akademik.find({
         mahasiswaId: req.user.id,
-      }).sort({ semesterKe: 1 });
+      }).sort({ strata: 1, semesterKe: 1 });
 
       if (allAkademik.length === 0) {
         console.warn("⚠️ No akademik data found for student", req.user.id);
       } else {
+        // ✅ Build grouped payload per strata sesuai spec ML API baru
+        const stratas = ["S1", "S2", "S3"];
+        const predictions = [];
+
+        for (const strata of stratas) {
+          const akademikByStrata = allAkademik.filter((a) => a.strata === strata);
+          
+          if (akademikByStrata.length > 0) {
+            const latest = akademikByStrata[akademikByStrata.length - 1];
+            
+            predictions.push({
+              strata: strata,
+              ipk_total: latest.ipkTotal,
+              history: akademikByStrata.map((row) => ({
+                strata: row.strata,
+                semester: row.semesterKe,
+                ip_semester: row.ipSemester,
+                sks_semester: row.sksPerSemester,
+                total_sks: row.totalSks,
+                sks_lulus: row.jumlahSksLulus,
+              })),
+            });
+          }
+        }
+
+        // ✅ Build payload sesuai spec
         const mlPayload = {
           student_id: req.user.id,
-          ipk_total: req.body.ipkTotal,
-          history: allAkademik.map((row) => ({
-            strata: row.strata,
-            semester: row.semesterKe,
-            ip_semester: row.ipSemester,
-            sks_semester: row.sksPerSemester,
-            total_sks: row.totalSks,
-            sks_lulus: row.jumlahSksLulus,
-          })),
+          predictions: predictions,
         };
 
         console.log(
           "📤 Sending to ML API with",
-          allAkademik.length,
-          "semesters:",
+          predictions.length,
+          "strata(s):",
           JSON.stringify(mlPayload, null, 2),
         );
 
@@ -449,28 +484,38 @@ app.post("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(mlPayload),
+          timeout: 5000,
         });
 
         if (mlRes.ok) {
-          prediksi = await mlRes.json();
-          console.log("✅ ML Prediction received:", prediksi);
+          mlPredictions = await mlRes.json();
+          console.log("✅ ML Predictions received:", JSON.stringify(mlPredictions, null, 2));
 
-          // Update akademik data dengan hasil prediksi
-          const skorConfidence = prediksi.probability
-            ? prediksi.probability[prediksi.prediction] || 0.5
-            : 0.5;
-          console.log("📊 Storing prediction:", {
-            prediction: prediksi.prediction,
-            skorConfidence,
-          });
+          // ✅ Handle response format: { S1: {...}, S2: {...}, S3: {...} }
+          for (const strata of stratas) {
+            if (mlPredictions[strata]) {
+              const prediction = mlPredictions[strata];
+              const mlPredictionValue = prediction.prediction;
+              const mappedPrediction = mapMLPredictionToEnum(mlPredictionValue);
+              const probability = prediction.probability || {};
+              const skorConfidence = probability[mlPredictionValue] || 0.5;
 
-          await Akademik.updateMany(
-            { mahasiswaId: req.user.id },
-            {
-              hasilPrediksi: prediksi.prediction,
-              skorConfidence: skorConfidence,
-            },
-          );
+              console.log(`📊 Storing prediction for ${strata}:`, {
+                mlValue: mlPredictionValue,
+                mapped: mappedPrediction,
+                skorConfidence,
+              });
+
+              // Update all akademik records untuk strata ini
+              await Akademik.updateMany(
+                { mahasiswaId: req.user.id, strata: strata },
+                {
+                  hasilPrediksi: mappedPrediction,
+                  skorConfidence: skorConfidence,
+                },
+              );
+            }
+          }
         } else {
           console.error("❌ ML API Error:", mlRes.status, mlRes.statusText);
           const errorText = await mlRes.text();
@@ -483,9 +528,9 @@ app.post("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
     }
 
     res.status(201).json({
-      message: "Data akademik disimpan",
+      message: "Data akademik disimpan + prediksi di-generate",
       data,
-      prediksi: prediksi || null,
+      mlPredictions: mlPredictions || {},
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -509,31 +554,111 @@ app.put("/api/akademik/:id", auth, role("mahasiswa"), async (req, res) => {
 // ─── PREDIKSI ROUTES ──────────────────────────────────────────────────────────
 app.post("/api/prediksi", auth, role("mahasiswa"), async (req, res) => {
   try {
-    const data = await Akademik.find({ mahasiswaId: req.user.id }).sort({
-      semesterKe: -1,
-    });
-    if (!data.length)
+    const allAkademik = await Akademik.find({ 
+      mahasiswaId: req.user.id 
+    }).sort({ strata: 1, semesterKe: 1 });
+    
+    if (!allAkademik.length)
       return res.status(400).json({ message: "Data akademik belum ada" });
 
-    const latest = data[0];
+    let mlPredictions = {};
+    try {
+      // ✅ Build grouped payload per strata sesuai spec ML API baru
+      const stratas = ["S1", "S2", "S3"];
+      const predictions = [];
 
-    // Rule-based fallback (sementara sebelum ML Python siap)
-    let hasilPrediksi = "Aman";
-    let skorConfidence = 0.85;
+      for (const strata of stratas) {
+        const akademikByStrata = allAkademik.filter((a) => a.strata === strata);
+        
+        if (akademikByStrata.length > 0) {
+          const latest = akademikByStrata[akademikByStrata.length - 1];
+          
+          predictions.push({
+            strata: strata,
+            ipk_total: latest.ipkTotal,
+            history: akademikByStrata.map((row) => ({
+              strata: row.strata,
+              semester: row.semesterKe,
+              ip_semester: row.ipSemester,
+              sks_semester: row.sksPerSemester,
+              total_sks: row.totalSks,
+              sks_lulus: row.jumlahSksLulus,
+            })),
+          });
+        }
+      }
 
-    if (latest.ipkTotal < 2.0 || latest.jumlahMkDiulang >= 3) {
-      hasilPrediksi = "Perlu perhatian";
-      skorConfidence = 0.9;
-    } else if (latest.ipkTotal < 2.75 || latest.jumlahMkDiulang >= 1) {
-      hasilPrediksi = "Waspada";
-      skorConfidence = 0.78;
+      if (predictions.length > 0) {
+        // ✅ Build payload sesuai spec
+        const mlPayload = {
+          student_id: req.user.id,
+          predictions: predictions,
+        };
+
+        console.log(
+          "📤 POST /api/prediksi: Sending to ML API with",
+          predictions.length,
+          "strata(s):",
+          JSON.stringify(mlPayload, null, 2),
+        );
+
+        const mlRes = await fetch(`${ML_API_URL}/predict`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(mlPayload),
+          timeout: 5000,
+        });
+
+        if (mlRes.ok) {
+          mlPredictions = await mlRes.json();
+          console.log("✅ ML Predictions received:", JSON.stringify(mlPredictions, null, 2));
+
+          // ✅ Handle response format: { S1: {...}, S2: {...}, S3: {...} }
+          for (const strata of stratas) {
+            if (mlPredictions[strata]) {
+              const prediction = mlPredictions[strata];
+              const mlPredictionValue = prediction.prediction;
+              const mappedPrediction = mapMLPredictionToEnum(mlPredictionValue);
+              const probability = prediction.probability || {};
+              const skorConfidence = probability[mlPredictionValue] || 0.5;
+
+              console.log(`📊 Storing prediction for ${strata}:`, {
+                mlValue: mlPredictionValue,
+                mapped: mappedPrediction,
+                skorConfidence,
+              });
+
+              // Update all akademik records untuk strata ini
+              await Akademik.updateMany(
+                { mahasiswaId: req.user.id, strata: strata },
+                {
+                  hasilPrediksi: mappedPrediction,
+                  skorConfidence: skorConfidence,
+                },
+              );
+            }
+          }
+        } else {
+          console.error("❌ ML API Error:", mlRes.status, mlRes.statusText);
+          const errorText = await mlRes.text();
+          console.error("ML API Response:", errorText);
+        }
+      }
+    } catch (mlErr) {
+      console.error("ML Prediction Error:", mlErr.message);
+      // Don't block - continue without ML prediction
     }
 
-    await Akademik.updateMany(
-      { mahasiswaId: req.user.id },
-      { hasilPrediksi, skorConfidence },
-    );
-    res.json({ hasilPrediksi, skorConfidence });
+    // Return latest prediction for user's first strata
+    const latestPrediksi = await Akademik.findOne({
+      mahasiswaId: req.user.id,
+      hasilPrediksi: { $ne: null },
+    }).sort({ semesterKe: -1 });
+
+    res.json({
+      hasilPrediksi: latestPrediksi?.hasilPrediksi || "Aman",
+      skorConfidence: latestPrediksi?.skorConfidence || 0,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -541,10 +666,15 @@ app.post("/api/prediksi", auth, role("mahasiswa"), async (req, res) => {
 
 app.get("/api/prediksi/latest", auth, role("mahasiswa"), async (req, res) => {
   try {
+    // Get strata dari query parameter, default ke S1
+    const strata = req.query.strata || "S1";
+    
     const latest = await Akademik.findOne({
       mahasiswaId: req.user.id,
+      strata: strata,
       hasilPrediksi: { $ne: null },
     }).sort({ semesterKe: -1 });
+    
     if (!latest) return res.json({ hasilPrediksi: "Aman", skorConfidence: 0 });
     res.json({
       hasilPrediksi: latest.hasilPrediksi,
