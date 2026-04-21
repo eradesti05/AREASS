@@ -875,17 +875,30 @@ export default function InputDataAkademikPage({ user }) {
             <div style={S.fieldGroup}>
               <span style={S.label}>IPK Total (Kumulatif)</span>
               <input
-                type="number"
-                min="0"
-                max="4"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00 - 4.00"
                 value={ipk}
                 onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  if (e.target.value === "" || (val >= 0 && val <= 4))
-                    setIpk(e.target.value);
+                  const val = e.target.value;
+                  if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
+                    setIpk(val);
+                  }
                 }}
+                onBlur={(e) => {
+                  const val = e.target.value.trim();
+                  if (val === "") {
+                    setIpk("");
+                  } else {
+                    const numVal = parseFloat(val);
+                    if (!isNaN(numVal) && numVal >= 0 && numVal <= 4) {
+                      setIpk(numVal.toFixed(2));
+                    } else {
+                      setIpk("");
+                    }
+                  }
+                }}
+                onWheel={(e) => e.target.blur()}
                 style={S.input}
               />
             </div>
@@ -965,16 +978,17 @@ export default function InputDataAkademikPage({ user }) {
                   <div key={`sem-${row.semester}-${strata}`} style={S.tableRow}>
                     <span style={S.tableRowLabel}>Sem {row.semester} {row.isExisting && <span style={{color: "#4CAF50", fontWeight: 700}}>(✓ Ada)</span>}</span>
                     <input
-                      type="number"
-                      min="0"
-                      max="4"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="0.00 - 4.00"
                       value={row.ip}
                       readOnly={row.isExisting}
                       onChange={(e) => {
                         if (!row.isExisting) {
-                          updateDataSemester(index, "ip", e.target.value);
+                          const val = e.target.value;
+                          if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
+                            updateDataSemester(index, "ip", val);
+                          }
                         }
                       }}
                       onBlur={(e) => {
@@ -992,6 +1006,7 @@ export default function InputDataAkademikPage({ user }) {
                           }
                         }
                       }}
+                      onWheel={(e) => e.target.blur()}
                       style={{...S.tableInput, background: row.isExisting ? "#F3F4F6" : "#FFFFFF"}}
                     />
                     <input
@@ -1021,6 +1036,7 @@ export default function InputDataAkademikPage({ user }) {
                           }
                         }
                       }}
+                      onWheel={(e) => e.target.blur()}
                       style={{...S.tableInput, background: row.isExisting ? "#F3F4F6" : "#FFFFFF"}}
                     />
                     <input
@@ -1050,6 +1066,7 @@ export default function InputDataAkademikPage({ user }) {
                           }
                         }
                       }}
+                      onWheel={(e) => e.target.blur()}
                       style={{...S.tableInput, background: row.isExisting ? "#F3F4F6" : "#FFFFFF"}}
                     />
                   </div>
