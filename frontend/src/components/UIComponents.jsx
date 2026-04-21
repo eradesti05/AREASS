@@ -25,7 +25,9 @@ export const StatusBadge = ({ status }) => {
 export const Card = ({ children, style = {} }) => (
   <div style={{
     background: C.white, borderRadius: 16, padding: 20,
-    boxShadow: "0 2px 12px rgba(0,0,0,0.06)", ...style
+    boxShadow: "0 2px 12px rgba(0,0,0,0.06)", 
+    boxSizing: "border-box",
+    ...style
   }}>{children}</div>
 );
 
