@@ -1012,6 +1012,7 @@ export default function InputDataAkademikPage({ user }) {
                     <input
                       type="number"
                       min="0"
+                      max="24"
                       step="1"
                       placeholder="contoh: 20"
                       value={row.sks}
@@ -1028,7 +1029,7 @@ export default function InputDataAkademikPage({ user }) {
                             updateDataSemester(index, "sks", "");
                           } else {
                             const numVal = parseInt(val);
-                            if (!isNaN(numVal) && numVal >= 0) {
+                            if (!isNaN(numVal) && numVal >= 0 && numVal <= 24) {
                               updateDataSemester(index, "sks", numVal.toString());
                             } else {
                               updateDataSemester(index, "sks", "");
