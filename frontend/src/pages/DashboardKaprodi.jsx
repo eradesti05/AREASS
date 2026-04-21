@@ -73,16 +73,21 @@ const DashboardKaprodi = () => {
         }));
         setTrendData(dataPerSemester);
 
+        const labelMapping = {
+          Aman: "Lulus Tepat Waktu",
+          Waspada: "Lulus Terlambat",
+          "Perlu perhatian": "Potensi Drop Out",
+        };
         // mapping data buat Pie Chart
         if (resStats && resStats.distribusi) {
           const formattedPie = resStats.distribusi.map((item) => {
             let sliceColor = "#94A3B8";
-            if (item._id === "Aman") sliceColor = "#22C55E";
-            else if (item._id === "Waspada") sliceColor = "#F59E0B";
-            else if (item._id === "Perlu perhatian") sliceColor = "#EF4444";
+            if (item._id === "Aman") sliceColor = C.green;
+            else if (item._id === "Waspada") sliceColor = C.yellow;
+            else if (item._id === "Perlu perhatian") sliceColor = C.red;
 
             return {
-              name: item._id,
+              name: labelMapping[item._id] || item._id,
               value: item.jumlah,
               color: sliceColor,
             };
