@@ -241,8 +241,8 @@ const DashboardMahasiswa = ({ user }) => {
         : Math.ceil(Math.max(...ipkTrend.map((d) => d.ip || 1.0)) * 10) / 10 + 0.1
       : 4.0;
   const taskProgress = [
-    { name: "On Progress", value: summary.onProgress || 0, color: "#FF9800" },
     { name: "Backlog", value: summary.backlog || 0, color: "#000000" },
+    { name: "On Progress", value: summary.onProgress || 0, color: "#FF9800" },
     { name: "Done", value: summary.done || 0, color: "#4CAF50" },
   ];
 
@@ -252,17 +252,17 @@ const DashboardMahasiswa = ({ user }) => {
     Aman: {
       color: C.green,
       label:
-        "Hasil performa akademikmu berada pada kondisi yang baik. Pertahankan konsistensimu dalam belajar. Sekarang kamu berada di jalur yang tepat untuk menyelesaikan studi tepat waktu.",
+        "Luar biasa! Kamu telah menunjukkan konsistensi yang hebat dalam studimu. Pertahankan semangat dan ritme belajarmu ya, kamu sudah berada di jalur yang tepat untuk lulus tepat waktu. Teruslah bersinar!",
     },
     Waspada: {
       color: C.yellow,
       label:
-        "Kamu sudah berusaha semakismal mungkin dalam belajar, namun ada beberapa indikator yang perlu kamu diperhatikan. Performa akademikmu menunjukkan tanda-tanda yang perlu kamu waspadai. Alangkah baiknya segera diskusikan kendala dalam belajar yang kamu hadapi dengan dosen wali untuk mencegah risiko lebih lanjut.",
+        "Apresiasi besar untuk semua usaha yang telah kamu lakukan. Saat ini, ada beberapa bagian akademik yang butuh perhatian kecil agar tetap stabil. Yuk, coba ceritakan kendalamu kepada dosen wali lebih awal supaya langkahmu ke depan kembali lancar dan tenang.",
     },
     "Perlu perhatian": {
       color: C.red,
       label:
-        "Semangat, kamu sudah coba bejuang sejauh ini. Saat ini performa akademikmu memerlukan perhatian segera. Berdasarkan data akademikmu, terdapat risiko yang signifikan. Alangkah baiknya segera menghubungi dosen wali untuk mendapatkan pendampingan.",
+        "Terima kasih sudah berjuang dan bertahan sejauh ini, kerja kerasmu sangat berharga. Saat ini kondisi akademikmu sedang cukup menantang dan butuh perhatian segera. Yuk, kita cari solusi terbaik bersama dosen wali agar bebanmu terasa lebih ringan. Kamu tidak sendirian!",
     },
   };
 
@@ -306,7 +306,7 @@ const DashboardMahasiswa = ({ user }) => {
     <div
       style={{
         padding: "clamp(12px, 4vw, 24px) clamp(8px, 3vw, 16px)",
-        background: "#f0ede6",
+        background: "#F4F6F9",
         minHeight: "100vh",
         boxSizing: "border-box",
       }}
@@ -349,33 +349,33 @@ const DashboardMahasiswa = ({ user }) => {
             <div
               style={{
                 fontWeight: 700,
-                fontSize: 18,
-                color: C.textGray,
-                marginBottom: 4,
+                fontSize: 22,
+                color: C.textDark,
+                marginBottom: 20,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
               }}
             >
-              <span>Selamat Datang, {user.nama?.split(" ")[0]}</span>
+              <span>Halo, {user.nama?.split(" ")[0]}! 👋</span>
               {/* Filter Strata - Custom Dropdown */}
               {uniqueStrata.length > 0 && (
                 <div ref={strataCardRef} style={{ position: "relative", width: "fit-content" }}>
                   <div
                     onClick={() => setOpenStrataCardDropdown(!openStrataCardDropdown)}
                     style={{
-                      border: "2px solid #5D9CEC",
-                      borderRadius: 20,
+                      border: "none",
+                      borderRadius: 24,
                       padding: "10px 14px",
                       fontSize: 13,
                       minWidth: "80px",
                       textAlign: "center",
                       outline: "none",
-                      color: "#5D9CEC",
-                      background: "white",
+                      color: "#1F2937",
+                      background: "#F3F4F6",
                       boxSizing: "border-box",
                       fontWeight: 600,
-                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+                      boxShadow: "none",
                       transition: "all 0.3s ease",
                       cursor: "pointer",
                       display: "flex",
@@ -385,14 +385,12 @@ const DashboardMahasiswa = ({ user }) => {
                     }}
                     onMouseEnter={(e) => {
                       if (!openStrataCardDropdown) {
-                        e.currentTarget.style.borderColor = "#0D9FE3";
-                        e.currentTarget.style.background = "#E1F5FE";
+                        e.currentTarget.style.background = "#E5E7EB";
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!openStrataCardDropdown) {
-                        e.currentTarget.style.borderColor = "#5D9CEC";
-                        e.currentTarget.style.background = "white";
+                        e.currentTarget.style.background = "#F3F4F6";
                       }
                     }}
                   >
@@ -406,9 +404,9 @@ const DashboardMahasiswa = ({ user }) => {
                       right: 0,
                       marginTop: 6,
                       background: "white",
-                      border: "2px solid #5D9CEC",
-                      borderRadius: 20,
-                      boxShadow: "0 8px 20px rgba(93, 156, 236, 0.15)",
+                      border: "1px solid #E5E7EB",
+                      borderRadius: 12,
+                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
                       zIndex: 1000,
                       overflow: "hidden",
                       minWidth: "80px"
@@ -423,17 +421,17 @@ const DashboardMahasiswa = ({ user }) => {
                           style={{
                             padding: "10px 14px",
                             cursor: "pointer",
-                            borderBottom: strata === uniqueStrata[uniqueStrata.length - 1] ? "none" : "1px solid #F0F0F0",
+                            borderBottom: strata === uniqueStrata[uniqueStrata.length - 1] ? "none" : "1px solid #F3F4F6",
                             fontSize: 13,
                             transition: "all 0.15s ease",
-                            background: selectedStrata === strata ? "#E3F2FD" : "transparent",
-                            color: selectedStrata === strata ? "#5D9CEC" : "#333",
+                            background: selectedStrata === strata ? "#F3F4F6" : "transparent",
+                            color: selectedStrata === strata ? "#1F2937" : "#6B7280",
                             fontWeight: selectedStrata === strata ? 600 : 500,
                             textAlign: "center"
                           }}
                           onMouseEnter={(e) => {
                             if (selectedStrata !== strata) {
-                              e.currentTarget.style.background = "#F9F9F9";
+                              e.currentTarget.style.background = "#F9FAFB";
                             }
                           }}
                           onMouseLeave={(e) => {
@@ -453,9 +451,10 @@ const DashboardMahasiswa = ({ user }) => {
             <div
               style={{
                 color: C.textGray,
-                fontSize: 13,
-                fontWeight: 500,
-                marginBottom: 12,
+                fontSize: 14,
+                fontWeight: 600,
+                marginBottom: 16,
+                lineHeight: 1.6,
               }}
             >
               Status Akademikmu saat ini :
@@ -467,23 +466,44 @@ const DashboardMahasiswa = ({ user }) => {
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: 6,
+                    gap: 8,
                     background: status.color,
                     color: "#FFFFFF",
-                    padding: "6px 12px",
-                    borderRadius: 16,
-                    fontSize: 12,
-                    fontWeight: 600,
+                    padding: "8px 16px",
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    boxShadow: prediksi.hasilPrediksi === "Aman" 
+                      ? `0 0 20px rgba(16, 185, 129, 0.15)` 
+                      : prediksi.hasilPrediksi === "Waspada"
+                        ? `0 0 20px rgba(245, 158, 11, 0.15)`
+                        : `0 0 20px rgba(239, 68, 68, 0.15)`,
+                    marginBottom: 16,
                   }}
                 >
-                  <CheckCircle size={14} /> {prediksi.hasilPrediksi}
+                  <CheckCircle size={16} /> {prediksi.hasilPrediksi}
                 </div>
 
                 <div
                   style={{
-                    color: C.textGray,
-                    fontSize: 11,
-                    marginTop: 8,
+                    color: prediksi.hasilPrediksi === "Aman"
+                      ? "#047857"
+                      : prediksi.hasilPrediksi === "Waspada"
+                        ? "#92400E"
+                        : "#991B1B",
+                    background: prediksi.hasilPrediksi === "Aman"
+                      ? "#ECFDF5"
+                      : prediksi.hasilPrediksi === "Waspada"
+                        ? "#FFFBEB"
+                        : "#FEF2F2",
+                    fontSize: 14,
+                    padding: "16px 16px",
+                    borderRadius: 12,
+                    marginTop: 12,
+                    marginBottom: 12,
+                    lineHeight: 1.7,
+                    fontWeight: 500,
+                    borderLeft: `4px solid ${status.color}`,
                   }}
                 >
                   {status.label}
@@ -495,25 +515,20 @@ const DashboardMahasiswa = ({ user }) => {
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: 6,
-                    background: C.textGray,
-                    background: hoveredPrediksi
-                      ? "rgba(100, 91, 91, 0.92)"
-                      : "rgba(224, 217, 207, 0.84)",
-
-                    color: C.textGray,
-                    color: hoveredPrediksi ? C.white : C.textGray,
-                    padding: "6px 12px",
-                    borderRadius: 16,
-                    fontSize: 12,
-                    fontWeight: 600,
+                    gap: 8,
+                    background: hoveredPrediksi ? "#BFDBFE" : "#DBEAFE",
+                    color: "#1E40AF",
+                    padding: "10px 16px",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 700,
                     marginTop: 12,
                     cursor: "pointer",
-                    transition: "all 0.2s",
-                    transform: hoveredPrediksi ? "scale(1.05)" : "scale(1)",
+                    transition: "all 0.2s ease",
+                    transform: hoveredPrediksi ? "translateY(-2px)" : "translateY(0)",
                   }}
                 >
-                  <Info size={14} /> {"Detail Analisis Akademik"}
+                  <Info size={16} /> {"Detail Analisis Akademik"}
                 </div>
               </>
             ) : (
@@ -534,242 +549,248 @@ const DashboardMahasiswa = ({ user }) => {
           </div>
         </Card>
 
-        {/* Kemajuan Tugas */}
+        {/* Kemajuan Tugas & Ringkasan Harian Combined */}
         <Card
           style={{
             boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
             borderRadius: 12,
             border: "none",
-            padding: "18px",
+            padding: "0",
             background: "#FFFFFF",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: C.textGray,
-              marginBottom: 10,
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-              textAlign: "center",
-            }}
-          >
-            Kemajuan Tugas
-          </div>
-          {summary.totalTugas === 0 ? (
+          {/* Kemajuan Tugas Section */}
+          <div style={{ padding: "18px", borderBottom: "1px solid #F0F0F0" }}>
             <div
               style={{
-                color: "#a39c94",
+                fontSize: 10,
+                fontWeight: 700,
+                color: C.textGray,
+                marginBottom: 10,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
                 textAlign: "center",
-                padding: "40px 20px",
-                fontSize: "14px",
-                height: "110px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "12px",
               }}
             >
-              <div> Belum ada tugas</div>
-              <a
-                href="/tasks/create"
-                style={{
-                  color: "#7bbf9e",
-                  textDecoration: "none",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  borderBottom: "1px solid #7bbf9e",
-                }}
-              >
-                Buat tugas sekarang →
-              </a>
+              Kemajuan Tugas
             </div>
-          ) : (
-            <>
-              <ResponsiveContainer width="100%" height={110}>
-                <PieChart>
-                  <MiniPie
-                    data={taskProgress}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={28}
-                    outerRadius={42}
-                    dataKey="value"
-                  >
-                    {taskProgress.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
-                  </MiniPie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+            {summary.totalTugas === 0 ? (
               <div
                 style={{
+                  color: "#a39c94",
+                  textAlign: "center",
+                  padding: "40px 20px",
+                  fontSize: "14px",
+                  height: "110px",
                   display: "flex",
-                  gap: 10,
+                  flexDirection: "column",
+                  alignItems: "center",
                   justifyContent: "center",
-                  flexWrap: "wrap",
-                  marginTop: 10,
+                  gap: "12px",
                 }}
               >
-                {taskProgress.map((t, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 5,
-                      fontSize: 11,
-                      fontWeight: 600,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        background: t.color,
-                      }}
-                    />
-                    <span style={{ color: C.textGray }}>
-                      {t.value} {t.name}
-                    </span>
-                  </div>
-                ))}
+                <div> Belum ada tugas</div>
+                <a
+                  href="/tasks/create"
+                  style={{
+                    color: "#7bbf9e",
+                    textDecoration: "none",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    borderBottom: "1px solid #7bbf9e",
+                  }}
+                >
+                  Buat tugas sekarang →
+                </a>
               </div>
-            </>
-          )}
-        </Card>
+            ) : (
+              <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+                {/* Chart on the left */}
+                <div style={{ flex: "0 0 50%", display: "flex", justifyContent: "center" }}>
+                  <ResponsiveContainer width="100%" height={140}>
+                    <PieChart>
+                      <MiniPie
+                        data={taskProgress}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={32}
+                        outerRadius={50}
+                        dataKey="value"
+                      >
+                        {taskProgress.map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </MiniPie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
 
-        <Card
-          style={{
-            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-            borderRadius: 12,
-            border: "none",
-            padding: "16px",
-            background: "#FFFFFF",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: C.textGray,
-              marginBottom: 12,
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-              textAlign: "center",
-            }}
-          >
-            Ringkasan Harian
-          </div>
-          {summary.totalTugas === 0 ? (
-            <div
-              style={{
-                color: "#a39c94",
-                textAlign: "center",
-                padding: "30px 20px",
-                fontSize: "14px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "12px",
-              }}
-            >
-              <div style={{ color: "#a39c94" }}>
-                <ListTodo size={32} strokeWidth={1.5} />
-              </div>
-              <div>Belum ada tugas yang dibuat</div>
-              <a
-                href="/tasks/create"
-                style={{
-                  color: "#7bbf9e",
-                  textDecoration: "none",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  borderBottom: "1px solid #7bbf9e",
-                }}
-              >
-                Mulai buat tugas →
-              </a>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[
-                {
-                  val: summary.totalTugas,
-                  label: "Total Tugas",
-                  bg: C.accent,
-                  icon: ListTodo,
-                },
-                {
-                  val: summary.tenggatWaktuTugas,
-                  label: "Tenggat Waktu",
-                  bg: C.primary,
-                  icon: Clock,
-                },
-                {
-                  val: summary.estimasiBebanKerja,
-                  label: "Estimasi Beban",
-                  bg: C.red,
-                  icon: Zap,
-                },
-              ].map((item, i) => {
-                const IconComponent = item.icon;
-                return (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      paddingBottom: 10,
-                      borderBottom: i < 2 ? "1px solid #F0F0F0" : "none",
-                    }}
-                  >
+                {/* Legend on the right - 3 rows */}
+                <div
+                  style={{
+                    flex: "1",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 12,
+                    justifyContent: "center",
+                  }}
+                >
+                  {taskProgress.map((t, i) => (
                     <div
+                      key={i}
                       style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: "8px",
-                        background: `${item.bg}20`,
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        color: item.bg,
+                        gap: 8,
+                        fontSize: 13,
+                        fontWeight: 600,
                       }}
                     >
-                      <IconComponent size={24} />
-                    </div>
-                    <div style={{ flex: 1 }}>
                       <div
                         style={{
-                          fontWeight: 700,
-                          fontSize: 18,
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          background: t.color,
+                        }}
+                      />
+                      <span style={{ color: C.textGray }}>
+                        {t.value} {t.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Ringkasan Harian Section */}
+          <div style={{ padding: "16px" }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: C.textGray,
+                marginBottom: 12,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                textAlign: "center",
+              }}
+            >
+              Ringkasan Harian
+            </div>
+            {summary.totalTugas === 0 ? (
+              <div
+                style={{
+                  color: "#a39c94",
+                  textAlign: "center",
+                  padding: "30px 20px",
+                  fontSize: "14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "12px",
+                }}
+              >
+                <div style={{ color: "#a39c94" }}>
+                  <ListTodo size={32} strokeWidth={1.5} />
+                </div>
+                <div>Belum ada tugas yang dibuat</div>
+                <a
+                  href="/tasks/create"
+                  style={{
+                    color: "#7bbf9e",
+                    textDecoration: "none",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    borderBottom: "1px solid #7bbf9e",
+                  }}
+                >
+                  Mulai buat tugas →
+                </a>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "row", gap: 10 }}>
+                {[
+                  {
+                    val: summary.totalTugas,
+                    label: "Total Tugas",
+                    bg: C.accent,
+                    icon: ListTodo,
+                  },
+                  {
+                    val: summary.tenggatWaktuTugas,
+                    label: "Tenggat Waktu",
+                    bg: C.primary,
+                    icon: Clock,
+                  },
+                  {
+                    val: summary.estimasiBebanKerja,
+                    label: "Estimasi Beban",
+                    bg: C.red,
+                    icon: Zap,
+                  },
+                ].map((item, i) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 12,
+                        padding: 10,
+                        borderRight: i < 2 ? "1px solid #F0F0F0" : "none",
+                        flex: 1,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: "8px",
+                          background: `${item.bg}20`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
                           color: item.bg,
                         }}
                       >
-                        {item.val}
+                        <IconComponent size={24} />
                       </div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: C.textGray,
-                        }}
-                      >
-                        {item.label}
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: 18,
+                            color: item.bg,
+                          }}
+                        >
+                          {item.val}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: C.textGray,
+                          }}
+                        >
+                          {item.label}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </Card>
       </div>
 
