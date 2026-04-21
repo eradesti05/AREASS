@@ -12,26 +12,39 @@ const CreateTask = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [openDropdown, setOpenDropdown] = useState(false);
+  const [openDifficultyDropdown, setOpenDifficultyDropdown] = useState(false);
+  const [openTimeDropdown, setOpenTimeDropdown] = useState(false);
   const [categories, setCategories] = useState(["IF5100", "IF5200", "IF5300", "Penelitian", "Statistika", "UKM"]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const difficultyRef = useRef(null);
+  const timeRef = useRef(null);
+
+  const difficultyOptions = ["Rendah", "Sedang", "Tinggi"];
+  const timeOptions = ["1 jam", "2 jam", "3 jam", "4 jam", "5 jam", "6 jam", "8 jam"];
 
   useEffect(() => {
     fetchCategories();
   }, []);
 
-  // Handle click outside dropdown
+  // Handle click outside dropdowns
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setOpenDropdown(false);
       }
+      if (difficultyRef.current && !difficultyRef.current.contains(e.target)) {
+        setOpenDifficultyDropdown(false);
+      }
+      if (timeRef.current && !timeRef.current.contains(e.target)) {
+        setOpenTimeDropdown(false);
+      }
     };
     
-    if (openDropdown) {
+    if (openDropdown || openDifficultyDropdown || openTimeDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [openDropdown]);
+  }, [openDropdown, openDifficultyDropdown, openTimeDropdown]);
 
   const fetchCategories = async () => {
     try {
@@ -179,8 +192,8 @@ const CreateTask = () => {
                       onChange={e => setForm({ ...form, kategoriTask: e.target.value })}
                       onFocus={(e) => {
                         setOpenDropdown(true);
-                        e.currentTarget.style.borderColor = C.primary;
-                        e.currentTarget.style.boxShadow = `0 0 0 3px ${C.primaryLight}, 0 1px 2px rgba(0, 0, 0, 0.04)`;
+                        e.currentTarget.style.borderColor = "#29B6F6";
+                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(41, 182, 246, 0.2)";
                         e.currentTarget.style.backgroundColor = C.white;
                       }}
                       onBlur={(e) => {
@@ -190,10 +203,10 @@ const CreateTask = () => {
                       }}
                       placeholder="Pilih atau buat kategori" 
                       style={{
-                        border: "1.5px solid #E5E8F0", borderRadius: 12, padding: "18px 24px",
+                        border: "2px solid #E5E8F0", borderRadius: 16, padding: "18px 24px",
                         fontSize: 16, width: "100%", outline: "none", color: C.textDark,
                         backgroundColor: "#FAFBFD", boxSizing: "border-box", fontWeight: 500,
-                        boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+                        boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)", transition: "all 0.3s ease",
                         cursor: "text",
                         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238A94A6' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
                         backgroundRepeat: "no-repeat",
@@ -212,9 +225,9 @@ const CreateTask = () => {
                           right: 0,
                           marginTop: 8,
                           background: C.white,
-                          border: `1.5px solid ${C.primary}`,
-                          borderRadius: 10,
-                          boxShadow: '0 10px 25px rgba(26, 35, 200, 0.12)',
+                          border: `2px solid #29B6F6`,
+                          borderRadius: 16,
+                          boxShadow: '0 4px 12px rgba(41, 182, 246, 0.2)',
                           zIndex: 9999,
                           maxHeight: 280,
                           overflowY: 'auto',
@@ -238,8 +251,8 @@ const CreateTask = () => {
                               color: C.textDark
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.background = C.primaryLight;
-                              e.currentTarget.style.color = C.primary;
+                              e.currentTarget.style.background = "#E1F5FE";
+                              e.currentTarget.style.color = "#29B6F6";
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.background = 'transparent';
@@ -325,36 +338,81 @@ const CreateTask = () => {
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 32 }}>
-                <div>
+                <div ref={difficultyRef} style={{ position: 'relative' }}>
                   <label style={{ fontSize: 15, fontWeight: 700, color: C.textDark, marginBottom: 12, display: "block" }}>Tingkat Kesulitan <span style={{ color: C.red }}>*</span></label>
-                  <select 
-                    value={form.tingkatKesulitan} 
-                    onChange={e => setForm({ ...form, tingkatKesulitan: e.target.value })} 
+                  <div
+                    onClick={() => setOpenDifficultyDropdown(!openDifficultyDropdown)}
                     style={{
-                      ...inputStyle,
-                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+                      border: "2px solid #E5E8F0", borderRadius: 20, padding: "18px 24px",
+                      fontSize: 17, width: "100%", outline: "none", color: form.tingkatKesulitan ? C.textDark : "#999",
+                      background: C.white, boxSizing: "border-box", fontWeight: 500,
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)", transition: "all 0.3s ease",
                       cursor: "pointer",
-                      appearance: "none",
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238A94A6' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "right 13px center",
-                      paddingRight: "36px"
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center"
                     }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = C.primary;
-                      e.currentTarget.style.boxShadow = `0 0 0 3px ${C.primaryLight}, 0 1px 2px rgba(0, 0, 0, 0.04)`;
-                      e.currentTarget.style.background = "#FAFBFD";
+                    onMouseEnter={(e) => {
+                      if (!openDifficultyDropdown) {
+                        e.currentTarget.style.borderColor = "#B0B8C0";
+                      }
                     }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = "#E5E8F0";
-                      e.currentTarget.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.04)";
+                    onMouseLeave={(e) => {
+                      if (!openDifficultyDropdown) {
+                        e.currentTarget.style.borderColor = "#E5E8F0";
+                      }
                     }}
                   >
-                    <option value="">Pilih tingkat kesulitan</option>
-                    <option>Rendah</option>
-                    <option>Sedang</option>
-                    <option>Tinggi</option>
-                  </select>
+                    <span>{form.tingkatKesulitan || "Pilih tingkat kesulitan"}</span>
+                    <span style={{transform: openDifficultyDropdown ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease"}}>▼</span>
+                  </div>
+                  {openDifficultyDropdown && (
+                    <div style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      marginTop: 8,
+                      background: C.white,
+                      border: "2px solid #29B6F6",
+                      borderRadius: 20,
+                      boxShadow: "0 8px 20px rgba(41, 182, 246, 0.15)",
+                      zIndex: 1000,
+                      overflow: "hidden"
+                    }}>
+                      {difficultyOptions.map((option) => (
+                        <div
+                          key={option}
+                          onClick={() => {
+                            setForm({ ...form, tingkatKesulitan: option });
+                            setOpenDifficultyDropdown(false);
+                          }}
+                          style={{
+                            padding: "14px 24px",
+                            cursor: "pointer",
+                            borderBottom: "1px solid #F0F0F0",
+                            fontSize: 16,
+                            transition: "all 0.15s ease",
+                            background: form.tingkatKesulitan === option ? "#E1F5FE" : "transparent",
+                            color: form.tingkatKesulitan === option ? "#29B6F6" : C.textDark,
+                            fontWeight: form.tingkatKesulitan === option ? 600 : 500
+                          }}
+                          onMouseEnter={(e) => {
+                            if (form.tingkatKesulitan !== option) {
+                              e.currentTarget.style.background = "#F9F9F9";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (form.tingkatKesulitan !== option) {
+                              e.currentTarget.style.background = "transparent";
+                            }
+                          }}
+                        >
+                          {option}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <p style={{ fontSize: 12, color: C.textGray, marginTop: 8, margin: "8px 0 0 0" }}>Berpengaruh pada prioritas</p>
                 </div>
 
@@ -383,35 +441,82 @@ const CreateTask = () => {
                   <p style={{ fontSize: 12, color: C.textGray, marginTop: 8, margin: "8px 0 0 0" }}>Kapan deadline tugas</p>
                 </div>
 
-                <div>
+                <div ref={timeRef} style={{ position: 'relative' }}>
                   <label style={{ fontSize: 15, fontWeight: 700, color: C.textDark, marginBottom: 12, display: "block" }}>Estimasi Waktu <span style={{ color: C.red }}>*</span></label>
-                  <select 
-                    value={form.estimasiPengerjaan} 
-                    onChange={e => setForm({ ...form, estimasiPengerjaan: e.target.value })} 
+                  <div
+                    onClick={() => setOpenTimeDropdown(!openTimeDropdown)}
                     style={{
-                      ...inputStyle,
-                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+                      border: "2px solid #E5E8F0", borderRadius: 20, padding: "18px 24px",
+                      fontSize: 17, width: "100%", outline: "none", color: form.estimasiPengerjaan ? C.textDark : "#999",
+                      background: C.white, boxSizing: "border-box", fontWeight: 500,
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)", transition: "all 0.3s ease",
                       cursor: "pointer",
-                      appearance: "none",
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238A94A6' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "right 13px center",
-                      paddingRight: "36px"
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center"
                     }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = C.primary;
-                      e.currentTarget.style.boxShadow = `0 0 0 3px ${C.primaryLight}, 0 1px 2px rgba(0, 0, 0, 0.04)`;
-                      e.currentTarget.style.background = "#FAFBFD";
+                    onMouseEnter={(e) => {
+                      if (!openTimeDropdown) {
+                        e.currentTarget.style.borderColor = "#B0B8C0";
+                      }
                     }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = "#E5E8F0";
-                      e.currentTarget.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.04)";
+                    onMouseLeave={(e) => {
+                      if (!openTimeDropdown) {
+                        e.currentTarget.style.borderColor = "#E5E8F0";
+                      }
                     }}
                   >
-                    <option value="">Pilih estimasi waktu</option>
-                    <option>1 jam</option><option>2 jam</option><option>3 jam</option>
-                    <option>4 jam</option><option>5 jam</option><option>6 jam</option><option>8 jam</option>
-                  </select>
+                    <span>{form.estimasiPengerjaan || "Pilih estimasi waktu"}</span>
+                    <span style={{transform: openTimeDropdown ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease"}}>▼</span>
+                  </div>
+                  {openTimeDropdown && (
+                    <div style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      marginTop: 8,
+                      background: C.white,
+                      border: "2px solid #29B6F6",
+                      borderRadius: 20,
+                      boxShadow: "0 8px 20px rgba(41, 182, 246, 0.15)",
+                      zIndex: 1000,
+                      maxHeight: 300,
+                      overflowY: "auto"
+                    }}>
+                      {timeOptions.map((option) => (
+                        <div
+                          key={option}
+                          onClick={() => {
+                            setForm({ ...form, estimasiPengerjaan: option });
+                            setOpenTimeDropdown(false);
+                          }}
+                          style={{
+                            padding: "14px 24px",
+                            cursor: "pointer",
+                            borderBottom: "1px solid #F0F0F0",
+                            fontSize: 16,
+                            transition: "all 0.15s ease",
+                            background: form.estimasiPengerjaan === option ? "#E1F5FE" : "transparent",
+                            color: form.estimasiPengerjaan === option ? "#29B6F6" : C.textDark,
+                            fontWeight: form.estimasiPengerjaan === option ? 600 : 500
+                          }}
+                          onMouseEnter={(e) => {
+                            if (form.estimasiPengerjaan !== option) {
+                              e.currentTarget.style.background = "#F9F9F9";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (form.estimasiPengerjaan !== option) {
+                              e.currentTarget.style.background = "transparent";
+                            }
+                          }}
+                        >
+                          {option}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <p style={{ fontSize: 12, color: C.textGray, marginTop: 8, margin: "8px 0 0 0" }}>Berapa lama pengerjaan</p>
                 </div>
               </div>

@@ -36,3 +36,73 @@
     transform: rotate(360deg);
   }
 }
+
+/* Global Responsive Utilities */
+* {
+  box-sizing: border-box;
+}
+
+/* Responsive Dashboard Grid */
+.dashboard-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto 32px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid-3 {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid-3 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* Responsive Charts Grid */
+.chart-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+  .chart-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-grid-2 {
+    gap: 12px;
+  }
+}
+
+/* Font size responsive */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 24px !important;
+  }
+  h2 {
+    font-size: 18px !important;
+  }
+  h3 {
+    font-size: 16px !important;
+  }
+}
+
+/* Spin animation for loading */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

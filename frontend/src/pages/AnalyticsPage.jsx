@@ -11,34 +11,55 @@ import {
   ShieldCheck,
   Clock,
 } from "lucide-react";
+import { useParams, useSearchParams } from "react-router-dom";
 
 const AnalyticsPage = () => {
+  const { mahasiswaId } = useParams();
+  const [searchParams] = useSearchParams();
+  const strataFilter = searchParams.get("strata");
+  
   const [akademik, setAkademik] = useState([]);
   const [prediksi, setPrediksi] = useState({
     hasilPrediksi: "Aman",
     skorConfidence: 0,
   });
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [akademikData, prediksiData] = await Promise.all([
-          akademikAPI.getAll(),
-          prediksiAPI.getLatest(),
-        ]);
+        let akademikData, prediksiData;
+
+        if (mahasiswaId) {
+          // Get data for specific mahasiswa (dosen/kaprodi view)
+          [akademikData, prediksiData] = await Promise.all([
+            akademikAPI.getByMahasiswaId(mahasiswaId),
+            prediksiAPI.getByMahasiswaId(mahasiswaId),
+          ]);
+        } else {
+          // Get logged-in user data
+          [akademikData, prediksiData] = await Promise.all([
+            akademikAPI.getAll(),
+            prediksiAPI.getLatest(strataFilter || "S1"),
+          ]);
+        }
+
         setAkademik(Array.isArray(akademikData) ? akademikData : []);
         setPrediksi(prediksiData);
       } catch (err) {
-        console.error("Error fetching analytics:", err);
+        console.error("Error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchAll();
-  }, []);
+  }, [mahasiswaId, strataFilter]);
 
-  const latest = akademik[akademik.length - 1] || {};
+  // Filter akademik berdasarkan strata parameter jika ada
+  const filteredAkademik = strataFilter 
+    ? akademik.filter((item) => item.strata === strataFilter) 
+    : akademik;
+
+  const latest = filteredAkademik[filteredAkademik.length - 1] || {};
 
   const prediksiColor =
     prediksi.hasilPrediksi === "Aman"
@@ -48,9 +69,9 @@ const AnalyticsPage = () => {
         : C.red;
 
   const rekomendasiText = {
-    Aman: `IPK Anda sebesar ${latest.ipkTotal?.toFixed(2) || "-"} menunjukkan capaian akademik kamu berada pada kondisi yang baik. Pertahankan konsistensimu dalam belajar. Sekarang kamu berada di jalur yang tepat untuk menyelesaikan studi tepat waktu.`,
-    Waspada: `IPK Anda sebesar ${latest.ipkTotal?.toFixed(2) || "-"} menunjukkan bahwa kamu sudah berusaha semakismal mungkin dalam belajar, namun ada beberapa indikator yang perlu kamu diperhatikan. Alangkah baiknya segera diskusikan kendala dalam belajar yang kamu hadapi dengan dosen wali untuk mencegah risiko lebih lanjut.`,
-    "Perlu perhatian": `IPK Anda sebesar ${latest.ipkTotal?.toFixed(2) || "-"} menunjukkan bahwa kamu sudah coba bejuang sejauh ini. Saat ini performa akademikmu memerlukan perhatian segera. Berdasarkan data akademikmu, terdapat risiko yang signifikan. Alangkah baiknya segera menghubungi dosen wali untuk mendapatkan pendampingan.`,
+    Aman: `IPK Anda sebesar ${latest.ipkTotal?.toFixed(2) || "-"} menunjukkan luar biasa! Kamu telah menunjukkan konsistensi yang hebat dalam studimu. Pertahankan semangat dan ritme belajarmu ya, kamu sudah berada di jalur yang tepat untuk lulus tepat waktu. Teruslah bersinar!`,
+    Waspada: `IPK Anda sebesar ${latest.ipkTotal?.toFixed(2) || "-"} - Apresiasi besar untuk semua usaha yang telah kamu lakukan. Saat ini, ada beberapa bagian akademik yang butuh perhatian kecil agar tetap stabil. Yuk, coba ceritakan kendalamu kepada dosen wali lebih awal supaya langkahmu ke depan kembali lancar dan tenang.`,
+    "Perlu perhatian": `IPK Anda sebesar ${latest.ipkTotal?.toFixed(2) || "-"} - Terima kasih sudah berjuang dan bertahan sejauh ini, kerja kerasmu sangat berharga. Saat ini kondisi akademikmu sedang cukup menantang dan butuh perhatian segera. Yuk, kita cari solusi terbaik bersama dosen wali agar bebanmu terasa lebih ringan. Kamu tidak sendirian!`,
   };
 
   if (loading)
@@ -84,46 +105,60 @@ const AnalyticsPage = () => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3,1fr)",
-          gap: 16,
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 20,
           marginBottom: 32,
         }}
       >
         <StatCard
-          icon={<BookOpen size={20} color="#F59E0B" />}
+          icon={<BookOpen size={24} color="#6366F1" />}
           label="Semester"
           value={latest.semesterKe || "-"}
-          iconBg="#FFF0CC"
+          secondary="Aktif"
+          iconBg="#EEF2FF"
         />
         <StatCard
-          icon={<TrendingUp size={20} color="#F59E0B" />}
+          icon={<TrendingUp size={24} color="#F59E0B" />}
           label="IP Semester"
           value={latest.ipSemester?.toFixed(2) || "-"}
-          iconBg="#E8EAFF"
+          secondary="Semester ini"
+          iconBg="#FFFBEB"
         />
         <StatCard
-          icon={<Award size={20} color="#F59E0B" />}
-          label="IPK"
+          icon={<Award size={24} color="#EC4899" />}
+          label="IPK Kumulatif"
           value={latest.ipkTotal?.toFixed(2) || "-"}
-          iconBg="#FFE0E8"
+          secondary={prediksi.hasilPrediksi}
+          secondaryColor={
+            prediksi.hasilPrediksi === "Aman"
+              ? "#10B981"
+              : prediksi.hasilPrediksi === "Waspada"
+                ? "#F59E0B"
+                : "#EF4444"
+          }
+          iconBg="#FCE7F3"
         />
         <StatCard
-          icon={<Clock size={20} color="#F59E0B" />}
+          icon={<Clock size={24} color="#10B981" />}
           label="SKS Semester"
           value={latest.sksPerSemester || "-"}
-          iconBg="#FFF0CC"
+          secondary="Semester ini"
+          iconBg="#ECFDF5"
         />
         <StatCard
-          icon={<BarChart2 size={20} color="#F59E0B" />}
+          icon={<BarChart2 size={24} color="#0EA5E9" />}
           label="Total SKS"
           value={latest.totalSks || "-"}
-          iconBg="#E8EAFF"
+          secondary="Kumulatif"
+          iconBg="#F0F9FF"
         />
         <StatCard
-          icon={<RefreshCw size={20} color="#F59E0B" />}
+          icon={<RefreshCw size={24} color="#8B5CF6" />}
           label="SKS Mengulang"
           value={latest.jumlahMkDiulang ?? 0}
-          iconBg="#FFE0E8"
+          secondary={latest.jumlahMkDiulang === 0 ? "Baik" : "Perlu Perhatian"}
+          secondaryColor={latest.jumlahMkDiulang === 0 ? "#10B981" : "#EF4444"}
+          iconBg="#F5F3FF"
         />
       </div>
 
@@ -138,54 +173,94 @@ const AnalyticsPage = () => {
       >
         Penjelasan Prediksi
       </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 2fr",
-          gap: 16,
-          marginBottom: 32,
-        }}
-      >
-        {/*hasil prediksi */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <StatCard
-            icon={<ShieldCheck size={20} color="#F59E0B" />}
-            label="Hasil Prediksi"
-            value={prediksi.hasilPrediksi}
-            iconBg="#FFF0CC"
-          />
-        </div>
 
-        {/* rekomendasi */}
-        <Card>
+      <Card>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+          }}
+        >
+          {/* Hasil Prediksi */}
           <div
             style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: C.textDark,
-              marginBottom: 12,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "12px 16px",
+              borderRadius: 12,
+              background: "#F9FAFB",
             }}
           >
-            Rekomendasi
+            <div
+              style={{
+                background: "#FFF0CC",
+                padding: 10,
+                borderRadius: 10,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <ShieldCheck size={20} color="#F59E0B" />
+            </div>
+
+            <div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: C.textGray,
+                  marginBottom: 2,
+                }}
+              >
+                Hasil Prediksi
+              </div>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: prediksiColor,
+                }}
+              >
+                {prediksi.hasilPrediksi}
+              </div>
+            </div>
           </div>
-          <p
-            style={{
-              color: C.textGray,
-              lineHeight: 1.8,
-              margin: 0,
-              fontSize: 14,
-            }}
-          >
-            Berdasarkan analisis data akademik Anda, performa akademik Anda saat
-            ini berada dalam kondisi{" "}
-            <strong style={{ color: prediksiColor }}>
-              {prediksi.hasilPrediksi}
-            </strong>
-            .{" "}
-            {rekomendasiText[prediksi.hasilPrediksi] || rekomendasiText["Aman"]}
-          </p>
-        </Card>
-      </div>
+
+          {/* Rekomendasi */}
+          <div>
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 700,
+                color: C.textDark,
+                marginBottom: 8,
+              }}
+            >
+              Rekomendasi
+            </div>
+
+            <p
+              style={{
+                color: C.textGray,
+                lineHeight: 1.8,
+                margin: 0,
+                fontSize: 14,
+              }}
+            >
+              Berdasarkan analisis data akademik Anda, performa akademik Anda
+              saat ini berada dalam kondisi{" "}
+              <strong style={{ color: prediksiColor }}>
+                {prediksi.hasilPrediksi}
+              </strong>
+              .{" "}
+              {rekomendasiText[prediksi.hasilPrediksi] ||
+                rekomendasiText["Aman"]}
+            </p>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 };

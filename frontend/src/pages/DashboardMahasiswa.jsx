@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../constants/theme";
 import { Card } from "../components/UIComponents";
@@ -54,6 +54,8 @@ ChartJS2.register(
 const DashboardMahasiswa = ({ user }) => {
   const navigate = useNavigate();
   const [akademik, setAkademik] = useState([]);
+  const [uniqueStrata, setUniqueStrata] = useState([]);
+  const [selectedStrata, setSelectedStrata] = useState("");
   const [summary, setSummary] = useState({
     totalTugas: 0,
     tenggatWaktuTugas: 0,
@@ -68,6 +70,32 @@ const DashboardMahasiswa = ({ user }) => {
   });
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [openStrataSKSDropdown, setOpenStrataSKSDropdown] = useState(false);
+  const [openStrataIPKDropdown, setOpenStrataIPKDropdown] = useState(false);
+  const [openStrataCardDropdown, setOpenStrataCardDropdown] = useState(false);
+  const strataSKSRef = useRef(null);
+  const strataIPKRef = useRef(null);
+  const strataCardRef = useRef(null);
+
+  // Handle click outside for strata dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (strataSKSRef.current && !strataSKSRef.current.contains(e.target)) {
+        setOpenStrataSKSDropdown(false);
+      }
+      if (strataIPKRef.current && !strataIPKRef.current.contains(e.target)) {
+        setOpenStrataIPKDropdown(false);
+      }
+      if (strataCardRef.current && !strataCardRef.current.contains(e.target)) {
+        setOpenStrataCardDropdown(false);
+      }
+    };
+
+    if (openStrataSKSDropdown || openStrataIPKDropdown || openStrataCardDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [openStrataSKSDropdown, openStrataIPKDropdown, openStrataCardDropdown]);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -106,9 +134,13 @@ const DashboardMahasiswa = ({ user }) => {
         // ─── Auto run prediksi jika ada data akademik ───
         let prediksiResult = { hasilPrediksi: "Aman", skorConfidence: 0 };
         if (akademikArray.length > 0) {
+          // Extract unique strata dulu untuk determine strata pertama
+          const strata = [...new Set(akademikArray.map((item) => item.strata))].filter(Boolean);
+          const firstStrata = strata[0] || "S1";
+          
           prediksiResult = await prediksiAPI.run().catch(async () => {
             return await prediksiAPI
-              .getLatest()
+              .getLatest(firstStrata)
               .catch(() => ({ hasilPrediksi: "Aman", skorConfidence: 0 }));
           });
         }
@@ -117,6 +149,16 @@ const DashboardMahasiswa = ({ user }) => {
         setSummary(summaryResult);
         setTasks(tasksArray);
         setPrediksi(prediksiResult);
+
+        // Extract unique strata dari akademik data
+        const strata = [...new Set(akademikArray.map((item) => item.strata))];
+        setUniqueStrata(strata.filter(Boolean)); // filter out null/undefined
+
+        // Set default selectedStrata ke strata pertama
+        if (akademikArray.length > 0) {
+          const firstStrata = akademikArray[0].strata || "";
+          setSelectedStrata(firstStrata);
+        }
       } catch (err) {
         console.error("❌ Dashboard fetch error:", err);
         setAkademik([]);
@@ -137,26 +179,70 @@ const DashboardMahasiswa = ({ user }) => {
     fetchAll();
   }, []);
 
-  const latest = akademik[akademik.length - 1] || {};
+  // ─── Fetch prediksi berdasarkan selectedStrata ───
+  useEffect(() => {
+    if (selectedStrata) {
+      prediksiAPI
+        .getLatest(selectedStrata)
+        .then((result) => {
+          console.log(`✅ Prediksi untuk ${selectedStrata}:`, result);
+          setPrediksi(result);
+        })
+        .catch((err) => {
+          console.error(`❌ Error fetching prediksi for ${selectedStrata}:`, err);
+        });
+    }
+  }, [selectedStrata]);
 
-  // Use akademik data if available, otherwise use empty arrays (user needs to input data)
+  // Filter akademik by selected strata
+  const filteredAkademik =
+    selectedStrata && akademik.length > 0
+      ? akademik
+          .filter((a) => a.strata === selectedStrata)
+          .sort((a, b) => a.semesterKe - b.semesterKe)
+      : akademik.sort((a, b) => a.semesterKe - b.semesterKe);
+
+  const latest = filteredAkademik[filteredAkademik.length - 1] || {};
+
   const ipkTrend =
-    akademik && akademik.length > 0
-      ? akademik.map((d) => ({
+    filteredAkademik && filteredAkademik.length > 0
+      ? filteredAkademik.map((d) => ({
           semester: `Sem ${d.semesterKe}`,
           ip: d.ipSemester,
         }))
       : [];
+
   const sksTrend =
-    akademik && akademik.length > 0
-      ? akademik.map((d) => ({
+    filteredAkademik && filteredAkademik.length > 0
+      ? filteredAkademik.map((d) => ({
           semester: `Sem ${d.semesterKe}`,
           sks: d.sksPerSemester,
         }))
       : [];
+
+  // Hitung max SKS otomatis dari data
+  const maxSks =
+    sksTrend.length > 0
+      ? Math.max(
+          24,
+          Math.ceil(Math.max(...sksTrend.map((d) => d.sks || 0)) * 1.1),
+        )
+      : 24;
+
+  // Hitung min dan max IPK otomatis dari data untuk better visualization
+  const minIpk =
+    ipkTrend.length > 0
+      ? Math.max(0, Math.floor(Math.min(...ipkTrend.map((d) => d.ip || 4.0)) * 10) / 10 - 0.2)
+      : 1.0;
+  const maxIpk =
+    ipkTrend.length > 0
+      ? Math.ceil(Math.max(...ipkTrend.map((d) => d.ip || 1.0)) * 10) / 10 + 0.1 <= 4.0
+        ? 4.0 + 0.15
+        : Math.ceil(Math.max(...ipkTrend.map((d) => d.ip || 1.0)) * 10) / 10 + 0.1
+      : 4.0;
   const taskProgress = [
-    { name: "On Progress", value: summary.onProgress || 0, color: "#FF9800" },
     { name: "Backlog", value: summary.backlog || 0, color: "#000000" },
+    { name: "On Progress", value: summary.onProgress || 0, color: "#FF9800" },
     { name: "Done", value: summary.done || 0, color: "#4CAF50" },
   ];
 
@@ -166,17 +252,17 @@ const DashboardMahasiswa = ({ user }) => {
     Aman: {
       color: C.green,
       label:
-        "Hasil performa akademikmu berada pada kondisi yang baik. Pertahankan konsistensimu dalam belajar. Sekarang kamu berada di jalur yang tepat untuk menyelesaikan studi tepat waktu.",
+        "Luar biasa! Kamu telah menunjukkan konsistensi yang hebat dalam studimu. Pertahankan semangat dan ritme belajarmu ya, kamu sudah berada di jalur yang tepat untuk lulus tepat waktu. Teruslah bersinar!",
     },
     Waspada: {
       color: C.yellow,
       label:
-        "Kamu sudah berusaha semakismal mungkin dalam belajar, namun ada beberapa indikator yang perlu kamu diperhatikan. Performa akademikmu menunjukkan tanda-tanda yang perlu kamu waspadai. Alangkah baiknya segera diskusikan kendala dalam belajar yang kamu hadapi dengan dosen wali untuk mencegah risiko lebih lanjut.",
+        "Apresiasi besar untuk semua usaha yang telah kamu lakukan. Saat ini, ada beberapa bagian akademik yang butuh perhatian kecil agar tetap stabil. Yuk, coba ceritakan kendalamu kepada dosen wali lebih awal supaya langkahmu ke depan kembali lancar dan tenang.",
     },
     "Perlu perhatian": {
       color: C.red,
       label:
-        "Semangat, kamu sudah coba bejuang sejauh ini. Saat ini performa akademikmu memerlukan perhatian segera. Berdasarkan data akademikmu, terdapat risiko yang signifikan. Alangkah baiknya segera menghubungi dosen wali untuk mendapatkan pendampingan.",
+        "Terima kasih sudah berjuang dan bertahan sejauh ini, kerja kerasmu sangat berharga. Saat ini kondisi akademikmu sedang cukup menantang dan butuh perhatian segera. Yuk, kita cari solusi terbaik bersama dosen wali agar bebanmu terasa lebih ringan. Kamu tidak sendirian!",
     },
   };
 
@@ -219,8 +305,8 @@ const DashboardMahasiswa = ({ user }) => {
   return (
     <div
       style={{
-        padding: "24px 16px",
-        background: "#f0ede6",
+        padding: "clamp(12px, 4vw, 24px) clamp(8px, 3vw, 16px)",
+        background: "#F4F6F9",
         minHeight: "100vh",
         boxSizing: "border-box",
       }}
@@ -229,8 +315,8 @@ const DashboardMahasiswa = ({ user }) => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 24,
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: "clamp(12px, 3vw, 24px)",
           marginBottom: 32,
           maxWidth: 1200,
           margin: "0 auto 32px",
@@ -244,7 +330,7 @@ const DashboardMahasiswa = ({ user }) => {
             borderRadius: 12,
             border: "none",
             padding: "18px 20px",
-            background: status.color,
+            background: "#FFFFFF",
           }}
         >
           <div
@@ -263,19 +349,112 @@ const DashboardMahasiswa = ({ user }) => {
             <div
               style={{
                 fontWeight: 700,
-                fontSize: 18,
-                color: "#FFFFFF",
-                marginBottom: 4,
+                fontSize: 22,
+                color: C.textDark,
+                marginBottom: 20,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
               }}
             >
-              Selamat Datang, {user.nama?.split(" ")[0]}
+              <span>Halo, {user.nama?.split(" ")[0]}! 👋</span>
+              {/* Filter Strata - Custom Dropdown */}
+              {uniqueStrata.length > 0 && (
+                <div ref={strataCardRef} style={{ position: "relative", width: "fit-content" }}>
+                  <div
+                    onClick={() => setOpenStrataCardDropdown(!openStrataCardDropdown)}
+                    style={{
+                      border: "none",
+                      borderRadius: 24,
+                      padding: "10px 14px",
+                      fontSize: 13,
+                      minWidth: "80px",
+                      textAlign: "center",
+                      outline: "none",
+                      color: "#1F2937",
+                      background: "#F3F4F6",
+                      boxSizing: "border-box",
+                      fontWeight: 600,
+                      boxShadow: "none",
+                      transition: "all 0.3s ease",
+                      cursor: "pointer",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!openStrataCardDropdown) {
+                        e.currentTarget.style.background = "#E5E7EB";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!openStrataCardDropdown) {
+                        e.currentTarget.style.background = "#F3F4F6";
+                      }
+                    }}
+                  >
+                    <span>{selectedStrata}</span>
+                    <span style={{ transform: openStrataCardDropdown ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", fontSize: 10 }}>▼</span>
+                  </div>
+                  {openStrataCardDropdown && (
+                    <div style={{
+                      position: "absolute",
+                      top: "100%",
+                      right: 0,
+                      marginTop: 6,
+                      background: "white",
+                      border: "1px solid #E5E7EB",
+                      borderRadius: 12,
+                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
+                      zIndex: 1000,
+                      overflow: "hidden",
+                      minWidth: "80px"
+                    }}>
+                      {uniqueStrata.map((strata) => (
+                        <div
+                          key={strata}
+                          onClick={() => {
+                            setSelectedStrata(strata);
+                            setOpenStrataCardDropdown(false);
+                          }}
+                          style={{
+                            padding: "10px 14px",
+                            cursor: "pointer",
+                            borderBottom: strata === uniqueStrata[uniqueStrata.length - 1] ? "none" : "1px solid #F3F4F6",
+                            fontSize: 13,
+                            transition: "all 0.15s ease",
+                            background: selectedStrata === strata ? "#F3F4F6" : "transparent",
+                            color: selectedStrata === strata ? "#1F2937" : "#6B7280",
+                            fontWeight: selectedStrata === strata ? 600 : 500,
+                            textAlign: "center"
+                          }}
+                          onMouseEnter={(e) => {
+                            if (selectedStrata !== strata) {
+                              e.currentTarget.style.background = "#F9FAFB";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (selectedStrata !== strata) {
+                              e.currentTarget.style.background = "transparent";
+                            }
+                          }}
+                        >
+                          {strata}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div
               style={{
-                color: "rgba(255,255,255,0.8)",
-                fontSize: 13,
-                fontWeight: 500,
-                marginBottom: 12,
+                color: C.textGray,
+                fontSize: 14,
+                fontWeight: 600,
+                marginBottom: 16,
+                lineHeight: 1.6,
               }}
             >
               Status Akademikmu saat ini :
@@ -287,52 +466,69 @@ const DashboardMahasiswa = ({ user }) => {
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: 6,
-                    background: "rgba(255,255,255,0.2)",
+                    gap: 8,
+                    background: status.color,
                     color: "#FFFFFF",
-                    padding: "6px 12px",
-                    borderRadius: 16,
-                    fontSize: 12,
-                    fontWeight: 600,
+                    padding: "8px 16px",
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    boxShadow: prediksi.hasilPrediksi === "Aman" 
+                      ? `0 0 20px rgba(16, 185, 129, 0.15)` 
+                      : prediksi.hasilPrediksi === "Waspada"
+                        ? `0 0 20px rgba(245, 158, 11, 0.15)`
+                        : `0 0 20px rgba(239, 68, 68, 0.15)`,
+                    marginBottom: 16,
                   }}
                 >
-                  <CheckCircle size={14} /> {prediksi.hasilPrediksi}
+                  <CheckCircle size={16} /> {prediksi.hasilPrediksi}
                 </div>
 
                 <div
                   style={{
-                    color: "rgba(255,255,255,0.7)",
-                    fontSize: 11,
-                    marginTop: 8,
+                    color: prediksi.hasilPrediksi === "Aman"
+                      ? "#047857"
+                      : prediksi.hasilPrediksi === "Waspada"
+                        ? "#92400E"
+                        : "#991B1B",
+                    background: prediksi.hasilPrediksi === "Aman"
+                      ? "#ECFDF5"
+                      : prediksi.hasilPrediksi === "Waspada"
+                        ? "#FFFBEB"
+                        : "#FEF2F2",
+                    fontSize: 14,
+                    padding: "16px 16px",
+                    borderRadius: 12,
+                    marginTop: 12,
+                    marginBottom: 12,
+                    lineHeight: 1.7,
+                    fontWeight: 500,
+                    borderLeft: `4px solid ${status.color}`,
                   }}
                 >
                   {status.label}
                 </div>
                 <div
-                  onClick={() => navigate("/analytics")}
+                  onClick={() => navigate(`/analytics?strata=${selectedStrata}`)}
                   onMouseEnter={() => setHoveredPrediksi(true)}
                   onMouseLeave={() => setHoveredPrediksi(false)}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: 6,
-                    background: "rgba(255, 255, 255, 0.56)",
-                    background: hoveredPrediksi
-                      ? "rgba(255,255,255,0.35)"
-                      : "rgba(255,255,255,0.2)",
-
-                    color: "#FFFFFF",
-                    padding: "6px 12px",
-                    borderRadius: 16,
-                    fontSize: 12,
-                    fontWeight: 600,
+                    gap: 8,
+                    background: hoveredPrediksi ? "#BFDBFE" : "#DBEAFE",
+                    color: "#1E40AF",
+                    padding: "10px 16px",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 700,
                     marginTop: 12,
                     cursor: "pointer",
-                    transition: "all 0.2s",
-                    transform: hoveredPrediksi ? "scale(1.05)" : "scale(1)",
+                    transition: "all 0.2s ease",
+                    transform: hoveredPrediksi ? "translateY(-2px)" : "translateY(0)",
                   }}
                 >
-                  <Info size={14} /> {"Detail Analisis Akademik"}
+                  <Info size={16} /> {"Detail Analisis Akademik"}
                 </div>
               </>
             ) : (
@@ -353,250 +549,256 @@ const DashboardMahasiswa = ({ user }) => {
           </div>
         </Card>
 
-        {/* Kemajuan Tugas */}
+        {/* Kemajuan Tugas & Ringkasan Harian Combined */}
         <Card
           style={{
             boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
             borderRadius: 12,
             border: "none",
-            padding: "18px",
+            padding: "0",
             background: "#FFFFFF",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: C.textGray,
-              marginBottom: 10,
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-              textAlign: "center",
-            }}
-          >
-            Kemajuan Tugas
-          </div>
-          {summary.totalTugas === 0 ? (
+          {/* Kemajuan Tugas Section */}
+          <div style={{ padding: "18px", borderBottom: "1px solid #F0F0F0" }}>
             <div
               style={{
-                color: "#a39c94",
+                fontSize: 10,
+                fontWeight: 700,
+                color: C.textGray,
+                marginBottom: 10,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
                 textAlign: "center",
-                padding: "40px 20px",
-                fontSize: "14px",
-                height: "110px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "12px",
               }}
             >
-              <div>📭 Belum ada tugas</div>
-              <a
-                href="/tasks/create"
-                style={{
-                  color: "#7bbf9e",
-                  textDecoration: "none",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  borderBottom: "1px solid #7bbf9e",
-                }}
-              >
-                Buat tugas sekarang →
-              </a>
+              Kemajuan Tugas
             </div>
-          ) : (
-            <>
-              <ResponsiveContainer width="100%" height={110}>
-                <PieChart>
-                  <MiniPie
-                    data={taskProgress}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={28}
-                    outerRadius={42}
-                    dataKey="value"
-                  >
-                    {taskProgress.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
-                  </MiniPie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+            {summary.totalTugas === 0 ? (
               <div
                 style={{
+                  color: "#a39c94",
+                  textAlign: "center",
+                  padding: "40px 20px",
+                  fontSize: "14px",
+                  height: "110px",
                   display: "flex",
-                  gap: 10,
+                  flexDirection: "column",
+                  alignItems: "center",
                   justifyContent: "center",
-                  flexWrap: "wrap",
-                  marginTop: 10,
+                  gap: "12px",
                 }}
               >
-                {taskProgress.map((t, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 5,
-                      fontSize: 11,
-                      fontWeight: 600,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        background: t.color,
-                      }}
-                    />
-                    <span style={{ color: C.textGray }}>
-                      {t.value} {t.name}
-                    </span>
-                  </div>
-                ))}
+                <div> Belum ada tugas</div>
+                <a
+                  href="/tasks/create"
+                  style={{
+                    color: "#7bbf9e",
+                    textDecoration: "none",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    borderBottom: "1px solid #7bbf9e",
+                  }}
+                >
+                  Buat tugas sekarang →
+                </a>
               </div>
-            </>
-          )}
-        </Card>
+            ) : (
+              <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+                {/* Chart on the left */}
+                <div style={{ flex: "0 0 50%", display: "flex", justifyContent: "center" }}>
+                  <ResponsiveContainer width="100%" height={140}>
+                    <PieChart>
+                      <MiniPie
+                        data={taskProgress}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={32}
+                        outerRadius={50}
+                        dataKey="value"
+                      >
+                        {taskProgress.map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </MiniPie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
 
-        <Card
-          style={{
-            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-            borderRadius: 12,
-            border: "none",
-            padding: "16px",
-            background: "#FFFFFF",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: C.textGray,
-              marginBottom: 12,
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-              textAlign: "center",
-            }}
-          >
-            Ringkasan Harian
-          </div>
-          {summary.totalTugas === 0 ? (
-            <div
-              style={{
-                color: "#a39c94",
-                textAlign: "center",
-                padding: "30px 20px",
-                fontSize: "14px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "12px",
-              }}
-            >
-              <div style={{ color: "#a39c94" }}>
-                <ListTodo size={32} strokeWidth={1.5} />
-              </div>
-              <div>Belum ada tugas yang dibuat</div>
-              <a
-                href="/tasks/create"
-                style={{
-                  color: "#7bbf9e",
-                  textDecoration: "none",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  borderBottom: "1px solid #7bbf9e",
-                }}
-              >
-                Mulai buat tugas →
-              </a>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[
-                {
-                  val: summary.totalTugas,
-                  label: "Total Tugas",
-                  bg: C.accent,
-                  icon: ListTodo,
-                },
-                {
-                  val: summary.tenggatWaktuTugas,
-                  label: "Tenggat Waktu",
-                  bg: C.primary,
-                  icon: Clock,
-                },
-                {
-                  val: summary.estimasiBebanKerja,
-                  label: "Estimasi Beban",
-                  bg: C.red,
-                  icon: Zap,
-                },
-              ].map((item, i) => {
-                const IconComponent = item.icon;
-                return (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      paddingBottom: 10,
-                      borderBottom: i < 2 ? "1px solid #F0F0F0" : "none",
-                    }}
-                  >
+                {/* Legend on the right - 3 rows */}
+                <div
+                  style={{
+                    flex: "1",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 12,
+                    justifyContent: "center",
+                  }}
+                >
+                  {taskProgress.map((t, i) => (
                     <div
+                      key={i}
                       style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: "8px",
-                        background: `${item.bg}20`,
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        color: item.bg,
+                        gap: 8,
+                        fontSize: 13,
+                        fontWeight: 600,
                       }}
                     >
-                      <IconComponent size={24} />
-                    </div>
-                    <div style={{ flex: 1 }}>
                       <div
                         style={{
-                          fontWeight: 700,
-                          fontSize: 18,
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          background: t.color,
+                        }}
+                      />
+                      <span style={{ color: C.textGray }}>
+                        {t.value} {t.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Ringkasan Harian Section */}
+          <div style={{ padding: "16px" }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: C.textGray,
+                marginBottom: 12,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                textAlign: "center",
+              }}
+            >
+              Ringkasan Harian
+            </div>
+            {summary.totalTugas === 0 ? (
+              <div
+                style={{
+                  color: "#a39c94",
+                  textAlign: "center",
+                  padding: "30px 20px",
+                  fontSize: "14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "12px",
+                }}
+              >
+                <div style={{ color: "#a39c94" }}>
+                  <ListTodo size={32} strokeWidth={1.5} />
+                </div>
+                <div>Belum ada tugas yang dibuat</div>
+                <a
+                  href="/tasks/create"
+                  style={{
+                    color: "#7bbf9e",
+                    textDecoration: "none",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    borderBottom: "1px solid #7bbf9e",
+                  }}
+                >
+                  Mulai buat tugas →
+                </a>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "row", gap: 10 }}>
+                {[
+                  {
+                    val: summary.totalTugas,
+                    label: "Total Tugas",
+                    bg: C.accent,
+                    icon: ListTodo,
+                  },
+                  {
+                    val: summary.tenggatWaktuTugas,
+                    label: "Tenggat Waktu",
+                    bg: C.primary,
+                    icon: Clock,
+                  },
+                  {
+                    val: summary.estimasiBebanKerja,
+                    label: "Estimasi Beban",
+                    bg: C.red,
+                    icon: Zap,
+                  },
+                ].map((item, i) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 12,
+                        padding: 10,
+                        borderRight: i < 2 ? "1px solid #F0F0F0" : "none",
+                        flex: 1,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: "8px",
+                          background: `${item.bg}20`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
                           color: item.bg,
                         }}
                       >
-                        {item.val}
+                        <IconComponent size={24} />
                       </div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: C.textGray,
-                        }}
-                      >
-                        {item.label}
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: 18,
+                            color: item.bg,
+                          }}
+                        >
+                          {item.val}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: C.textGray,
+                          }}
+                        >
+                          {item.label}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </Card>
       </div>
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 24,
+          gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
+          gap: "clamp(12px, 3vw, 24px)",
           maxWidth: 1200,
           margin: "0 auto",
           boxSizing: "border-box",
@@ -613,19 +815,118 @@ const DashboardMahasiswa = ({ user }) => {
             boxSizing: "border-box",
           }}
         >
-          <h2
+          <div
             style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "#8b8377",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
               marginBottom: "16px",
-              letterSpacing: "0.5px",
-              margin: "0 0 16px 0",
-              textTransform: "uppercase",
             }}
           >
-            Trend Beban SKS
-          </h2>
+            <h2
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                color: "#8b8377",
+                letterSpacing: "0.5px",
+                margin: 0,
+                textTransform: "uppercase",
+              }}
+            >
+              Trend Beban SKS
+            </h2>
+            {uniqueStrata.length > 0 && (
+              <div ref={strataSKSRef} style={{ position: 'relative', width: 'fit-content' }}>
+                <div
+                  onClick={() => setOpenStrataSKSDropdown(!openStrataSKSDropdown)}
+                  style={{
+                    border: "2px solid #29B6F6",
+                    borderRadius: 20,
+                    padding: "10px 14px",
+                    fontSize: 13,
+                    minWidth: "80px",
+                    textAlign: "center",
+                    outline: "none",
+                    color: "#29B6F6",
+                    background: "white",
+                    boxSizing: "border-box",
+                    fontWeight: 600,
+                    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!openStrataSKSDropdown) {
+                      e.currentTarget.style.borderColor = "#0D9FE3";
+                      e.currentTarget.style.background = "#E1F5FE";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!openStrataSKSDropdown) {
+                      e.currentTarget.style.borderColor = "#29B6F6";
+                      e.currentTarget.style.background = "white";
+                    }
+                  }}
+                >
+                  <span>{selectedStrata || "Strata"}</span>
+                  <span style={{transform: openStrataSKSDropdown ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", fontSize: 10}}>▼</span>
+                </div>
+                {openStrataSKSDropdown && (
+                  <div style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    right: 0,
+                    marginTop: 6,
+                    background: "white",
+                    border: "2px solid #29B6F6",
+                    borderRadius: 16,
+                    boxShadow: "0 8px 20px rgba(41, 182, 246, 0.15)",
+                    zIndex: 1000,
+                    overflow: "hidden",
+                    minWidth: "80px"
+                  }}>
+                    {uniqueStrata.map((strata) => (
+                      <div
+                        key={strata}
+                        onClick={() => {
+                          setSelectedStrata(strata);
+                          setOpenStrataSKSDropdown(false);
+                        }}
+                        style={{
+                          padding: "10px 12px",
+                          cursor: "pointer",
+                          borderBottom: "1px solid #F0F0F0",
+                          fontSize: 13,
+                          transition: "all 0.15s ease",
+                          background: selectedStrata === strata ? "#E1F5FE" : "transparent",
+                          color: selectedStrata === strata ? "#29B6F6" : "#333",
+                          fontWeight: selectedStrata === strata ? 600 : 500,
+                          textAlign: "center"
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedStrata !== strata) {
+                            e.currentTarget.style.background = "#F9F9F9";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedStrata !== strata) {
+                            e.currentTarget.style.background = "transparent";
+                          }
+                        }}
+                      >
+                        {strata}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           {sksTrend && sksTrend.length > 0 ? (
             <>
               <div
@@ -674,7 +975,7 @@ const DashboardMahasiswa = ({ user }) => {
                       y: {
                         display: false,
                         beginAtZero: true,
-                        max: 20,
+                        max: maxSks,
                       },
                       x: {
                         grid: {
@@ -763,19 +1064,118 @@ const DashboardMahasiswa = ({ user }) => {
             boxSizing: "border-box",
           }}
         >
-          <h2
+          <div
             style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "#8b8377",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
               marginBottom: "16px",
-              letterSpacing: "0.5px",
-              margin: "0 0 16px 0",
-              textTransform: "uppercase",
             }}
           >
-            Trend IPK
-          </h2>
+            <h2
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                color: "#8b8377",
+                letterSpacing: "0.5px",
+                margin: 0,
+                textTransform: "uppercase",
+              }}
+            >
+              Trend IPK
+            </h2>
+            {uniqueStrata.length > 0 && (
+              <div ref={strataIPKRef} style={{ position: 'relative', width: 'fit-content' }}>
+                <div
+                  onClick={() => setOpenStrataIPKDropdown(!openStrataIPKDropdown)}
+                  style={{
+                    border: "2px solid #29B6F6",
+                    borderRadius: 20,
+                    padding: "10px 14px",
+                    fontSize: 13,
+                    minWidth: "80px",
+                    textAlign: "center",
+                    outline: "none",
+                    color: "#29B6F6",
+                    background: "white",
+                    boxSizing: "border-box",
+                    fontWeight: 600,
+                    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+                    transition: "all 0.3s ease",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!openStrataIPKDropdown) {
+                      e.currentTarget.style.borderColor = "#0D9FE3";
+                      e.currentTarget.style.background = "#E1F5FE";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!openStrataIPKDropdown) {
+                      e.currentTarget.style.borderColor = "#29B6F6";
+                      e.currentTarget.style.background = "white";
+                    }
+                  }}
+                >
+                  <span>{selectedStrata || "Strata"}</span>
+                  <span style={{transform: openStrataIPKDropdown ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", fontSize: 10}}>▼</span>
+                </div>
+                {openStrataIPKDropdown && (
+                  <div style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    right: 0,
+                    marginTop: 6,
+                    background: "white",
+                    border: "2px solid #29B6F6",
+                    borderRadius: 16,
+                    boxShadow: "0 8px 20px rgba(41, 182, 246, 0.15)",
+                    zIndex: 1000,
+                    overflow: "hidden",
+                    minWidth: "80px"
+                  }}>
+                    {uniqueStrata.map((strata) => (
+                      <div
+                        key={strata}
+                        onClick={() => {
+                          setSelectedStrata(strata);
+                          setOpenStrataIPKDropdown(false);
+                        }}
+                        style={{
+                          padding: "10px 12px",
+                          cursor: "pointer",
+                          borderBottom: "1px solid #F0F0F0",
+                          fontSize: 13,
+                          transition: "all 0.15s ease",
+                          background: selectedStrata === strata ? "#E1F5FE" : "transparent",
+                          color: selectedStrata === strata ? "#29B6F6" : "#333",
+                          fontWeight: selectedStrata === strata ? 600 : 500,
+                          textAlign: "center"
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedStrata !== strata) {
+                            e.currentTarget.style.background = "#F9F9F9";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedStrata !== strata) {
+                            e.currentTarget.style.background = "transparent";
+                          }
+                        }}
+                      >
+                        {strata}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           {ipkTrend && ipkTrend.length > 0 ? (
             <>
               <div
@@ -826,11 +1226,15 @@ const DashboardMahasiswa = ({ user }) => {
                     },
                     scales: {
                       y: {
-                        min: 1.0,
-                        max: 4.0,
+                        min: minIpk,
+                        max: maxIpk,
                         ticks: {
                           color: "#a39c94",
                           font: { size: 12 },
+                          callback: (value) => {
+                            const rounded = Math.round(value * 10) / 10;
+                            return rounded <= 4.0 && value === rounded ? rounded.toFixed(1) : '';
+                          },
                         },
                         grid: {
                           color: "#e8e0d7",
@@ -923,20 +1327,20 @@ const DashboardMahasiswa = ({ user }) => {
         <div
           style={{
             maxWidth: 1200,
-            margin: "24px auto 0 auto",
+            margin: "clamp(16px, 4vw, 24px) auto 0 auto",
             backgroundColor: "#ffffff",
             borderRadius: "14px",
-            padding: "24px",
+            padding: "clamp(12px, 4vw, 24px)",
             boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
             boxSizing: "border-box",
           }}
         >
           <h2
             style={{
-              fontSize: "13px",
+              fontSize: "clamp(11px, 2.5vw, 13px)",
               fontWeight: "700",
               color: "#8b8377",
-              marginBottom: "20px",
+              marginBottom: "clamp(12px, 3vw, 20px)",
               letterSpacing: "0.5px",
               textTransform: "uppercase",
             }}
@@ -964,12 +1368,14 @@ const DashboardMahasiswa = ({ user }) => {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      padding: "14px 16px",
+                      padding: "clamp(10px, 3vw, 14px) clamp(12px, 3vw, 16px)",
                       background: "#f9f9f9",
                       borderRadius: "10px",
                       border: "1px solid #e8e8e8",
                       transition: "all 0.2s",
                       cursor: "pointer",
+                      gap: "clamp(8px, 2vw, 12px)",
+                      flexWrap: "wrap",
                     }}
                     onMouseOver={(e) => {
                       e.currentTarget.style.background = "#f0f8f6";
@@ -987,7 +1393,7 @@ const DashboardMahasiswa = ({ user }) => {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 14,
+                        gap: "clamp(10px, 2vw, 14px)",
                         flex: 1,
                         minWidth: 0,
                       }}
@@ -1007,7 +1413,7 @@ const DashboardMahasiswa = ({ user }) => {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div
                           style={{
-                            fontSize: 13,
+                            fontSize: "clamp(12px, 2.5vw, 13px)",
                             fontWeight: 600,
                             color: "#2c3e50",
                             marginBottom: 4,
@@ -1020,7 +1426,7 @@ const DashboardMahasiswa = ({ user }) => {
                         </div>
                         <div
                           style={{
-                            fontSize: 11,
+                            fontSize: "clamp(10px, 2vw, 11px)",
                             color: "#999",
                             fontWeight: 500,
                           }}
@@ -1031,9 +1437,9 @@ const DashboardMahasiswa = ({ user }) => {
                     </div>
                     <div
                       style={{
-                        fontSize: 11,
+                        fontSize: "clamp(10px, 2vw, 11px)",
                         fontWeight: 700,
-                        padding: "8px 14px",
+                        padding: "clamp(6px, 2vw, 8px) clamp(10px, 2vw, 14px)",
                         borderRadius: "20px",
                         background: isOverdue
                           ? "#FF6B6B"
@@ -1043,7 +1449,7 @@ const DashboardMahasiswa = ({ user }) => {
                               ? "#FFC107"
                               : "#4CAF50",
                         color: "#fff",
-                        minWidth: "90px",
+                        minWidth: "clamp(70px, 20vw, 90px)",
                         textAlign: "center",
                         flexShrink: 0,
                       }}

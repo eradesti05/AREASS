@@ -2,12 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../constants/theme";
 import NotificationCenter from "./NotificationCenter";
-import { Search, Settings, Bell, LogOut, AlertCircle } from "lucide-react";
+import { Search, Bell, LogOut, AlertCircle, Menu, X } from "lucide-react";
 
 const Navbar = ({ user, onLogout, currentPath }) => {
   const navigate = useNavigate();
   const [showLogoutMenu, setShowLogoutMenu] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Handle both _id (MongoDB) dan id (backend response)
   const userId = user?._id || user?.id;
@@ -23,10 +24,10 @@ const Navbar = ({ user, onLogout, currentPath }) => {
       ? akademikCompleted
         ? [
             { path: "/dashboard", label: "Dashboard" },
-            { path: "/tasks", label: "Task Management" },
+            { path: "/tasks", label: "Kelola Tugas" },
             // { path: "/analytics", label: "Analitik" },
-            { path: "/profile", label: "Profil" },
             { path: "/akademik/input", label: "Input Data Akademik" },
+            { path: "/profile", label: "Profil" },
           ]
         : [{ path: "/akademik/input", label: "Input Data Akademik" }]
       : user?.role === "dosen_wali"
@@ -43,7 +44,7 @@ const Navbar = ({ user, onLogout, currentPath }) => {
     <div
       style={{
         background: C.white,
-        padding: "0 32px",
+        padding: "0 max(12px, 2vw)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -52,9 +53,11 @@ const Navbar = ({ user, onLogout, currentPath }) => {
         position: "sticky",
         top: 0,
         zIndex: 100,
+        flexWrap: "wrap",
+        gap: "8px",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "min(32px, 4vw)" }}>
         <div
           style={{
             display: "flex",
@@ -71,7 +74,7 @@ const Navbar = ({ user, onLogout, currentPath }) => {
               width: 40,
               height: 40,
               objectFit: "contain",
-              paddingRight: 40,
+              paddingRight: "min(40px, 3vw)",
             }}
           />
           <div>
@@ -79,7 +82,7 @@ const Navbar = ({ user, onLogout, currentPath }) => {
               style={{
                 color: C.primary,
                 fontWeight: 800,
-                fontSize: 20,
+                fontSize: "clamp(14px, 4vw, 20px)",
                 letterSpacing: 1,
               }}
             ></span>
@@ -94,7 +97,9 @@ const Navbar = ({ user, onLogout, currentPath }) => {
             ></div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 4 }}>
+        
+        {/* Desktop Navigation */}
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
           {navItems.map((item) => {
             const isActive =
               currentPath === item.path ||
@@ -108,10 +113,12 @@ const Navbar = ({ user, onLogout, currentPath }) => {
                   color: isActive ? C.primary : C.textGray,
                   border: "none",
                   borderRadius: 8,
-                  padding: "6px 16px",
+                  padding: "6px clamp(8px, 2vw, 16px)",
                   fontWeight: isActive ? 700 : 500,
                   cursor: "pointer",
-                  fontSize: 14,
+                  fontSize: "clamp(11px, 2.5vw, 14px)",
+                  whiteSpace: "nowrap",
+                  display: window.innerWidth > 768 ? "block" : "none",
                 }}
               >
                 {item.label}
@@ -120,7 +127,7 @@ const Navbar = ({ user, onLogout, currentPath }) => {
           })}
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "clamp(8px, 2vw, 16px)" }}>
         <div
           style={{
             background: C.bg,
@@ -130,7 +137,8 @@ const Navbar = ({ user, onLogout, currentPath }) => {
             alignItems: "center",
             gap: 8,
             color: C.textGray,
-            fontSize: 14,
+            fontSize: "clamp(11px, 2vw, 14px)",
+            display: "none",
           }}
         >
           <span>
@@ -138,10 +146,28 @@ const Navbar = ({ user, onLogout, currentPath }) => {
           </span>{" "}
           Cari sesuatu?
         </div>
-        <span style={{ fontSize: 20, cursor: "pointer" }}>
-          <Settings size={20} color="#718EBF" />
-        </span>
-        <Bell size={20} color="#718EBF" />
+        
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+          style={{
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            display: window.innerWidth <= 768 ? "flex" : "none",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "6px 8px",
+          }}
+        >
+          {showMobileMenu ? (
+            <X size={24} color="#718EBF" />
+          ) : (
+            <Menu size={24} color="#718EBF" />
+          )}
+        </button>
+        
+        <NotificationCenter />
 
         {/* Profile Avatar with Dropdown */}
         <div style={{ position: "relative" }}>
@@ -365,6 +391,62 @@ const Navbar = ({ user, onLogout, currentPath }) => {
           </div>
         )}
       </div>
+      
+      {/* Mobile Menu Dropdown */}
+      {showMobileMenu && window.innerWidth <= 768 && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            background: "#fff",
+            borderBottom: "1px solid #E8EAF0",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            zIndex: 999,
+            display: "flex",
+            flexDirection: "column",
+            gap: 0,
+          }}
+        >
+          {navItems.map((item) => {
+            const isActive =
+              currentPath === item.path ||
+              currentPath.startsWith(item.path + "/");
+            return (
+              <button
+                key={item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  setShowMobileMenu(false);
+                }}
+                style={{
+                  background: isActive ? C.primaryLight : "transparent",
+                  color: isActive ? C.primary : C.textGray,
+                  border: "none",
+                  borderBottom: "1px solid #f0f0f0",
+                  padding: "12px 16px",
+                  fontWeight: isActive ? 700 : 500,
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  textAlign: "left",
+                  transition: "all 0.2s",
+                }}
+                onMouseOver={(e) =>
+                  (e.currentTarget.style.background = "#f5f5f5")
+                }
+                onMouseOut={(e) =>
+                  (e.currentTarget.style.background = isActive
+                    ? C.primaryLight
+                    : "transparent")
+                }
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

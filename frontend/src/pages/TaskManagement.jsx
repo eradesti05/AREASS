@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from 'react-router-dom';
 import { C } from '../constants/theme';
 import { StatusBadge } from '../components/UIComponents';
@@ -23,6 +23,7 @@ const PriorityBadge = ({ label }) => {
 
 const TaskManagement = () => {
   const navigate = useNavigate();
+  const categoryFilterRef = useRef(null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,6 +33,9 @@ const TaskManagement = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  const [draggedTask, setDraggedTask] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
+  const [openCategoryDropdown, setOpenCategoryDropdown] = useState(false);
 
   const columns = ["Backlog", "On Progress", "Done"];
   const colColors = { "Backlog": "#000000", "On Progress": "#FF9800", "Done": "#4CAF50" };
@@ -46,6 +50,20 @@ const TaskManagement = () => {
     fetchTasks();
   }, []);
 
+  // Handle click outside filter dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (categoryFilterRef.current && !categoryFilterRef.current.contains(e.target)) {
+        setOpenCategoryDropdown(false);
+      }
+    };
+    
+    if (openCategoryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openCategoryDropdown]);
+
   const fetchTasks = async () => {
     try {
       setLoading(true);
@@ -53,6 +71,13 @@ const TaskManagement = () => {
       // Handle both array response and object with data property
       const tasks = Array.isArray(response) ? response : (response.data || response.tasks || []);
       setTasks(tasks);
+      
+      // Extract unique categories from tasks
+      const taskCategories = [...new Set(tasks.map(t => t.kategoriTask).filter(Boolean))];
+      setCategories(prev => {
+        const combined = [...new Set([...prev, ...taskCategories])];
+        return combined.sort();
+      });
     } catch (err) {
       setError('Gagal memuat tasks: ' + err.message);
     } finally {
@@ -76,6 +101,43 @@ const TaskManagement = () => {
     } catch (err) {
       alert('Gagal update status: ' + err.message);
     }
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (task, e) => {
+    setDraggedTask(task);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDragEnter = (col, e) => {
+    e.preventDefault();
+    setDragOverColumn(col);
+  };
+
+  const handleDragLeave = (e) => {
+    if (e.currentTarget === e.target) {
+      setDragOverColumn(null);
+    }
+  };
+
+  const handleDrop = async (col, e) => {
+    e.preventDefault();
+    setDragOverColumn(null);
+    
+    if (draggedTask && draggedTask.status !== col) {
+      await moveTask(draggedTask._id, col);
+    }
+    setDraggedTask(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTask(null);
+    setDragOverColumn(null);
   };
 
   const deleteTask = async (taskId) => {
@@ -158,28 +220,119 @@ const TaskManagement = () => {
 
       {/* Filters */}
       <div style={{ background: C.white, borderRadius: 14, padding: 18, marginBottom: 28, boxShadow: cardBoxShadow, display: 'flex', gap: 20, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-        <div>
+        <div ref={categoryFilterRef} style={{ position: 'relative' }}>
           <label style={{ fontSize: 13, fontWeight: 700, color: C.textGray, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
             <Folder size={14} /> Filter Kategori
           </label>
-          <select 
-            value={filterCategory} 
-            onChange={e => setFilterCategory(e.target.value)}
+          <div
+            onClick={() => setOpenCategoryDropdown(!openCategoryDropdown)}
             style={{
-              border: filterCategory ? `2px solid ${C.primary}` : "1.5px solid #E0E4F0",
-              borderRadius: 10, padding: "10px 14px",
-              fontSize: 14, color: filterCategory ? C.primary : C.textDark, background: C.white, cursor: 'pointer',
-              minWidth: 180, transition: 'all 0.2s', fontWeight: filterCategory ? 600 : 400,
-              boxShadow: filterCategory ? `0 0 0 3px ${C.primaryLight}` : 'none'
+              border: "2px solid #DFEAF2",
+              borderRadius: 20,
+              padding: "10px 14px",
+              fontSize: 14,
+              color: filterCategory ? C.primary : "#A0AEC0",
+              background: C.white,
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              minWidth: 200,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
             }}
-            onFocus={(e) => { e.target.style.boxShadow = `0 0 0 3px ${C.primaryLight}`; e.target.style.borderColor = C.primary; }}
-            onBlur={(e) => { e.target.style.boxShadow = filterCategory ? `0 0 0 3px ${C.primaryLight}` : 'none'; }}
+            onMouseEnter={(e) => {
+              if (!openCategoryDropdown) {
+                e.currentTarget.style.borderColor = "#5D9CEC";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(93, 156, 236, 0.2)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!openCategoryDropdown) {
+                e.currentTarget.style.borderColor = "#DFEAF2";
+                e.currentTarget.style.boxShadow = "none";
+              }
+            }}
           >
-            <option value="">Semua Kategori</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
+            <span>{filterCategory || "Semua Kategori"}</span>
+            <span style={{fontSize: 12, transform: openCategoryDropdown ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s ease"}}>▼</span>
+          </div>
+          
+          {openCategoryDropdown && (
+            <div style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              right: 0,
+              marginTop: 8,
+              background: C.white,
+              border: "2px solid #5D9CEC",
+              borderRadius: 20,
+              boxShadow: "0 8px 20px rgba(93, 156, 236, 0.15)",
+              zIndex: 100,
+              maxHeight: 280,
+              overflowY: "auto"
+            }}>
+              <div
+                onClick={() => {
+                  setFilterCategory('');
+                  setOpenCategoryDropdown(false);
+                }}
+                style={{
+                  padding: "12px 14px",
+                  cursor: "pointer",
+                  borderBottom: "1px solid #F5F6FA",
+                  fontSize: 14,
+                  transition: "all 0.15s ease",
+                  background: !filterCategory ? "#E8EAFF" : "transparent",
+                  color: !filterCategory ? C.primary : C.textDark,
+                  fontWeight: !filterCategory ? 600 : 500
+                }}
+                onMouseEnter={(e) => {
+                  if (filterCategory) {
+                    e.currentTarget.style.background = "#F5F6FA";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (filterCategory) {
+                    e.currentTarget.style.background = "transparent";
+                  }
+                }}
+              >
+                Semua Kategori
+              </div>
+              {categories.map(cat => (
+                <div
+                  key={cat}
+                  onClick={() => {
+                    setFilterCategory(cat);
+                    setOpenCategoryDropdown(false);
+                  }}
+                  style={{
+                    padding: "12px 14px",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #F5F6FA",
+                    fontSize: 14,
+                    transition: "all 0.15s ease",
+                    background: filterCategory === cat ? "#E8EAFF" : "transparent",
+                    color: filterCategory === cat ? C.primary : C.textDark,
+                    fontWeight: filterCategory === cat ? 600 : 500
+                  }}
+                  onMouseEnter={(e) => {
+                    if (filterCategory !== cat) {
+                      e.currentTarget.style.background = "#F5F6FA";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (filterCategory !== cat) {
+                      e.currentTarget.style.background = "transparent";
+                    }
+                  }}
+                >
+                  {cat}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
@@ -228,7 +381,22 @@ const TaskManagement = () => {
           // Filter tasks by status and apply filters
           const colTasks = filteredTasks.filter(t => t.status === col);
           return (
-            <div key={col} style={{ background: C.white, borderRadius: 18, padding: 22, boxShadow: cardBoxShadow, transition, minHeight: 420 }}>
+            <div 
+              key={col} 
+              style={{ 
+                background: dragOverColumn === col ? 'rgba(26, 35, 200, 0.05)' : C.white, 
+                borderRadius: 18, 
+                padding: 22, 
+                boxShadow: dragOverColumn === col ? '0 0 0 2px #1A23C8' : cardBoxShadow, 
+                transition: 'all 0.2s',
+                minHeight: 420,
+                border: dragOverColumn === col ? '2px solid #1A23C8' : 'none'
+              }}
+              onDragOver={handleDragOver}
+              onDragEnter={(e) => handleDragEnter(col, e)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(col, e)}
+            >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ width: 12, height: 12, borderRadius: "50%", background: colColors[col] }} />
@@ -263,17 +431,29 @@ const TaskManagement = () => {
 
                   return (
                     <div key={task._id}
+                      draggable
                       style={{
                         background: isOverdue ? '#FFF0F0' : C.bg,
                         borderRadius: 14, padding: 18,
-                        boxShadow: cardBoxShadow,
+                        boxShadow: draggedTask?._id === task._id ? '0 8px 20px rgba(26, 35, 200, 0.25)' : cardBoxShadow,
                         border: isOverdue ? `1.5px solid ${C.red}` : 'none',
                         position: 'relative',
                         transition,
-                        cursor: 'pointer',
+                        cursor: 'grab',
+                        opacity: draggedTask?._id === task._id ? 0.7 : 1,
                       }}
-                      onMouseOver={e => e.currentTarget.style.boxShadow = cardHoverShadow}
-                      onMouseOut={e => e.currentTarget.style.boxShadow = cardBoxShadow}
+                      onDragStart={(e) => handleDragStart(task, e)}
+                      onDragEnd={handleDragEnd}
+                      onMouseOver={e => {
+                        if (draggedTask?._id !== task._id) {
+                          e.currentTarget.style.boxShadow = cardHoverShadow;
+                        }
+                      }}
+                      onMouseOut={e => {
+                        if (draggedTask?._id !== task._id) {
+                          e.currentTarget.style.boxShadow = cardBoxShadow;
+                        }
+                      }}
                     >
                       {/* Nomor urut prioritas */}
                       {col !== 'Done' && (
