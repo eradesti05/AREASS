@@ -417,19 +417,23 @@ export default function InputDataAkademikPage({ user }) {
       display: "flex",
       flex: 1,
       flexDirection: "column",
-      background: "#DFEAF2",
+      background: "#fff",
       padding: isMobile ? "14px" : "20px",
       gap: isMobile ? 8 : 16,
       borderRadius: 15,
       border: "1px solid #718EBF",
       minWidth: isMobile ? "100%" : 150,
+      alignItems: "center",
+      justifyContent: "center",
+      textAlign: "center",
+      boxShadow: "0 2px 8px rgba(41, 182, 246, 0.1)",
     },
     summaryLabel: {
       color: "#718EBF",
       fontSize: isMobile ? 13 : 15,
     },
     summaryValue: {
-      color: "#718EBF",
+      color: "#1F2937",
       fontSize: isMobile ? 20 : 24,
       fontWeight: 700,
     },
@@ -587,6 +591,41 @@ export default function InputDataAkademikPage({ user }) {
       `}</style>
       <div style={S.page}>
       <span style={S.pageTitle}>Input Data Akademik</span>
+
+      {/* Notifikasi Penting */}
+      <div style={{
+        background: "#fff",
+        border: "1px solid #E5E7EB",
+        borderLeft: "4px solid #EF5350",
+        borderRadius: 12,
+        padding: "24px",
+        display: "flex",
+        gap: 20,
+        alignItems: "center",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
+      }}>
+        <div style={{
+          fontSize: 40,
+          flexShrink: 0,
+        }}>⚠️</div>
+        <div style={{display: "flex", flexDirection: "column", gap: 16, flex: 1}}>
+          <div style={{fontSize: 18, fontWeight: 700, color: "#EF5350", letterSpacing: 1}}>PERHATIAN</div>
+          <ol style={{margin: 0, paddingLeft: 0, display: "flex", flexDirection: "column", gap: 12}}>
+            <li style={{display: "flex", gap: 12, alignItems: "flex-start", fontSize: 15, color: "#333", listStyle: "none"}}>
+              <span style={{color: "#EF5350", fontWeight: 700, minWidth: 20}}>1</span>
+              <span>Data yang diinput hanya untuk semester yang <span style={{color: "#EF5350", fontWeight: 600}}>sudah selesai</span></span>
+            </li>
+            <li style={{display: "flex", gap: 12, alignItems: "flex-start", fontSize: 15, color: "#333", listStyle: "none"}}>
+              <span style={{color: "#EF5350", fontWeight: 700, minWidth: 20}}>2</span>
+              <span>Jangan memasukkan data semester yang <span style={{color: "#EF5350", fontWeight: 600}}>sedang berlangsung</span></span>
+            </li>
+            <li style={{display: "flex", gap: 12, alignItems: "flex-start", fontSize: 15, color: "#333", listStyle: "none"}}>
+              <span style={{color: "#EF5350", fontWeight: 700, minWidth: 20}}>3</span>
+              <span>Pastikan semester memiliki <span style={{color: "#EF5350", fontWeight: 600}}>nilai IP Semester</span> sebelum diinput</span>
+            </li>
+          </ol>
+        </div>
+      </div>
 
       {/* Notifikasi */}
       {message && (
@@ -1064,7 +1103,7 @@ export default function InputDataAkademikPage({ user }) {
       )}
 
       {/* Tombol Submit */}
-      {dataUmumLengkap && (
+      {dataUmumLengkap && !selectedSemesterExists && (
         <div style={S.submitRow}>
           <button
             onClick={handleSubmit}
