@@ -122,10 +122,10 @@ const ProfilePage = ({ user }) => {
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "clamp(16px, 4vw, 24px)" }}>
-          <button style={{
-            background: C.primary, color: "#fff", border: "none",
+          <button disabled style={{
+            background: "#D0D5E0", color: "#999", border: "none",
             borderRadius: 12, padding: "clamp(10px, 2.5vw, 12px) clamp(24px, 5vw, 40px)",
-            fontWeight: 600, cursor: "pointer", fontSize: "clamp(13px, 2.5vw, 15px)"
+            fontWeight: 600, cursor: "not-allowed", fontSize: "clamp(13px, 2.5vw, 15px)"
           }}>Simpan</button>
         </div>
       </Card>

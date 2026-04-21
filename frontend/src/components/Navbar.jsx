@@ -24,10 +24,10 @@ const Navbar = ({ user, onLogout, currentPath }) => {
       ? akademikCompleted
         ? [
             { path: "/dashboard", label: "Dashboard" },
-            { path: "/tasks", label: "Task Management" },
+            { path: "/tasks", label: "Kelola Tugas" },
             // { path: "/analytics", label: "Analitik" },
-            { path: "/profile", label: "Profil" },
             { path: "/akademik/input", label: "Input Data Akademik" },
+            { path: "/profile", label: "Profil" },
           ]
         : [{ path: "/akademik/input", label: "Input Data Akademik" }]
       : user?.role === "dosen_wali"
