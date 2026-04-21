@@ -229,13 +229,20 @@ const AnalyticsPage = () => {
           </div>
 
           {/* Rekomendasi */}
-          <div>
+          <div
+            style={{
+              backgroundColor: "#F9FAFB",
+              padding: "16px",
+              borderRadius: 12,
+              borderLeft: `4px solid ${prediksiColor}`,
+            }}
+          >
             <div
               style={{
                 fontSize: 15,
                 fontWeight: 700,
                 color: C.textDark,
-                marginBottom: 8,
+                marginBottom: 12,
               }}
             >
               Rekomendasi
@@ -243,10 +250,11 @@ const AnalyticsPage = () => {
 
             <p
               style={{
-                color: C.textGray,
-                lineHeight: 1.8,
+                color: C.textDark,
+                lineHeight: 2,
                 margin: 0,
-                fontSize: 14,
+                fontSize: 15,
+                fontWeight: 500,
               }}
             >
               Berdasarkan analisis data akademik Anda, performa akademik Anda
