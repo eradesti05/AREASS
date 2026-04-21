@@ -76,22 +76,38 @@ export default function InputDataAkademikPage({ user }) {
         .filter(a => a.strata === strata) // Only check current strata
         .map(a => a.semesterKe);
       
+      // Create rows untuk semua semester (termasuk yang sudah ada) untuk ditampilkan
       const rows = Array.from({ length: parseInt(semesterAktif) }, (_, i) => {
         const semesterNum = i + 1;
-        // Skip if semester already exists for this strata
-        if (existingSemestersForStrata.includes(semesterNum)) {
-          return null;
+        // Cari data existing untuk semester ini
+        const existing = existingAkademik.find(
+          a => a.strata === strata && a.semesterKe === semesterNum
+        );
+        
+        if (existing) {
+          // Jika sudah ada, populate dengan data existing (read-only)
+          return {
+            semester: semesterNum,
+            ip: existing.ipSemester?.toString() || "",
+            sks: existing.sksPerSemester?.toString() || "",
+            sksLulus: existing.jumlahSksLulus?.toString() || "",
+            isExisting: true,
+          };
         }
+        
+        // Jika belum ada, return empty form
         return {
           semester: semesterNum,
           ip: "",
           sks: "",
           sksLulus: "",
+          isExisting: false,
         };
-      }).filter(row => row !== null); // Remove null entries for existing semesters
+      });
+      
       setDataSemester(rows);
     }
-  }, [semesterAktif, strata]);
+  }, [semesterAktif, strata, existingAkademik]);
 
   useEffect(() => {
     if (parseInt(semesterAktif) > maxSemester) {
@@ -153,8 +169,15 @@ export default function InputDataAkademikPage({ user }) {
     };
   }, [ipk, sks, jumlahSksLulus, dataSemester]);
 
+  // Cek hanya data umum saja (untuk show form)
   const dataUmumLengkap =
-    strata && semesterAktif && ipk && sks && jumlahSksLulus;
+    strata && semesterAktif && ipk && sks && jumlahSksLulus &&
+    dataSemester.length > 0;
+
+  // Cek data umum + semua semester terisi (untuk enable submit button)
+  const dataSemesterLengkap = 
+    dataUmumLengkap &&
+    dataSemester.every(row => row.ip && row.sks && row.sksLulus);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -171,6 +194,12 @@ export default function InputDataAkademikPage({ user }) {
       
       // Process each semester, skip if already exists
       for (const row of dataSemester) {
+        // Skip existing data (already in database)
+        if (row.isExisting) {
+          console.log(`⏭️ Semester ${row.semester} untuk ${strata} sudah ada (skip)`);
+          continue;
+        }
+        
         // Frontend double-check: apakah semester+strata sudah ada?
         const isDuplicate = freshAkademikArray.some(
           a => a.strata === strata && a.semesterKe === row.semester
@@ -860,39 +889,13 @@ export default function InputDataAkademikPage({ user }) {
       </div>
 
       {/* Data Per Semester */}
-      {dataUmumLengkap && !selectedSemesterExists && (
+      {dataUmumLengkap && (
         <div style={S.card}>
           <div style={{ ...S.cardBody, gap: 20 }}>
             <div style={S.sectionHeader}>
               <span style={S.sectionTitle}>Data Per Semester</span>
               <div style={S.sectionDivider} />
             </div>
-            
-            {/* Info tentang semester yang sudah ada untuk strata ini - PALING ATAS */}
-            {existingAkademik.filter(a => a.strata === strata).length > 0 && (
-              <div style={{
-                background: "linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)",
-                border: "2px solid #4CAF50",
-                borderRadius: 16,
-                padding: "20px 24px",
-                fontSize: 15,
-                color: "#1B5E20",
-                fontWeight: 600,
-                marginBottom: 12,
-                boxShadow: "0 4px 12px rgba(76, 175, 80, 0.15)",
-                display: "flex",
-                alignItems: "center",
-                gap: 12
-              }}>
-                <span style={{fontSize: 22}}>✓</span>
-                <div>
-                  <strong>Semester yang sudah ada ({strata}):</strong>
-                  <div style={{marginTop: 4, fontSize: 14, fontWeight: 500}}>
-                    {existingAkademik.filter(a => a.strata === strata).map(a => `Sem ${a.semesterKe}`).join(", ")}
-                  </div>
-                </div>
-              </div>
-            )}
             
             <div style={S.infoBox}>
               Isi IP Semester dan SKS yang ditempuh untuk setiap semester yang
@@ -921,7 +924,7 @@ export default function InputDataAkademikPage({ user }) {
                 </div>
                 {dataSemester.map((row, index) => (
                   <div key={`sem-${row.semester}-${strata}`} style={S.tableRow}>
-                    <span style={S.tableRowLabel}>Sem {row.semester}</span>
+                    <span style={S.tableRowLabel}>Sem {row.semester} {row.isExisting && <span style={{color: "#4CAF50", fontWeight: 700}}>(✓ Ada)</span>}</span>
                     <input
                       type="number"
                       min="0"
@@ -929,23 +932,28 @@ export default function InputDataAkademikPage({ user }) {
                       step="0.01"
                       placeholder="0.00 - 4.00"
                       value={row.ip}
+                      readOnly={row.isExisting}
                       onChange={(e) => {
-                        updateDataSemester(index, "ip", e.target.value);
+                        if (!row.isExisting) {
+                          updateDataSemester(index, "ip", e.target.value);
+                        }
                       }}
                       onBlur={(e) => {
-                        const val = e.target.value.trim();
-                        if (val === "") {
-                          updateDataSemester(index, "ip", "");
-                        } else {
-                          const numVal = parseFloat(val);
-                          if (!isNaN(numVal) && numVal >= 0 && numVal <= 4) {
-                            updateDataSemester(index, "ip", numVal.toFixed(2));
-                          } else {
+                        if (!row.isExisting) {
+                          const val = e.target.value.trim();
+                          if (val === "") {
                             updateDataSemester(index, "ip", "");
+                          } else {
+                            const numVal = parseFloat(val);
+                            if (!isNaN(numVal) && numVal >= 0 && numVal <= 4) {
+                              updateDataSemester(index, "ip", numVal.toFixed(2));
+                            } else {
+                              updateDataSemester(index, "ip", "");
+                            }
                           }
                         }
                       }}
-                      style={S.tableInput}
+                      style={{...S.tableInput, background: row.isExisting ? "#F3F4F6" : "#FFFFFF"}}
                     />
                     <input
                       type="number"
@@ -953,23 +961,28 @@ export default function InputDataAkademikPage({ user }) {
                       step="1"
                       placeholder="contoh: 20"
                       value={row.sks}
+                      readOnly={row.isExisting}
                       onChange={(e) => {
-                        updateDataSemester(index, "sks", e.target.value);
+                        if (!row.isExisting) {
+                          updateDataSemester(index, "sks", e.target.value);
+                        }
                       }}
                       onBlur={(e) => {
-                        const val = e.target.value.trim();
-                        if (val === "") {
-                          updateDataSemester(index, "sks", "");
-                        } else {
-                          const numVal = parseInt(val);
-                          if (!isNaN(numVal) && numVal >= 0) {
-                            updateDataSemester(index, "sks", numVal.toString());
-                          } else {
+                        if (!row.isExisting) {
+                          const val = e.target.value.trim();
+                          if (val === "") {
                             updateDataSemester(index, "sks", "");
+                          } else {
+                            const numVal = parseInt(val);
+                            if (!isNaN(numVal) && numVal >= 0) {
+                              updateDataSemester(index, "sks", numVal.toString());
+                            } else {
+                              updateDataSemester(index, "sks", "");
+                            }
                           }
                         }
                       }}
-                      style={S.tableInput}
+                      style={{...S.tableInput, background: row.isExisting ? "#F3F4F6" : "#FFFFFF"}}
                     />
                     <input
                       type="number"
@@ -977,23 +990,28 @@ export default function InputDataAkademikPage({ user }) {
                       step="1"
                       placeholder="contoh: 20"
                       value={row.sksLulus}
+                      readOnly={row.isExisting}
                       onChange={(e) => {
-                        updateDataSemester(index, "sksLulus", e.target.value);
+                        if (!row.isExisting) {
+                          updateDataSemester(index, "sksLulus", e.target.value);
+                        }
                       }}
                       onBlur={(e) => {
-                        const val = e.target.value.trim();
-                        if (val === "") {
-                          updateDataSemester(index, "sksLulus", "");
-                        } else {
-                          const numVal = parseInt(val);
-                          if (!isNaN(numVal) && numVal >= 0) {
-                            updateDataSemester(index, "sksLulus", numVal.toString());
-                          } else {
+                        if (!row.isExisting) {
+                          const val = e.target.value.trim();
+                          if (val === "") {
                             updateDataSemester(index, "sksLulus", "");
+                          } else {
+                            const numVal = parseInt(val);
+                            if (!isNaN(numVal) && numVal >= 0) {
+                              updateDataSemester(index, "sksLulus", numVal.toString());
+                            } else {
+                              updateDataSemester(index, "sksLulus", "");
+                            }
                           }
                         }
                       }}
-                      style={S.tableInput}
+                      style={{...S.tableInput, background: row.isExisting ? "#F3F4F6" : "#FFFFFF"}}
                     />
                   </div>
                 ))}
@@ -1046,14 +1064,14 @@ export default function InputDataAkademikPage({ user }) {
       )}
 
       {/* Tombol Submit */}
-      {!selectedSemesterExists && (
+      {dataUmumLengkap && (
         <div style={S.submitRow}>
           <button
             onClick={handleSubmit}
-            disabled={!dataUmumLengkap || loading}
-            style={dataUmumLengkap && !loading ? S.btnActive : S.btnDisabled}
+            disabled={!dataSemesterLengkap || loading}
+            style={dataSemesterLengkap && !loading ? S.btnActive : S.btnDisabled}
           >
-            {loading ? "Menyimpan..." : "Add Data"}
+            {loading ? "Menyimpan..." : "Kirim Data"}
           </button>
         </div>
       )}

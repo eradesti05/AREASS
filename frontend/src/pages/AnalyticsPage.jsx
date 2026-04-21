@@ -11,10 +11,13 @@ import {
   ShieldCheck,
   Clock,
 } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 
 const AnalyticsPage = () => {
   const { mahasiswaId } = useParams();
+  const [searchParams] = useSearchParams();
+  const strataFilter = searchParams.get("strata");
+  
   const [akademik, setAkademik] = useState([]);
   const [prediksi, setPrediksi] = useState({
     hasilPrediksi: "Aman",
@@ -25,30 +28,23 @@ const AnalyticsPage = () => {
     const fetchAll = async () => {
       try {
         let akademikData, prediksiData;
-        const token = localStorage.getItem("areass_token");
-        const headers = { Authorization: `Bearer ${token}` };
 
         if (mahasiswaId) {
-          const [akademikRes, prediksiRes] = await Promise.all([
-            fetch(`http://localhost:5000/api/akademik/${mahasiswaId}`, {
-              headers,
-            }).then((r) => r.json()),
-            fetch(`http://localhost:5000/api/prediksi/${mahasiswaId}`, {
-              headers,
-            }).then((r) => r.json()),
+          // Get data for specific mahasiswa (dosen/kaprodi view)
+          [akademikData, prediksiData] = await Promise.all([
+            akademikAPI.getByMahasiswaId(mahasiswaId),
+            prediksiAPI.getByMahasiswaId(mahasiswaId),
           ]);
-
-          setAkademik(Array.isArray(akademikRes) ? akademikRes : []);
-          setPrediksi(prediksiRes);
         } else {
-          const [akademikData, prediksiData] = await Promise.all([
+          // Get logged-in user data
+          [akademikData, prediksiData] = await Promise.all([
             akademikAPI.getAll(),
-            prediksiAPI.getLatest(),
+            prediksiAPI.getLatest(strataFilter || "S1"),
           ]);
-
-          setAkademik(Array.isArray(akademikData) ? akademikData : []);
-          setPrediksi(prediksiData);
         }
+
+        setAkademik(Array.isArray(akademikData) ? akademikData : []);
+        setPrediksi(prediksiData);
       } catch (err) {
         console.error("Error:", err);
       } finally {
@@ -56,9 +52,14 @@ const AnalyticsPage = () => {
       }
     };
     fetchAll();
-  }, [mahasiswaId]);
+  }, [mahasiswaId, strataFilter]);
 
-  const latest = akademik[akademik.length - 1] || {};
+  // Filter akademik berdasarkan strata parameter jika ada
+  const filteredAkademik = strataFilter 
+    ? akademik.filter((item) => item.strata === strataFilter) 
+    : akademik;
+
+  const latest = filteredAkademik[filteredAkademik.length - 1] || {};
 
   const prediksiColor =
     prediksi.hasilPrediksi === "Aman"
@@ -104,46 +105,60 @@ const AnalyticsPage = () => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(6,1fr)",
-          gap: 16,
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 20,
           marginBottom: 32,
         }}
       >
         <StatCard
-          icon={<BookOpen size={20} color="#F59E0B" />}
+          icon={<BookOpen size={24} color="#6366F1" />}
           label="Semester"
           value={latest.semesterKe || "-"}
-          iconBg="#FFF0CC"
+          secondary="Aktif"
+          iconBg="#EEF2FF"
         />
         <StatCard
-          icon={<TrendingUp size={20} color="#F59E0B" />}
+          icon={<TrendingUp size={24} color="#F59E0B" />}
           label="IP Semester"
           value={latest.ipSemester?.toFixed(2) || "-"}
-          iconBg="#E8EAFF"
+          secondary="Semester ini"
+          iconBg="#FFFBEB"
         />
         <StatCard
-          icon={<Award size={20} color="#F59E0B" />}
-          label="IPK"
+          icon={<Award size={24} color="#EC4899" />}
+          label="IPK Kumulatif"
           value={latest.ipkTotal?.toFixed(2) || "-"}
-          iconBg="#FFE0E8"
+          secondary={prediksi.hasilPrediksi}
+          secondaryColor={
+            prediksi.hasilPrediksi === "Aman"
+              ? "#10B981"
+              : prediksi.hasilPrediksi === "Waspada"
+                ? "#F59E0B"
+                : "#EF4444"
+          }
+          iconBg="#FCE7F3"
         />
         <StatCard
-          icon={<Clock size={20} color="#F59E0B" />}
+          icon={<Clock size={24} color="#10B981" />}
           label="SKS Semester"
           value={latest.sksPerSemester || "-"}
-          iconBg="#FFF0CC"
+          secondary="Semester ini"
+          iconBg="#ECFDF5"
         />
         <StatCard
-          icon={<BarChart2 size={20} color="#F59E0B" />}
+          icon={<BarChart2 size={24} color="#0EA5E9" />}
           label="Total SKS"
           value={latest.totalSks || "-"}
-          iconBg="#E8EAFF"
+          secondary="Kumulatif"
+          iconBg="#F0F9FF"
         />
         <StatCard
-          icon={<RefreshCw size={20} color="#F59E0B" />}
+          icon={<RefreshCw size={24} color="#8B5CF6" />}
           label="SKS Mengulang"
           value={latest.jumlahMkDiulang ?? 0}
-          iconBg="#FFE0E8"
+          secondary={latest.jumlahMkDiulang === 0 ? "Baik" : "Perlu Perhatian"}
+          secondaryColor={latest.jumlahMkDiulang === 0 ? "#10B981" : "#EF4444"}
+          iconBg="#F5F3FF"
         />
       </div>
 
