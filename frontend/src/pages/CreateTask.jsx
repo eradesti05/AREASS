@@ -110,16 +110,16 @@ const CreateTask = () => {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F8FAFC", padding: "48px 24px" }}>
+    <div style={{ minHeight: "100vh", background: "#F8FAFC", padding: "clamp(24px, 5vw, 48px) clamp(12px, 4vw, 24px)" }}>
       {/* Header Section */}
-      <div style={{ maxWidth: "100%", margin: "0 auto", paddingLeft: 20, paddingRight: 20 }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto", paddingLeft: "clamp(12px, 3vw, 20px)", paddingRight: "clamp(12px, 3vw, 20px)" }}>
         {/* Info Banner */}
         <div style={{
           background: "linear-gradient(135deg, rgba(26, 35, 200, 0.05) 0%, rgba(26, 35, 200, 0.02) 100%)",
           border: `1px solid ${C.primaryLight}`,
           borderRadius: 12,
           padding: "16px 20px",
-          marginBottom: 32,
+          marginBottom: "clamp(20px, 3vw, 32px)",
           display: "flex",
           alignItems: "flex-start",
           gap: 12
@@ -132,15 +132,15 @@ const CreateTask = () => {
         </div>
 
         <Card style={{ boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)", borderRadius: 16 }}>
-          <div style={{ padding: "56px 60px", overflow: "visible" }}>
+          <div style={{ padding: "clamp(24px, 4vw, 48px) clamp(16px, 4vw, 48px)", overflow: "visible" }}>
             
             {/* Section 1: Informasi Dasar */}
-            <div style={{ marginBottom: 52, overflow: "visible" }}>
+            <div style={{ marginBottom: "clamp(32px, 5vw, 52px)", overflow: "visible" }}>
               <div style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                marginBottom: 28
+                marginBottom: "clamp(16px, 3vw, 28px)"
               }}>
                 <div style={{
                   width: 32,
@@ -154,20 +154,20 @@ const CreateTask = () => {
                   fontWeight: 700,
                   color: C.primary
                 }}>1</div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: C.textDark, margin: 0 }}>Informasi Dasar</h2>
+                <h2 style={{ fontSize: "clamp(16px, 4vw, 20px)", fontWeight: 700, color: C.textDark, margin: 0 }}>Informasi Dasar</h2>
               </div>
               
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 44, overflow: "visible" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "clamp(16px, 3vw, 24px)", overflow: "visible" }}>
                 <div>
-                  <label style={{ fontSize: 15, fontWeight: 700, color: C.textDark, marginBottom: 12, display: "block" }}>Nama Tugas <span style={{ color: C.red }}>*</span></label>
+                  <label style={{ fontSize: "clamp(13px, 2.5vw, 15px)", fontWeight: 700, color: C.textDark, marginBottom: "clamp(8px, 1.5vw, 12px)", display: "block" }}>Nama Tugas <span style={{ color: C.red }}>*</span></label>
                   <input 
                     value={form.namaTugas} 
                     onChange={e => setForm({ ...form, namaTugas: e.target.value })}
                     placeholder="Misalnya: Membuat API untuk login" 
                     style={{
                       ...inputStyle,
-                      padding: "18px 24px",
-                      fontSize: 16,
+                      padding: "clamp(12px, 2vw, 18px) clamp(16px, 2vw, 24px)",
+                      fontSize: "clamp(14px, 2.5vw, 16px)",
                       boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)"
                     }} 
                     onFocus={(e) => {
@@ -181,11 +181,11 @@ const CreateTask = () => {
                       e.target.style.background = "#FAFBFD";
                     }}
                   />
-                  <p style={{ fontSize: 12, color: C.textGray, marginTop: 8, margin: "8px 0 0 0" }}>Bersifat spesifik dan terukur</p>
+                  <p style={{ fontSize: "clamp(11px, 1.5vw, 12px)", color: C.textGray, marginTop: "clamp(6px, 1vw, 8px)", margin: "clamp(6px, 1vw, 8px) 0 0 0" }}>Bersifat spesifik dan terukur</p>
                 </div>
                 
                 <div>
-                  <label style={{ fontSize: 15, fontWeight: 700, color: C.textDark, marginBottom: 12, display: "block" }}>Kategori Tugas <span style={{ color: C.red }}>*</span></label>
+                  <label style={{ fontSize: "clamp(13px, 2.5vw, 15px)", fontWeight: 700, color: C.textDark, marginBottom: "clamp(8px, 1.5vw, 12px)", display: "block" }}>Kategori Tugas <span style={{ color: C.red }}>*</span></label>
                   <div style={{ position: 'relative', zIndex: 9999 }} ref={dropdownRef}>
                     <input 
                       value={form.kategoriTask} 
@@ -203,8 +203,8 @@ const CreateTask = () => {
                       }}
                       placeholder="Pilih atau buat kategori" 
                       style={{
-                        border: "2px solid #E5E8F0", borderRadius: 16, padding: "18px 24px",
-                        fontSize: 16, width: "100%", outline: "none", color: C.textDark,
+                        border: "2px solid #E5E8F0", borderRadius: 16, padding: "clamp(12px, 2vw, 18px) clamp(16px, 2vw, 24px)",
+                        fontSize: "clamp(14px, 2.5vw, 16px)", width: "100%", outline: "none", color: C.textDark,
                         backgroundColor: "#FAFBFD", boxSizing: "border-box", fontWeight: 500,
                         boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)", transition: "all 0.3s ease",
                         cursor: "text",
@@ -212,7 +212,7 @@ const CreateTask = () => {
                         backgroundRepeat: "no-repeat",
                         backgroundPosition: "right 14px center",
                         backgroundSize: "12px 12px",
-                        paddingRight: "36px"
+                        paddingRight: "clamp(28px, 4vw, 36px)"
                       }} 
                     />
                     
@@ -315,12 +315,12 @@ const CreateTask = () => {
             <div style={{ height: 1, background: "#E5E8F0", marginBottom: 52 }}></div>
 
             {/* Section 2: Detail Pengerjaan */}
-            <div style={{ marginBottom: 40 }}>
+            <div style={{ marginBottom: "clamp(24px, 4vw, 40px)" }}>
               <div style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                marginBottom: 28
+                marginBottom: "clamp(16px, 3vw, 28px)"
               }}>
                 <div style={{
                   width: 32,
@@ -334,17 +334,17 @@ const CreateTask = () => {
                   fontWeight: 700,
                   color: C.primary
                 }}>2</div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: C.textDark, margin: 0 }}>Detail Pengerjaan</h2>
+                <h2 style={{ fontSize: "clamp(16px, 4vw, 20px)", fontWeight: 700, color: C.textDark, margin: 0 }}>Detail Pengerjaan</h2>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 32 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "clamp(16px, 2vw, 24px)" }}>
                 <div ref={difficultyRef} style={{ position: 'relative' }}>
-                  <label style={{ fontSize: 15, fontWeight: 700, color: C.textDark, marginBottom: 12, display: "block" }}>Tingkat Kesulitan <span style={{ color: C.red }}>*</span></label>
+                  <label style={{ fontSize: "clamp(13px, 2.5vw, 15px)", fontWeight: 700, color: C.textDark, marginBottom: "clamp(8px, 1.5vw, 12px)", display: "block" }}>Tingkat Kesulitan <span style={{ color: C.red }}>*</span></label>
                   <div
                     onClick={() => setOpenDifficultyDropdown(!openDifficultyDropdown)}
                     style={{
-                      border: "2px solid #E5E8F0", borderRadius: 20, padding: "18px 24px",
-                      fontSize: 17, width: "100%", outline: "none", color: form.tingkatKesulitan ? C.textDark : "#999",
+                      border: "2px solid #E5E8F0", borderRadius: 20, padding: "clamp(12px, 2vw, 18px) clamp(16px, 2vw, 24px)",
+                      fontSize: "clamp(14px, 2.5vw, 17px)", width: "100%", outline: "none", color: form.tingkatKesulitan ? C.textDark : "#999",
                       background: C.white, boxSizing: "border-box", fontWeight: 500,
                       boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)", transition: "all 0.3s ease",
                       cursor: "pointer",
@@ -413,11 +413,11 @@ const CreateTask = () => {
                       ))}
                     </div>
                   )}
-                  <p style={{ fontSize: 12, color: C.textGray, marginTop: 8, margin: "8px 0 0 0" }}>Berpengaruh pada prioritas</p>
+                  <p style={{ fontSize: "clamp(11px, 1.5vw, 12px)", color: C.textGray, marginTop: "clamp(6px, 1vw, 8px)", margin: "clamp(6px, 1vw, 8px) 0 0 0" }}>Berpengaruh pada prioritas</p>
                 </div>
 
                 <div>
-                  <label style={{ fontSize: 15, fontWeight: 700, color: C.textDark, marginBottom: 12, display: "block" }}>Tenggat Waktu <span style={{ color: C.red }}>*</span></label>
+                  <label style={{ fontSize: "clamp(13px, 2.5vw, 15px)", fontWeight: 700, color: C.textDark, marginBottom: "clamp(8px, 1.5vw, 12px)", display: "block" }}>Tenggat Waktu <span style={{ color: C.red }}>*</span></label>
                   <input 
                     type="date" 
                     value={form.deadline}
@@ -442,7 +442,7 @@ const CreateTask = () => {
                 </div>
 
                 <div ref={timeRef} style={{ position: 'relative' }}>
-                  <label style={{ fontSize: 15, fontWeight: 700, color: C.textDark, marginBottom: 12, display: "block" }}>Estimasi Waktu <span style={{ color: C.red }}>*</span></label>
+                  <label style={{ fontSize: "clamp(13px, 2.5vw, 15px)", fontWeight: 700, color: C.textDark, marginBottom: "clamp(8px, 1.5vw, 12px)", display: "block" }}>Estimasi Waktu <span style={{ color: C.red }}>*</span></label>
                   <div
                     onClick={() => setOpenTimeDropdown(!openTimeDropdown)}
                     style={{
