@@ -89,13 +89,13 @@ const AnalyticsPage = () => {
     );
 
   return (
-    <div style={{ padding: 32 }}>
+    <div style={{ padding: "clamp(16px, 4vw, 32px)" }}>
       <div
         style={{
-          fontSize: 22,
+          fontSize: "clamp(18px, 5vw, 22px)",
           fontWeight: 700,
           color: C.textDark,
-          marginBottom: 24,
+          marginBottom: "clamp(16px, 3vw, 24px)",
         }}
       >
         Detail Analisis Akademik
@@ -105,9 +105,9 @@ const AnalyticsPage = () => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 20,
-          marginBottom: 32,
+          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+          gap: "clamp(12px, 2vw, 20px)",
+          marginBottom: "clamp(20px, 3vw, 32px)",
         }}
       >
         <StatCard
@@ -165,10 +165,10 @@ const AnalyticsPage = () => {
       {/* Prediksi dan Rekomendasi  */}
       <div
         style={{
-          fontSize: 18,
+          fontSize: "clamp(16px, 4vw, 18px)",
           fontWeight: 700,
           color: C.textDark,
-          marginBottom: 16,
+          marginBottom: "clamp(12px, 2vw, 16px)",
         }}
       >
         Penjelasan Prediksi

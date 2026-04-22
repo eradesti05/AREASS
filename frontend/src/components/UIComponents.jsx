@@ -35,10 +35,10 @@ export const StatCard = ({ icon, label, value, secondary, secondaryColor, iconBg
   <Card style={{ 
     display: "flex", 
     alignItems: "center", 
-    gap: 16, 
+    gap: "clamp(12px, 2vw, 16px)", 
     flex: 1, 
-    minWidth: 180,
-    padding: "18px 20px",
+    minWidth: "clamp(150px, 30vw, 180px)",
+    padding: "clamp(12px, 2vw, 18px) clamp(14px, 2vw, 20px)",
     borderRadius: 12,
     border: "1px solid #F0F0F0",
     transition: "all 0.3s ease",
@@ -53,20 +53,20 @@ export const StatCard = ({ icon, label, value, secondary, secondaryColor, iconBg
   }}
   >
     <div style={{
-      width: 56, height: 56, borderRadius: "12px", background: iconBg,
+      width: "clamp(48px, 10vw, 56px)", height: "clamp(48px, 10vw, 56px)", borderRadius: "12px", background: iconBg,
       display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: 24, flexShrink: 0
+      fontSize: "clamp(18px, 3vw, 24px)", flexShrink: 0
     }}>{icon}</div>
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: 12, color: C.textGray, marginBottom: 2, fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: 700, color: C.textDark, marginBottom: 4 }}>{value}</div>
+      <div style={{ fontSize: "clamp(11px, 2vw, 12px)", color: C.textGray, marginBottom: 2, fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, color: C.textDark, marginBottom: 4 }}>{value}</div>
       {secondary && (
         <div style={{ 
-          fontSize: 11, 
+          fontSize: "clamp(10px, 1.5vw, 11px)", 
           fontWeight: 600,
           color: secondaryColor || "#10B981",
           background: `${secondaryColor || "#10B981"}15`,
-          padding: "2px 8px",
+          padding: "clamp(1px, 1vw, 2px) clamp(6px, 1vw, 8px)",
           borderRadius: 4,
           display: "inline-block"
         }}>

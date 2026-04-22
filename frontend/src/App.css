@@ -45,20 +45,27 @@
 /* Responsive Dashboard Grid */
 .dashboard-grid-3 {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: clamp(12px, 2vw, 24px);
   max-width: 1200px;
-  margin: 0 auto 32px;
+  margin: 0 auto clamp(20px, 3vw, 32px);
 }
 
 @media (max-width: 1024px) {
   .dashboard-grid-3 {
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: clamp(12px, 2vw, 16px);
   }
 }
 
 @media (max-width: 768px) {
+  .dashboard-grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: clamp(10px, 2vw, 12px);
+  }
+}
+
+@media (max-width: 480px) {
   .dashboard-grid-3 {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -68,8 +75,8 @@
 /* Responsive Charts Grid */
 .chart-grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: clamp(16px, 2vw, 24px);
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -77,17 +84,29 @@
 @media (max-width: 1024px) {
   .chart-grid-2 {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: clamp(12px, 2vw, 16px);
   }
 }
 
 @media (max-width: 768px) {
   .chart-grid-2 {
-    gap: 12px;
+    gap: clamp(10px, 2vw, 12px);
   }
 }
 
 /* Font size responsive */
+@media (max-width: 1024px) {
+  h1 {
+    font-size: 28px !important;
+  }
+  h2 {
+    font-size: 20px !important;
+  }
+  h3 {
+    font-size: 17px !important;
+  }
+}
+
 @media (max-width: 768px) {
   h1 {
     font-size: 24px !important;
@@ -97,6 +116,21 @@
   }
   h3 {
     font-size: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 20px !important;
+  }
+  h2 {
+    font-size: 16px !important;
+  }
+  h3 {
+    font-size: 14px !important;
+  }
+  body {
+    font-size: 14px;
   }
 }
 
