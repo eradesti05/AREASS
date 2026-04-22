@@ -58,6 +58,12 @@ const LoginPage = ({ onLogin, allowedRole, userType }) => {
       ? "xxxxxxxx@mahasiswa.itb.ac.id"
       : "xxxxxxxx@itb.ac.id";
 
+  const registerRouteMap = {
+    mahasiswa: "/register/mahasiswa",
+    dosen_wali: "/register/dosen",
+    kaprodi: "/register/kaprodi",
+  };
+
   return (
     <div
       style={{
@@ -244,7 +250,7 @@ const LoginPage = ({ onLogin, allowedRole, userType }) => {
         <div style={{ textAlign: "center", fontSize: 13, color: C.textGray }}>
           Kamu tidak memiliki akun?{" "}
           <span
-            onClick={() => navigate("/register")}
+            onClick={() => navigate(`/${userType}/register`)}
             style={{ color: C.primary, cursor: "pointer", fontWeight: 600 }}
           >
             Register

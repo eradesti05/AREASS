@@ -33,7 +33,7 @@ const RegisterPage = ({ allowedRole, userType }) => {
       return;
     }
 
-    let detectedRole = "";
+    let detectedRole = allowedRole;
     let nim = "";
     if (allowedRole === "mahasiswa") {
       if (!email.endsWith("@mahasiswa.itb.ac.id")) {
@@ -71,7 +71,7 @@ const RegisterPage = ({ allowedRole, userType }) => {
         prodi,
         nim,
       });
-      navigate("/login");
+      navigate(`/${userType}/login`);
     } catch (err) {
       setError(err.message || "Registrasi gagal");
     } finally {
@@ -101,6 +101,12 @@ const RegisterPage = ({ allowedRole, userType }) => {
     allowedRole === "mahasiswa"
       ? "xxxxxxxx@mahasiswa.itb.ac.id"
       : "xxxxxxxx@itb.ac.id";
+
+  const loginRouteMap = {
+    mahasiswa: "/login/mahasiswa",
+    dosen_wali: "/login/dosen",
+    kaprodi: "/login/kaprodi",
+  };
 
   return (
     <div
@@ -297,7 +303,7 @@ const RegisterPage = ({ allowedRole, userType }) => {
         <div style={{ textAlign: "center", fontSize: 13, color: C.textGray }}>
           Sudah punya akun?{" "}
           <span
-            onClick={() => navigate("/login")}
+            onClick={() => navigate(`/${userType}/login`)}
             style={{ color: C.primary, cursor: "pointer", fontWeight: 600 }}
           >
             Login

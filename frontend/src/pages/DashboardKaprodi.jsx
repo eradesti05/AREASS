@@ -136,7 +136,10 @@ const DashboardKaprodi = () => {
           <div style={{ fontWeight: 700, marginBottom: 16, color: C.textDark }}>
             Prediksi Tren Jumlah Mahasiswa
           </div>
-          <ResponsiveContainer width="100%" height={window.innerWidth < 768 ? 250 : 300}>
+          <ResponsiveContainer
+            width="100%"
+            height={window.innerWidth < 768 ? 250 : 300}
+          >
             <LineChart data={trendData}>
               {" "}
               <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
@@ -161,7 +164,10 @@ const DashboardKaprodi = () => {
           <div style={{ fontWeight: 700, marginBottom: 16, color: C.textDark }}>
             Distribusi Prediksi Kelulusan
           </div>
-          <ResponsiveContainer width="100%" height={window.innerWidth < 768 ? 250 : 300}>
+          <ResponsiveContainer
+            width="100%"
+            height={window.innerWidth < 768 ? 250 : 300}
+          >
             <PieChart>
               <Pie
                 data={pieData}
@@ -198,7 +204,14 @@ const DashboardKaprodi = () => {
         Tabel Mahasiswa dan Prediksi Status
       </div>
       <Card>
-        <div style={{ marginBottom: 16, display: "flex", gap: "clamp(6px, 2vw, 8px)", flexWrap: "wrap" }}>
+        <div
+          style={{
+            marginBottom: 16,
+            display: "flex",
+            gap: "clamp(6px, 2vw, 8px)",
+            flexWrap: "wrap",
+          }}
+        >
           {["Semua", "Aman", "Waspada", "Perlu perhatian"].map((status) => (
             <button
               key={status}
@@ -213,7 +226,7 @@ const DashboardKaprodi = () => {
                 background:
                   filterStatus === status ? C.primary : "rgba(0,0,0,0.05)",
                 color: filterStatus === status ? "#fff" : "#333",
-                whiteSpace: "nowrap"
+                whiteSpace: "nowrap",
               }}
             >
               {status}
@@ -222,7 +235,11 @@ const DashboardKaprodi = () => {
           <select
             value={selectedStrata}
             onChange={(e) => setSelectedStrata(e.target.value)}
-            style={{ padding: "clamp(4px, 1vw, 6px) clamp(8px, 2vw, 10px)", borderRadius: 8, fontSize: "clamp(11px, 2vw, 12px)" }}
+            style={{
+              padding: "clamp(4px, 1vw, 6px) clamp(8px, 2vw, 10px)",
+              borderRadius: 8,
+              fontSize: "clamp(11px, 2vw, 12px)",
+            }}
           >
             <option value="Semua">Semua</option>
             {uniqueStrata.map((s) => (
