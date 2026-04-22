@@ -14,8 +14,6 @@ export default function InputDataAkademikPage({ user }) {
   const dropdownRefStrata = useRef(null);
   const dropdownRefSemester = useRef(null);
   const [ipk, setIpk] = useState("");
-  const [sks, setSks] = useState("");
-  const [jumlahSksLulus, setJumlahSksLulus] = useState("");
   const [dataSemester, setDataSemester] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -140,12 +138,6 @@ export default function InputDataAkademikPage({ user }) {
     setDataSemester(updated);
   };
 
-  const sksTidakLulus = useMemo(() => {
-    const total = parseInt(sks) || 0;
-    const lulus = parseInt(jumlahSksLulus) || 0;
-    return total - lulus >= 0 ? total - lulus : 0;
-  }, [sks, jumlahSksLulus]);
-
   const ringkasan = useMemo(() => {
     const totalIp = dataSemester.reduce(
       (sum, row) => sum + (parseFloat(row.ip) || 0),
@@ -162,16 +154,13 @@ export default function InputDataAkademikPage({ user }) {
     return {
       ipk: ipk || "---",
       rataRataIp,
-      totalSks: sks || "---",
-      sksLulus: jumlahSksLulus || "---",
-      sksTidakLulus: sksTidakLulus || 0,
       totalSksPerSemester: totalSksPerSemester || "---",
     };
-  }, [ipk, sks, jumlahSksLulus, dataSemester]);
+  }, [ipk, dataSemester]);
 
   // Cek hanya data umum saja (untuk show form)
   const dataUmumLengkap =
-    strata && semesterAktif && ipk && sks && jumlahSksLulus &&
+    strata && semesterAktif && ipk &&
     dataSemester.length > 0;
 
   // Cek data umum + semua semester terisi (untuk enable submit button)
@@ -222,8 +211,7 @@ export default function InputDataAkademikPage({ user }) {
           ipkTotal: parseFloat(ipk),
           sksPerSemester: parseInt(row.sks) || 0,
           jumlahSksLulus: parseInt(row.sksLulus) || 0,
-          totalSks: parseInt(sks),
-          jumlahMkDiulang: sksTidakLulus,
+          totalSks: parseInt(ringkasan.totalSksPerSemester) || 0,
         };
         
         try {
@@ -726,7 +714,7 @@ export default function InputDataAkademikPage({ user }) {
               </div>
             </div>
             <div style={S.fieldGroup}>
-              <span style={S.label}>Semester Aktif Saat Ini</span>
+              <span style={S.label}>Semester yang telah dilalui/selesai</span>
               <div style={{ position: 'relative', zIndex: 99 }} ref={dropdownRefSemester}>
                 <div
                   onClick={() => setOpenDropdownSemester(!openDropdownSemester)}
@@ -903,40 +891,6 @@ export default function InputDataAkademikPage({ user }) {
               />
             </div>
           </div>
-          <div style={S.row}>
-            <div style={S.fieldGroup}>
-              <span style={S.label}>Total SKS ditempuh</span>
-              <input
-                placeholder="contoh : 72"
-                value={sks}
-                onChange={(e) => {
-                  if (e.target.value === "" || /^\d+$/.test(e.target.value))
-                    setSks(e.target.value);
-                }}
-                style={S.input}
-              />
-            </div>
-            <div style={S.fieldGroup}>
-              <span style={S.label}>Jumlah SKS lulus</span>
-              <input
-                placeholder="contoh : 67"
-                value={jumlahSksLulus}
-                onChange={(e) => {
-                  if (e.target.value === "" || /^\d+$/.test(e.target.value))
-                    setJumlahSksLulus(e.target.value);
-                }}
-                style={S.input}
-              />
-            </div>
-            <div style={S.fieldGroup}>
-              <span style={S.label}>Jumlah SKS tidak lulus</span>
-              <input
-                value={sksTidakLulus}
-                readOnly
-                style={{ ...S.input, background: "#F3F4F6" }}
-              />
-            </div>
-          </div>
         </div>
       </div>
 
@@ -1089,23 +1043,7 @@ export default function InputDataAkademikPage({ user }) {
             </div>
             <div style={S.summaryRow}>
               {[
-                { label: "IPK", value: ringkasan.ipk },
                 { label: "Rata-rata IP", value: ringkasan.rataRataIp },
-                { label: "Total SKS", value: ringkasan.totalSks },
-              ].map((item) => (
-                <div key={item.label} style={S.summaryCard}>
-                  <span style={S.summaryLabel}>{item.label}</span>
-                  <span style={S.summaryValue}>{item.value}</span>
-                </div>
-              ))}
-            </div>
-            <div style={S.summaryRow}>
-              {[
-                { label: "Total SKS Lulus", value: ringkasan.sksLulus },
-                {
-                  label: "Total SKS Tidak Lulus",
-                  value: ringkasan.sksTidakLulus,
-                },
                 {
                   label: "Total SKS Per Semester",
                   value: ringkasan.totalSksPerSemester,
