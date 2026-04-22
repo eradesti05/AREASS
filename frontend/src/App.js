@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -10,6 +10,9 @@ import {
 
 // Components
 import Navbar from "./components/Navbar";
+
+// Services
+import { akademikAPI } from "./services/api";
 
 // Pages
 import LoginPage from "./pages/LoginPage";
@@ -28,7 +31,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogin = (u) => {
+  const handleLogin = async (u) => {
     setUser(u);
 
     if (u.token) {
@@ -41,13 +44,30 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
     const userId = u._id || u.id;
 
     if (u.role === "mahasiswa") {
-      const akademikCompleted = localStorage.getItem(
-        `akademik_completed_${userId}`,
-      );
-      if (akademikCompleted) {
-        navigate("/dashboard");
-      } else {
-        navigate("/akademik/input");
+      try {
+        // Check ke server apakah mahasiswa sudah input data akademik
+        const akademikData = await akademikAPI.getAll();
+        const hasAkademikData = akademikData && akademikData.length > 0;
+        
+        // Set localStorage flag berdasarkan data dari server
+        if (hasAkademikData) {
+          localStorage.setItem(`akademik_completed_${userId}`, "true");
+          navigate("/dashboard");
+        } else {
+          localStorage.removeItem(`akademik_completed_${userId}`);
+          navigate("/akademik/input");
+        }
+      } catch (err) {
+        // Jika error, fallback ke check localStorage
+        console.error("Error checking akademik data:", err);
+        const akademikCompleted = localStorage.getItem(
+          `akademik_completed_${userId}`,
+        );
+        if (akademikCompleted) {
+          navigate("/dashboard");
+        } else {
+          navigate("/akademik/input");
+        }
       }
     } else if (u.role === "dosen_wali" || u.role === "dosen")
       navigate("/dashboard-dosen");
@@ -61,6 +81,29 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
     localStorage.removeItem("areass_user");
     navigate("/mahasiswa/login");
   };
+
+  // Check akademik data from server and sync localStorage
+  useEffect(() => {
+    const checkAkademikData = async () => {
+      if (user?.role === "mahasiswa") {
+        try {
+          const akademikData = await akademikAPI.getAll();
+          const hasAkademikData = akademikData && akademikData.length > 0;
+          const userId = user._id || user.id;
+
+          if (hasAkademikData) {
+            localStorage.setItem(`akademik_completed_${userId}`, "true");
+          } else {
+            localStorage.removeItem(`akademik_completed_${userId}`);
+          }
+        } catch (err) {
+          console.log("Info: Could not verify akademik data from server");
+        }
+      }
+    };
+
+    checkAkademikData();
+  }, [user]);
 
   if (
     !user &&
