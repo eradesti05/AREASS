@@ -460,7 +460,7 @@ app.post("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
                 semester: row.semesterKe,
                 ip_semester: row.ipSemester,
                 sks_semester: row.sksPerSemester,
-                total_sks: row.totalSks,
+                total_sks: row.sksPerSemester,
                 sks_lulus: row.jumlahSksLulus,
               })),
             });
@@ -581,7 +581,7 @@ app.post("/api/prediksi", auth, role("mahasiswa"), async (req, res) => {
               semester: row.semesterKe,
               ip_semester: row.ipSemester,
               sks_semester: row.sksPerSemester,
-              total_sks: row.totalSks,
+              total_sks: row.sksPerSemester,
               sks_lulus: row.jumlahSksLulus,
             })),
           });
