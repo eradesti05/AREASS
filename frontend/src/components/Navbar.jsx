@@ -48,13 +48,13 @@ const Navbar = ({ user, onLogout, currentPath }) => {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        height: 64,
+        height: "clamp(56px, 10vh, 64px)",
         borderBottom: "1px solid #E8EAF0",
         position: "sticky",
         top: 0,
         zIndex: 100,
         flexWrap: "wrap",
-        gap: "8px",
+        gap: "clamp(8px, 1vw, 12px)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "min(32px, 4vw)" }}>

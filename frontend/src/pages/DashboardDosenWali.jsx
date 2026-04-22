@@ -60,7 +60,7 @@ const DashboardDosen = () => {
 
   if (loading) {
     return (
-      <div style={{ padding: 32, textAlign: "center" }}>
+      <div style={{ padding: "clamp(16px, 4vw, 32px)", textAlign: "center" }}>
         Memproses data mahasiswa...
       </div>
     );
@@ -79,7 +79,7 @@ const DashboardDosen = () => {
   });
 
   return (
-    <div style={{ padding: 32 }}>
+    <div style={{ padding: "clamp(16px, 4vw, 32px)" }}>
       <div
         style={{
           fontWeight: 700,
@@ -93,21 +93,22 @@ const DashboardDosen = () => {
 
       <Card>
         {/* FILTER */}
-        <div style={{ marginBottom: 16, display: "flex", gap: 8 }}>
+        <div style={{ marginBottom: 16, display: "flex", gap: "clamp(6px, 2vw, 8px)", flexWrap: "wrap" }}>
           {["Semua", "Aman", "Waspada", "Perlu perhatian"].map((status) => (
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
               style={{
-                padding: "6px 12px",
+                padding: "clamp(4px, 1vw, 6px) clamp(8px, 2vw, 12px)",
                 borderRadius: 12,
                 border: "none",
                 cursor: "pointer",
-                fontSize: 12,
+                fontSize: "clamp(11px, 2vw, 12px)",
                 fontWeight: 600,
                 background:
                   filterStatus === status ? C.primary : "rgba(0,0,0,0.05)",
                 color: filterStatus === status ? "#fff" : "#333",
+                whiteSpace: "nowrap"
               }}
             >
               {status}
@@ -117,7 +118,7 @@ const DashboardDosen = () => {
           <select
             value={selectedStrata}
             onChange={(e) => setSelectedStrata(e.target.value)}
-            style={{ padding: "6px 10px", borderRadius: 8 }}
+            style={{ padding: "clamp(4px, 1vw, 6px) clamp(8px, 2vw, 10px)", borderRadius: 8, fontSize: "clamp(11px, 2vw, 12px)" }}
           >
             <option value="Semua">Semua</option>
             {uniqueStrata.map((s) => (

@@ -305,20 +305,39 @@ app.get("/api/tasks", auth, role("mahasiswa"), async (req, res) => {
 app.get("/api/tasks/summary", auth, role("mahasiswa"), async (req, res) => {
   try {
     const tasks = await Task.find({ mahasiswaId: req.user.id });
-    const now = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const tenggatDekat = tasks.filter((t) => {
       const sisa = Math.ceil(
-        (new Date(t.deadline) - now) / (1000 * 60 * 60 * 24),
+        (new Date(t.deadline) - today) / (1000 * 60 * 60 * 24),
       );
-      return sisa <= 7 && t.status !== "Done";
+      const pass = sisa <= 7 && t.status !== "Done";
+      console.log(`[Backend] Task: ${t.title}, Deadline: ${t.deadline}, SisaHari: ${sisa}, Status: ${t.status}, Pass: ${pass}`);
+      return pass;
     });
+    const backlogCount = tasks.filter((t) => t.status === "Backlog").length;
+    const onProgressCount = tasks.filter((t) => t.status === "On Progress").length;
+    const doneCount = tasks.filter((t) => t.status === "Done").length;
+    
+    // Hitung total jam kerja dari tasks yang belum done
+    const estimasiBeban = tasks
+      .filter((t) => t.status !== "Done")
+      .reduce((total, t) => {
+        const jam = parseInt(t.estimasiPengerjaan, 10) || 0;
+        return total + jam;
+      }, 0);
+    
+    console.log(`[Backend] Summary: Total=${tasks.length}, Backlog=${backlogCount}, OnProgress=${onProgressCount}, Done=${doneCount}`);
+    console.log(`[Backend] EstimasiBeban=${estimasiBeban} jam (sum dari tasks yang belum Done)`);
+    console.log(`[Backend] TenggatDekat=${tenggatDekat.length} tasks with deadline <= 7 days`);
+    
     res.json({
       totalTugas: tasks.length,
       tenggatWaktuTugas: tenggatDekat.length,
-      estimasiBebanKerja: tasks.filter((t) => t.status !== "Done").length,
-      backlog: tasks.filter((t) => t.status === "Backlog").length,
-      onProgress: tasks.filter((t) => t.status === "On Progress").length,
-      done: tasks.filter((t) => t.status === "Done").length,
+      estimasiBebanKerja: estimasiBeban,
+      backlog: backlogCount,
+      onProgress: onProgressCount,
+      done: doneCount,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

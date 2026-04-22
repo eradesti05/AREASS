@@ -176,12 +176,12 @@ const EditTask = () => {
         </div>
       </div>
 
-      <div style={{ maxWidth: "100%", margin: "0 auto", paddingLeft: 20, paddingRight: 20 }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto", paddingLeft: "clamp(12px, 3vw, 20px)", paddingRight: "clamp(12px, 3vw, 20px)" }}>
         <Card style={{ boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)", borderRadius: 16 }}>
-          <div style={{ padding: "56px 60px", overflow: "visible" }}>
+          <div style={{ padding: "clamp(24px, 4vw, 56px) clamp(16px, 4vw, 60px)", overflow: "visible" }}>
             
             {/* Section 1: Informasi Dasar */}
-            <div style={{ marginBottom: 52, overflow: "visible" }}>
+            <div style={{ marginBottom: "clamp(32px, 5vw, 52px)", overflow: "visible" }}>
               <div style={{
                 display: "flex",
                 alignItems: "center",
@@ -200,10 +200,10 @@ const EditTask = () => {
                   fontWeight: 700,
                   color: C.primary
                 }}>1</div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: C.textDark, margin: 0 }}>Informasi Dasar</h2>
+                <h2 style={{ fontSize: "clamp(16px, 4vw, 20px)", fontWeight: 700, color: C.textDark, margin: 0 }}>Informasi Dasar</h2>
               </div>
               
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 44, overflow: "visible" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "clamp(16px, 3vw, 24px)", overflow: "visible" }}>
                 <div>
                   <label style={{ fontSize: 14, fontWeight: 700, color: C.textDark, marginBottom: 10, display: "block" }}>Nama Tugas <span style={{ color: C.red }}>*</span></label>
                   <input 
@@ -368,15 +368,15 @@ const EditTask = () => {
             </div>
 
             {/* Divider */}
-            <div style={{ height: 1, background: "#E5E8F0", marginBottom: 52 }}></div>
+            <div style={{ height: 1, background: "#E5E8F0", marginBottom: "clamp(32px, 5vw, 52px)" }}></div>
 
             {/* Section 2: Detail Pengerjaan */}
-            <div style={{ marginBottom: 40 }}>
+            <div style={{ marginBottom: "clamp(24px, 4vw, 40px)" }}>
               <div style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                marginBottom: 28
+                marginBottom: "clamp(16px, 3vw, 28px)"
               }}>
                 <div style={{
                   width: 32,
@@ -390,17 +390,17 @@ const EditTask = () => {
                   fontWeight: 700,
                   color: C.primary
                 }}>2</div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: C.textDark, margin: 0 }}>Detail Pengerjaan</h2>
+                <h2 style={{ fontSize: "clamp(16px, 4vw, 18px)", fontWeight: 700, color: C.textDark, margin: 0 }}>Detail Pengerjaan</h2>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 44 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "clamp(16px, 2vw, 24px)" }}>
                 <div ref={difficultyRef} style={{ position: 'relative' }}>
-                  <label style={{ fontSize: 14, fontWeight: 700, color: C.textDark, marginBottom: 10, display: "block" }}>Tingkat Kesulitan <span style={{ color: C.red }}>*</span></label>
+                  <label style={{ fontSize: "clamp(13px, 2.5vw, 14px)", fontWeight: 700, color: C.textDark, marginBottom: "clamp(8px, 1.5vw, 10px)", display: "block" }}>Tingkat Kesulitan <span style={{ color: C.red }}>*</span></label>
                   <div
                     onClick={() => setOpenDifficultyDropdown(!openDifficultyDropdown)}
                     style={{
-                      border: "2px solid #E5E8F0", borderRadius: 20, padding: "18px 24px",
-                      fontSize: 15, width: "100%", outline: "none", color: form.tingkatKesulitan ? C.textDark : "#999",
+                      border: "2px solid #E5E8F0", borderRadius: 20, padding: "clamp(12px, 2vw, 18px) clamp(16px, 2vw, 24px)",
+                      fontSize: "clamp(14px, 2.5vw, 15px)", width: "100%", outline: "none", color: form.tingkatKesulitan ? C.textDark : "#999",
                       background: "#FAFBFD", boxSizing: "border-box", fontWeight: 500,
                       boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)", transition: "all 0.3s ease",
                       cursor: "pointer",

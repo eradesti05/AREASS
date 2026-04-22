@@ -29,7 +29,8 @@ const TaskManagement = () => {
   const [error, setError] = useState('');
   const [categories, setCategories] = useState([]);
   const [filterCategory, setFilterCategory] = useState('');
-  const [filterDeadline, setFilterDeadline] = useState('');
+  const [filterDeadlineStart, setFilterDeadlineStart] = useState('');
+  const [filterDeadlineEnd, setFilterDeadlineEnd] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
@@ -178,10 +179,20 @@ const TaskManagement = () => {
       match = false;
     }
     
-    // Filter by deadline
-    if (filterDeadline && match) {
-      const taskDate = new Date(task.deadline).toISOString().split('T')[0];
-      match = taskDate === filterDeadline;
+    // Filter by deadline range
+    if (match && (filterDeadlineStart || filterDeadlineEnd)) {
+      const taskDate = new Date(task.deadline);
+      
+      if (filterDeadlineStart) {
+        const startDate = new Date(filterDeadlineStart);
+        if (taskDate < startDate) match = false;
+      }
+      
+      if (filterDeadlineEnd && match) {
+        const endDate = new Date(filterDeadlineEnd);
+        endDate.setHours(23, 59, 59, 999); // Include entire end date
+        if (taskDate > endDate) match = false;
+      }
     }
     
     return match;
@@ -200,9 +211,9 @@ const TaskManagement = () => {
   );
 
   return (
-    <div style={{ padding: 32, background: C.bg, minHeight: '100vh' }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div style={{ fontSize: 24, fontWeight: 800, color: C.textDark, letterSpacing: 0.5 }}>Papan Kanban</div>
+    <div style={{ padding: "clamp(16px, 4vw, 32px)", background: C.bg, minHeight: '100vh' }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "clamp(12px, 2vw, 16px)", flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ fontSize: "clamp(18px, 5vw, 24px)", fontWeight: 800, color: C.textDark, letterSpacing: 0.5 }}>Papan Kanban</div>
         <button onClick={() => navigate("/tasks/create")} style={{
           background: C.primary, color: "#fff", border: "none",
           borderRadius: 12, padding: "12px 28px", fontWeight: 700, cursor: "pointer", fontSize: 15,
@@ -214,8 +225,13 @@ const TaskManagement = () => {
       </div>
 
       {/* Info rule-based */}
-      <div style={{ background: C.primaryLight, borderRadius: 10, padding: "10px 20px", marginBottom: 24, fontSize: 13, color: C.primary, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Zap size={16} /> <strong>Rule-Based Scheduling aktif</strong> — Task diurutkan otomatis berdasarkan urgensi deadline, tingkat kesulitan, dan estimasi pengerjaan
+      <div style={{ background: C.primaryLight, borderRadius: 10, padding: "clamp(12px, 3vw, 16px) clamp(14px, 4vw, 20px)", marginBottom: 24, color: C.primary, fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: 'clamp(8px, 2vw, 12px)', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, minWidth: '100%' }}>
+          <Zap size={16} style={{ minWidth: 16, marginTop: 2, flexShrink: 0 }} />
+          <div style={{ fontSize: 'clamp(12px, 2.5vw, 14px)', lineHeight: 1.5 }}>
+            <strong>Rule-Based Scheduling aktif</strong> — Task diurutkan otomatis berdasarkan urgensi deadline, tingkat kesulitan, dan estimasi pengerjaan
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -335,31 +351,56 @@ const TaskManagement = () => {
           )}
         </div>
 
-        <div>
-          <label style={{ fontSize: 13, fontWeight: 700, color: C.textGray, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Calendar size={14} /> Filter Deadline
-          </label>
-          <input 
-            type="date"
-            value={filterDeadline}
-            onChange={e => setFilterDeadline(e.target.value)}
-            style={{
-              border: filterDeadline ? `2px solid ${C.primary}` : "1.5px solid #E0E4F0",
-              borderRadius: 10, padding: "10px 14px",
-              fontSize: 14, color: filterDeadline ? C.primary : C.textDark, background: C.white, cursor: 'pointer',
-              transition: 'all 0.2s', fontWeight: filterDeadline ? 600 : 400,
-              boxShadow: filterDeadline ? `0 0 0 3px ${C.primaryLight}` : 'none'
-            }}
-            onFocus={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${C.primaryLight}`; e.currentTarget.style.borderColor = C.primary; }}
-            onBlur={(e) => { e.currentTarget.style.boxShadow = filterDeadline ? `0 0 0 3px ${C.primaryLight}` : 'none'; }}
-          />
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <label style={{ fontSize: 13, fontWeight: 700, color: C.textGray, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Calendar size={14} /> Dari
+            </label>
+            <input 
+              type="date"
+              value={filterDeadlineStart}
+              onChange={e => setFilterDeadlineStart(e.target.value)}
+              style={{
+                border: filterDeadlineStart ? `2px solid ${C.primary}` : "1.5px solid #E0E4F0",
+                borderRadius: 8, padding: "8px 12px",
+                fontSize: 14, color: filterDeadlineStart ? C.primary : C.textDark, background: C.white, cursor: 'pointer',
+                transition: 'all 0.2s', fontWeight: filterDeadlineStart ? 600 : 400,
+                boxShadow: filterDeadlineStart ? `0 0 0 3px ${C.primaryLight}` : 'none',
+                width: '100%', boxSizing: 'border-box'
+              }}
+              onFocus={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${C.primaryLight}`; e.currentTarget.style.borderColor = C.primary; }}
+              onBlur={(e) => { e.currentTarget.style.boxShadow = filterDeadlineStart ? `0 0 0 3px ${C.primaryLight}` : 'none'; }}
+            />
+          </div>
+          
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <label style={{ fontSize: 13, fontWeight: 700, color: C.textGray, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Calendar size={14} /> Sampai
+            </label>
+            <input 
+              type="date"
+              value={filterDeadlineEnd}
+              onChange={e => setFilterDeadlineEnd(e.target.value)}
+              style={{
+                border: filterDeadlineEnd ? `2px solid ${C.primary}` : "1.5px solid #E0E4F0",
+                borderRadius: 8, padding: "8px 12px",
+                fontSize: 14, color: filterDeadlineEnd ? C.primary : C.textDark, background: C.white, cursor: 'pointer',
+                transition: 'all 0.2s', fontWeight: filterDeadlineEnd ? 600 : 400,
+                boxShadow: filterDeadlineEnd ? `0 0 0 3px ${C.primaryLight}` : 'none',
+                width: '100%', boxSizing: 'border-box'
+              }}
+              onFocus={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${C.primaryLight}`; e.currentTarget.style.borderColor = C.primary; }}
+              onBlur={(e) => { e.currentTarget.style.boxShadow = filterDeadlineEnd ? `0 0 0 3px ${C.primaryLight}` : 'none'; }}
+            />
+          </div>
         </div>
 
-        {(filterCategory || filterDeadline) && (
+        {(filterCategory || filterDeadlineStart || filterDeadlineEnd) && (
           <button
             onClick={() => {
               setFilterCategory('');
-              setFilterDeadline('');
+              setFilterDeadlineStart('');
+              setFilterDeadlineEnd('');
             }}
             style={{
               background: 'transparent', color: C.primary, border: `1.5px solid ${C.primary}`,
@@ -376,7 +417,7 @@ const TaskManagement = () => {
 
       {error && <div style={{ color: C.red, marginBottom: 18, fontSize: 14, fontWeight: 600 }}>{error}</div>}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "clamp(16px, 2vw, 28px)" }}>
         {columns.map(col => {
           // Filter tasks by status and apply filters
           const colTasks = filteredTasks.filter(t => t.status === col);
