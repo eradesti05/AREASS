@@ -147,7 +147,7 @@ const NotificationCenter = () => {
   };
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', zIndex: 1001 }}>
       <style>{animationStyles}</style>
       {/* Bell Icon Button */}
       <button
@@ -217,15 +217,15 @@ const NotificationCenter = () => {
 
           {/* Panel */}
           <div style={{
-            position: 'absolute',
-            top: 50,
-            right: 0,
-            width: 420,
+            position: 'fixed',
+            top: 70,
+            right: 'max(16px, calc((100vw - 100%) / 2 + 16px))',
+            width: 'min(calc(100vw - 32px), 420px)',
             background: '#FFFFFF',
             borderRadius: 16,
             boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
             zIndex: 1000,
-            maxHeight: 'calc(100vh - 100px)',
+            maxHeight: 'calc(100vh - 120px)',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',

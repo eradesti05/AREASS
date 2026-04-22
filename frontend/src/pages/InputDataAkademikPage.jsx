@@ -18,6 +18,7 @@ export default function InputDataAkademikPage({ user }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [existingAkademik, setExistingAkademik] = useState([]);
   const [selectedSemesterExists, setSelectedSemesterExists] = useState(false);
@@ -169,6 +170,11 @@ export default function InputDataAkademikPage({ user }) {
     dataSemester.every(row => row.ip && row.sks && row.sksLulus);
 
   const handleSubmit = async () => {
+    // Hanya trigger modal konfirmasi, jangan langsung submit
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSubmit = async () => {
     setLoading(true);
     setMessage(null);
     const token = localStorage.getItem("areass_token");
@@ -240,6 +246,7 @@ export default function InputDataAkademikPage({ user }) {
       
       // Show success modal instead of auto redirect
       setShowSuccessModal(true);
+      setShowConfirmModal(false);
       setLoading(false);
     } catch (err) {
       setMessage({ type: "error", text: "Gagal terhubung ke server" });
@@ -257,27 +264,27 @@ export default function InputDataAkademikPage({ user }) {
       flexDirection: "column",
       background: "#F4F6F9",
       minHeight: "100vh",
-      padding: isMobile ? "16px 12px" : isTablet ? "24px 20px" : "32px 40px",
-      gap: isMobile ? 16 : 24,
+      padding: "clamp(12px, 3vw, 32px) clamp(12px, 3vw, 40px)",
+      gap: "clamp(12px, 2vw, 24px)",
       boxSizing: "border-box",
     },
     pageTitle: {
       color: "#333B69",
-      fontSize: isMobile ? 18 : 22,
+      fontSize: "clamp(16px, 4vw, 22px)",
       fontWeight: 700,
     },
     card: {
       width: "100%",
       background: "#fff",
-      borderRadius: isMobile ? 15 : 25,
+      borderRadius: "clamp(12px, 3vw, 25px)",
       boxShadow: "4px 4px 18px #00000040",
       boxSizing: "border-box",
     },
     cardBody: {
-      padding: isMobile ? "16px" : isTablet ? "24px" : "32px",
+      padding: "clamp(12px, 3vw, 32px)",
       display: "flex",
       flexDirection: "column",
-      gap: isMobile ? 16 : 24,
+      gap: "clamp(12px, 2vw, 24px)",
     },
     sectionHeader: {
       display: "flex",
@@ -286,7 +293,7 @@ export default function InputDataAkademikPage({ user }) {
     },
     sectionTitle: {
       color: "#232323",
-      fontSize: isMobile ? 15 : 18,
+      fontSize: "clamp(13px, 3vw, 18px)",
       fontWeight: 700,
       whiteSpace: "nowrap",
     },
@@ -309,14 +316,14 @@ export default function InputDataAkademikPage({ user }) {
     },
     label: {
       color: "#232323",
-      fontSize: isMobile ? 13 : 15,
+      fontSize: "clamp(12px, 2.5vw, 15px)",
     },
     input: {
       width: "100%",
       color: "#718EBF",
       background: "#fff",
-      fontSize: isMobile ? 13 : 15,
-      padding: isMobile ? "10px 14px" : "14px 20px",
+      fontSize: "clamp(12px, 2.5vw, 15px)",
+      padding: "clamp(8px, 1.5vw, 14px) clamp(12px, 2vw, 20px)",
       borderRadius: 15,
       border: "1px solid #DFEAF2",
       outline: "none",
@@ -326,8 +333,8 @@ export default function InputDataAkademikPage({ user }) {
       width: "100%",
       color: "#718EBF",
       background: "#fff",
-      fontSize: isMobile ? 13 : 15,
-      padding: isMobile ? "10px 14px" : "14px 20px",
+      fontSize: "clamp(12px, 2.5vw, 15px)",
+      padding: "clamp(8px, 1.5vw, 14px) clamp(12px, 2vw, 20px)",
       borderRadius: 20,
       border: "2px solid #DFEAF2",
       outline: "none",
@@ -339,15 +346,15 @@ export default function InputDataAkademikPage({ user }) {
       backgroundRepeat: "no-repeat",
       backgroundPosition: "right 14px center",
       backgroundSize: "20px",
-      paddingRight: isMobile ? "35px" : "40px",      // Styling untuk option ketika dropdown open
+      paddingRight: "clamp(28px, 4vw, 40px)",      // Styling untuk option ketika dropdown open
       WebkitAppearance: "none",
       MozAppearance: "none",
       boxShadow: "0 2px 8px rgba(113, 142, 191, 0.1)",    },
     infoBox: {
       color: "#0277BD",
       background: "linear-gradient(135deg, #E1F5FE 0%, #B3E5FC 100%)",
-      fontSize: isMobile ? 13 : 14,
-      padding: isMobile ? "14px 16px" : "16px 20px",
+      fontSize: "clamp(12px, 2vw, 14px)",
+      padding: "clamp(10px, 2vw, 16px) clamp(12px, 2vw, 20px)",
       borderRadius: 16,
       border: "2px solid #29B6F6",
       boxShadow: "0 2px 8px rgba(41, 182, 246, 0.1)",
@@ -356,69 +363,75 @@ export default function InputDataAkademikPage({ user }) {
     tableHeader: {
       display: "flex",
       alignItems: "center",
-      gap: isMobile ? 8 : 16,
+      gap: "clamp(6px, 1vw, 12px)",
       padding: "0 4px",
+      overflowX: "auto",
     },
     tableHeaderSem: {
       color: "#232323",
-      fontSize: isMobile ? 12 : 15,
+      fontSize: "clamp(11px, 2vw, 14px)",
       fontWeight: 600,
-      width: isMobile ? 60 : 100,
+      width: "clamp(45px, 10vw, 80px)",
       flexShrink: 0,
     },
     tableHeaderCol: {
       color: "#232323",
-      fontSize: isMobile ? 12 : 15,
+      fontSize: "clamp(10px, 1.8vw, 14px)",
       fontWeight: 600,
       flex: 1,
+      minWidth: "60px",
     },
     tableRow: {
       display: "flex",
       alignItems: "center",
-      gap: isMobile ? 8 : 16,
+      gap: "clamp(6px, 1vw, 12px)",
+      overflowX: "auto",
     },
     tableRowLabel: {
       color: "#718EBF",
-      fontSize: isMobile ? 12 : 15,
+      fontSize: "clamp(11px, 2vw, 14px)",
       fontWeight: 600,
-      width: isMobile ? 60 : 100,
+      width: "clamp(45px, 10vw, 80px)",
       flexShrink: 0,
     },
     tableInput: {
       flex: 1,
       color: "#718EBF",
       background: "#fff",
-      fontSize: isMobile ? 13 : 15,
-      padding: isMobile ? "10px 10px" : "14px 20px",
-      borderRadius: 15,
+      fontSize: "clamp(12px, 2.5vw, 14px)",
+      padding: "clamp(8px, 1.2vw, 12px) clamp(10px, 1.5vw, 14px)",
+      borderRadius: 12,
       border: "1px solid #DFEAF2",
       outline: "none",
-      minWidth: 0,
+      minWidth: "60px",
     },
     summaryRow: {
       display: "flex",
-      flexDirection: isMobile ? "column" : isTablet ? "row" : "row",
-      gap: isMobile ? 10 : 16,
-      flexWrap: "wrap",
+      flexDirection: isMobile ? "column" : "row",
+      gap: isMobile ? 10 : 14,
+      width: "100%",
+      boxSizing: "border-box",
     },
     summaryCard: {
       display: "flex",
       flex: 1,
       flexDirection: "column",
       background: "#fff",
-      padding: isMobile ? "14px" : "20px",
-      gap: isMobile ? 8 : 16,
-      borderRadius: 15,
+      padding: isMobile ? "12px 14px" : "18px 20px",
+      gap: isMobile ? 6 : 12,
+      borderRadius: 12,
       border: "1px solid #718EBF",
-      minWidth: isMobile ? "100%" : 150,
+      minWidth: 0,
       alignItems: "center",
       justifyContent: "center",
       textAlign: "center",
       boxShadow: "0 2px 8px rgba(41, 182, 246, 0.1)",
+      overflow: "hidden",
     },
     summaryLabel: {
       color: "#718EBF",
-      fontSize: isMobile ? 13 : 15,
+      fontSize: isMobile ? 12 : 14,
+      fontWeight: 500,
     },
     summaryValue: {
       color: "#1F2937",
@@ -1045,7 +1058,7 @@ export default function InputDataAkademikPage({ user }) {
               {[
                 { label: "Rata-rata IP", value: ringkasan.rataRataIp },
                 {
-                  label: "Total SKS Per Semester",
+                  label: "Total SKS",
                   value: ringkasan.totalSksPerSemester,
                 },
               ].map((item) => (
@@ -1063,12 +1076,126 @@ export default function InputDataAkademikPage({ user }) {
       {dataUmumLengkap && !selectedSemesterExists && (
         <div style={S.submitRow}>
           <button
-            onClick={handleSubmit}
+            onClick={() => setShowConfirmModal(true)}
             disabled={!dataSemesterLengkap || loading}
             style={dataSemesterLengkap && !loading ? S.btnActive : S.btnDisabled}
           >
             {loading ? "Menyimpan..." : "Kirim Data"}
           </button>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div style={S.modalOverlay}>
+          <div style={{
+            background: "#fff",
+            borderRadius: 16,
+            padding: 32,
+            maxWidth: 400,
+            width: "90%",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+            position: "relative",
+          }}>
+            <div style={S.modalCloseBtn} onClick={() => setShowConfirmModal(false)}>
+              <X size={24} />
+            </div>
+            
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+            }}>
+              <div style={{
+                width: 60,
+                height: 60,
+                borderRadius: "50%",
+                background: "#E3F2FD",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 12px",
+              }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#5D9CEC" strokeWidth="2">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+                </svg>
+              </div>
+
+              <h2 style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: "#2c3e50",
+                marginBottom: 12,
+                textAlign: "center",
+              }}>Yakin ingin mengirim?</h2>
+
+              <p style={{
+                fontSize: 14,
+                color: "#333333",
+                marginBottom: 24,
+                lineHeight: 1.6,
+                textAlign: "center",
+              }}>
+                Data yang sudah dikirim <span style={{fontWeight: 600, color: "#FF6B6B"}}>tidak bisa diedit</span> lagi. Pastikan semua data sudah benar.
+              </p>
+              
+              <div style={{
+                display: "flex",
+                gap: 12,
+              }}>
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  disabled={loading}
+                  style={{
+                    flex: 1,
+                    padding: "12px 16px",
+                    background: "#f0f0f0",
+                    border: "none",
+                    borderRadius: 10,
+                    fontWeight: 600,
+                    fontSize: 14,
+                    cursor: loading ? "not-allowed" : "pointer",
+                    color: "#8b8377",
+                    transition: "all 0.2s",
+                    opacity: loading ? 0.6 : 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading) e.currentTarget.style.background = "#e8e8e8";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#f0f0f0";
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleConfirmSubmit}
+                  disabled={loading}
+                  style={{
+                    flex: 1,
+                    padding: "12px 16px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: loading ? "#A0AEC0" : "#5D9CEC",
+                    color: "#fff",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: loading ? "not-allowed" : "pointer",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading) e.currentTarget.style.background = "#4A8FE7";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#5D9CEC";
+                  }}
+                >
+                  {loading ? "Mengirim..." : "Lanjutkan"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

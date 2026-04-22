@@ -37,6 +37,10 @@ import {
   Zap,
   View,
   Info,
+  Tag,
+  Calendar,
+  Edit2,
+  X,
 } from "lucide-react";
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
@@ -70,6 +74,8 @@ const DashboardMahasiswa = ({ user }) => {
   });
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [showUpcomingTasks, setShowUpcomingTasks] = useState(false);
   const [openStrataSKSDropdown, setOpenStrataSKSDropdown] = useState(false);
   const [openStrataIPKDropdown, setOpenStrataIPKDropdown] = useState(false);
   const [openStrataCardDropdown, setOpenStrataCardDropdown] = useState(false);
@@ -280,7 +286,7 @@ const DashboardMahasiswa = ({ user }) => {
         <div
           style={{
             color: C.textGray,
-            fontSize: 16,
+            fontSize: "clamp(14px, 3vw, 16px)",
             display: "flex",
             alignItems: "center",
             gap: 8,
@@ -303,6 +309,19 @@ const DashboardMahasiswa = ({ user }) => {
     );
 
   return (
+    <>
+      <style>{`
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     <div
       style={{
         padding: "clamp(12px, 4vw, 24px) clamp(8px, 3vw, 16px)",
@@ -317,9 +336,9 @@ const DashboardMahasiswa = ({ user }) => {
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
           gap: "clamp(12px, 3vw, 24px)",
-          marginBottom: 32,
+          marginBottom: "clamp(20px, 3vw, 32px)",
           maxWidth: 1200,
-          margin: "0 auto 32px",
+          margin: "0 auto clamp(20px, 3vw, 32px)",
           boxSizing: "border-box",
         }}
       >
@@ -329,16 +348,16 @@ const DashboardMahasiswa = ({ user }) => {
             boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
             borderRadius: 12,
             border: "none",
-            padding: "18px 20px",
+            padding: "clamp(14px, 2vw, 18px) clamp(16px, 2vw, 20px)",
             background: "#FFFFFF",
           }}
         >
           <div
             style={{
-              fontSize: 11,
+              fontSize: "clamp(10px, 1.5vw, 11px)",
               fontWeight: 700,
               color: "rgba(255,255,255,0.7)",
-              marginBottom: 8,
+              marginBottom: "clamp(6px, 1vw, 8px)",
               textTransform: "uppercase",
               letterSpacing: "0.5px",
             }}
@@ -349,12 +368,14 @@ const DashboardMahasiswa = ({ user }) => {
             <div
               style={{
                 fontWeight: 700,
-                fontSize: 22,
+                fontSize: "clamp(18px, 5vw, 22px)",
                 color: C.textDark,
-                marginBottom: 20,
+                marginBottom: "clamp(12px, 2vw, 20px)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                flexWrap: "wrap",
+                gap: "clamp(8px, 2vw, 12px)"
               }}
             >
               <span>Halo, {user.nama?.split(" ")[0]}! 👋</span>
@@ -606,10 +627,10 @@ const DashboardMahasiswa = ({ user }) => {
                 </a>
               </div>
             ) : (
-              <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
-                {/* Chart on the left */}
-                <div style={{ flex: "0 0 50%", display: "flex", justifyContent: "center" }}>
-                  <ResponsiveContainer width="100%" height={140}>
+              <div style={{ display: "flex", gap: "clamp(12px, 3vw, 20px)", alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+                {/* Chart on the center */}
+                <div style={{ width: "140px", height: "140px", display: "flex", justifyContent: "center", flexShrink: 0 }}>
+                  <ResponsiveContainer width={140} height={140}>
                     <PieChart>
                       <MiniPie
                         data={taskProgress}
@@ -631,11 +652,12 @@ const DashboardMahasiswa = ({ user }) => {
                 {/* Legend on the right - 3 rows */}
                 <div
                   style={{
-                    flex: "1",
                     display: "flex",
                     flexDirection: "column",
-                    gap: 12,
+                    gap: "clamp(8px, 2vw, 12px)",
                     justifyContent: "center",
+                    flex: "0 1 auto",
+                    minWidth: "120px",
                   }}
                 >
                   {taskProgress.map((t, i) => (
@@ -719,26 +741,45 @@ const DashboardMahasiswa = ({ user }) => {
                   {
                     val: summary.totalTugas,
                     label: "Total Tugas",
+                    desc: "Jumlah seluruh tugas Anda",
+                    unit: "task",
                     bg: C.accent,
                     icon: ListTodo,
                   },
                   {
                     val: summary.tenggatWaktuTugas,
                     label: "Tenggat Waktu",
+                    desc: "Task dengan deadline ≤ 7 hari ke depan",
+                    unit: "task",
                     bg: C.primary,
                     icon: Clock,
                   },
                   {
                     val: summary.estimasiBebanKerja,
                     label: "Estimasi Beban",
+                    desc: "Total jam kerja dari semua task",
+                    unit: "jam",
                     bg: C.red,
                     icon: Zap,
                   },
                 ].map((item, i) => {
                   const IconComponent = item.icon;
+                  const handleItemClick = () => {
+                    if (i === 0) {
+                      // Total Tugas - go to Kelola Tugas
+                      navigate("/tasks");
+                    } else if (i === 1) {
+                      // Tenggat Waktu - show upcoming tasks modal
+                      setShowUpcomingTasks(true);
+                    } else if (i === 2) {
+                      // Estimasi Beban - go to Kelola Tugas
+                      navigate("/tasks");
+                    }
+                  };
                   return (
                     <div
                       key={i}
+                      onClick={handleItemClick}
                       style={{
                         display: "flex",
                         flexDirection: "column",
@@ -748,6 +789,19 @@ const DashboardMahasiswa = ({ user }) => {
                         padding: 10,
                         borderRight: i < 2 ? "1px solid #F0F0F0" : "none",
                         flex: 1,
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        borderRadius: 8,
+                        position: "relative",
+                      }}
+                      title={item.desc}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#F9FAFB";
+                        e.currentTarget.style.transform = "scale(1.02)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.transform = "scale(1)";
                       }}
                     >
                       <div
@@ -773,7 +827,7 @@ const DashboardMahasiswa = ({ user }) => {
                             color: item.bg,
                           }}
                         >
-                          {item.val}
+                          {item.val} {item.unit && <span style={{ fontSize: 14, fontWeight: 500 }}>{item.unit}</span>}
                         </div>
                         <div
                           style={{
@@ -809,7 +863,7 @@ const DashboardMahasiswa = ({ user }) => {
           style={{
             backgroundColor: "#ffffff",
             borderRadius: "12px",
-            padding: "20px",
+            padding: "clamp(14px, 2vw, 20px)",
             border: "none",
             boxShadow: "none",
             boxSizing: "border-box",
@@ -820,7 +874,9 @@ const DashboardMahasiswa = ({ user }) => {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: "16px",
+              marginBottom: "clamp(12px, 2vw, 16px)",
+              flexWrap: "wrap",
+              gap: "clamp(8px, 2vw, 12px)"
             }}
           >
             <h2
@@ -1363,7 +1419,7 @@ const DashboardMahasiswa = ({ user }) => {
                 return (
                   <div
                     key={task._id}
-                    onClick={() => navigate(`/tasks/edit/${task._id}`)}
+                    onClick={() => setSelectedTask(task)}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -1468,7 +1524,730 @@ const DashboardMahasiswa = ({ user }) => {
           </div>
         </div>
       )}
+
+      {/* Task Detail Modal */}
+      {selectedTask && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "16px",
+            backdropFilter: "blur(3px)",
+          }}
+          onClick={() => setSelectedTask(null)}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "16px",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.12)",
+              maxWidth: "520px",
+              width: "100%",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              boxSizing: "border-box",
+              animation: "slideUp 0.3s ease-out",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                background: "#F8FAFB",
+                borderRadius: "16px 16px 0 0",
+                padding: "24px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                borderBottom: "1px solid #E5E7EB",
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "#6B7280", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Detail Tugas
+                </div>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: "24px",
+                    fontWeight: 800,
+                    color: "#1F2937",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {selectedTask.namaTugas}
+                </h2>
+              </div>
+              <button
+                onClick={() => setSelectedTask(null)}
+                style={{
+                  background: "#F3F4F6",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#6B7280",
+                  padding: "8px",
+                  width: "40px",
+                  height: "40px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "8px",
+                  transition: "all 0.2s",
+                  flexShrink: 0,
+                  marginLeft: "12px",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "#E5E7EB";
+                  e.currentTarget.style.color = "#374151";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "#F3F4F6";
+                  e.currentTarget.style.color = "#6B7280";
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Status & Deadline Row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                {/* Status */}
+                <div
+                  style={{
+                    background: "#F9FAFB",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    border: "1px solid #E5E7EB",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#6B7280",
+                      marginBottom: "6px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    <CheckCircle size={14} />
+                    Status
+                  </div>
+                  <div
+                    style={{
+                      display: "inline-block",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "white",
+                      background:
+                        selectedTask.status === "Backlog"
+                          ? "#6B7280"
+                          : selectedTask.status === "On Progress"
+                            ? "#F59E0B"
+                            : "#10B981",
+                    }}
+                  >
+                    {selectedTask.status}
+                  </div>
+                </div>
+
+                {/* Deadline */}
+                {selectedTask.deadline && (
+                  <div
+                    style={{
+                      background: "#F9FAFB",
+                      padding: "12px",
+                      borderRadius: "10px",
+                      border: "1px solid #E5E7EB",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#6B7280",
+                        marginBottom: "6px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      <Calendar size={14} />
+                      Tenggat Waktu
+                    </div>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#1F2937" }}>
+                      {new Date(selectedTask.deadline).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Category */}
+              <div
+                style={{
+                  background: "#F9FAFB",
+                  padding: "12px",
+                  borderRadius: "10px",
+                  border: "1px solid #E5E7EB",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                }}
+              >
+                <Tag size={16} color="#6B7280" />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: "11px", color: "#6B7280", fontWeight: 700, marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    Kategori
+                  </div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#1F2937" }}>
+                    {selectedTask.kategoriTask}
+                  </div>
+                </div>
+              </div>
+
+              {/* Estimasi Jam */}
+              {selectedTask.estimasiJam && (
+                <div
+                  style={{
+                    background: "#F9FAFB",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    border: "1px solid #E5E7EB",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+                  <Clock size={16} color="#6B7280" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "11px", color: "#6B7280", fontWeight: 700, marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      Estimasi Jam Kerja
+                    </div>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#1F2937" }}>
+                      {selectedTask.estimasiJam} jam
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              {selectedTask.deskripsi && (
+                <div
+                  style={{
+                    background: "#F9FAFB",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    border: "1px solid #E5E7EB",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#6B7280",
+                      marginBottom: "8px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    <Info size={14} />
+                    Deskripsi
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#374151", lineHeight: "1.5", fontWeight: 500 }}>
+                    {selectedTask.deskripsi}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  marginTop: "8px",
+                  paddingTop: "16px",
+                  borderTop: "1px solid #E5E7EB",
+                }}
+              >
+                <button
+                  onClick={() => navigate(`/tasks/edit/${selectedTask._id}`)}
+                  style={{
+                    flex: 1,
+                    padding: "12px 16px",
+                    background: "#10B981",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                  }}
+                  onMouseOver={(e) => (e.currentTarget.style.background = "#059669")}
+                  onMouseOut={(e) => (e.currentTarget.style.background = "#10B981")}
+                >
+                  <Edit2 size={16} />
+                  Edit Tugas
+                </button>
+                <button
+                  onClick={() => setSelectedTask(null)}
+                  style={{
+                    flex: 1,
+                    padding: "12px 16px",
+                    background: "#F3F4F6",
+                    color: "#374151",
+                    border: "1px solid #D1D5DB",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = "#E5E7EB";
+                    e.currentTarget.style.borderColor = "#9CA3AF";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = "#F3F4F6";
+                    e.currentTarget.style.borderColor = "#D1D5DB";
+                  }}
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upcoming Tasks Modal */}
+      {showUpcomingTasks && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "16px",
+            backdropFilter: "blur(3px)",
+          }}
+          onClick={() => setShowUpcomingTasks(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "16px",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.12)",
+              maxWidth: "600px",
+              width: "100%",
+              maxHeight: "80vh",
+              overflowY: "auto",
+              boxSizing: "border-box",
+              animation: "slideUp 0.3s ease-out",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                background: "#F8FAFB",
+                borderRadius: "16px 16px 0 0",
+                padding: "24px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                borderBottom: "1px solid #E5E7EB",
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "#6B7280", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Tugas Mendatang
+                </div>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: "24px",
+                    fontWeight: 800,
+                    color: "#1F2937",
+                  }}
+                >
+                  Daftar Tenggat Waktu
+                </h2>
+              </div>
+              <button
+                onClick={() => setShowUpcomingTasks(false)}
+                style={{
+                  background: "#F3F4F6",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#6B7280",
+                  padding: "8px",
+                  width: "40px",
+                  height: "40px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "8px",
+                  transition: "all 0.2s",
+                  flexShrink: 0,
+                  marginLeft: "12px",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "#E5E7EB";
+                  e.currentTarget.style.color = "#374151";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "#F3F4F6";
+                  e.currentTarget.style.color = "#6B7280";
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Tasks List */}
+            <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              {(() => {
+                const filtered = tasks.filter((t) => {
+                  // Filter SAMA DENGAN backend: status !== Done dan deadline <= 7 hari ke depan
+                  if (t.status === "Done") return false;
+                  
+                  const deadline = new Date(t.deadline);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  
+                  const sisaHari = Math.ceil(
+                    (deadline - today) / (1000 * 60 * 60 * 24),
+                  );
+                  
+                  console.log(`Task: ${t.title}, Deadline: ${t.deadline}, SisaHari: ${sisaHari}, Pass: ${sisaHari <= 7}`);
+                  
+                  // Tampilkan task yang ada dalam 7 hari ke depan (upcoming)
+                  return sisaHari <= 7;
+                });
+                
+                console.log(`Modal: Showing ${filtered.length} tasks out of ${tasks.length} total. Summary says: ${summary.tenggatWaktuTugas}`);
+                
+                return filtered;
+              })()
+                
+                .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+                .map((task, idx) => {
+                  const deadline = new Date(task.deadline);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const sisaHari = Math.ceil(
+                    (deadline - today) / (1000 * 60 * 60 * 24),
+                  );
+                  const isOverdue = sisaHari < 0;
+                  
+                  let statusColor = "#10B981"; // Normal - hijau
+                  let statusBg = "#ECFDF5";
+                  let priorityLabel = "Normal";
+                  let priorityIcon = "📅";
+                  
+                  if (isOverdue) {
+                    statusColor = "#DC2626"; // Overdue - merah
+                    statusBg = "#FEE2E2";
+                    priorityLabel = `${Math.abs(sisaHari)} hari terlewat`;
+                    priorityIcon = "🔥";
+                  } else if (sisaHari === 0) {
+                    statusColor = "#DC2626"; // Hari ini - merah
+                    statusBg = "#FEE2E2";
+                    priorityLabel = "Hari ini";
+                    priorityIcon = "⚡";
+                  } else if (sisaHari === 1) {
+                    statusColor = "#EA580C"; // Esok - orange
+                    statusBg = "#FFEDD5";
+                    priorityLabel = "1 hari tersisa";
+                    priorityIcon = "⚠️";
+                  } else if (sisaHari <= 3) {
+                    statusColor = "#F59E0B"; // Dekat - kuning
+                    statusBg = "#FFFBEB";
+                    priorityLabel = `${sisaHari} hari tersisa`;
+                    priorityIcon = "📌";
+                  } else {
+                    priorityLabel = `${sisaHari} hari tersisa`;
+                    priorityIcon = "✓";
+                  }
+
+                  return (
+                    <div
+                      key={task._id}
+                      onClick={() => {
+                        setSelectedTask(task);
+                        setShowUpcomingTasks(false);
+                      }}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr auto",
+                        alignItems: "start",
+                        gap: "12px",
+                        padding: "14px 16px",
+                        background: "white",
+                        borderRadius: "12px",
+                        border: `2px solid ${statusBg}`,
+                        transition: "all 0.2s ease",
+                        cursor: "pointer",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.background = statusBg;
+                        e.currentTarget.style.boxShadow =
+                          `0 4px 12px rgba(0,0,0,0.08)`;
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.background = "white";
+                        e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                    >
+                      {/* Left Content */}
+                      <div style={{ display: "flex", gap: "12px", minWidth: 0 }}>
+                        <div style={{ 
+                          fontSize: "28px", 
+                          lineHeight: 1, 
+                          display: "flex", 
+                          alignItems: "center",
+                          flexShrink: 0 
+                        }}>
+                          {priorityIcon}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: "14px",
+                              fontWeight: 700,
+                              color: "#1F2937",
+                              marginBottom: "4px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {task.namaTugas}
+                          </div>
+                          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                fontWeight: 600,
+                                color: "white",
+                                background: task.status === "Backlog"
+                                  ? "#6B7280"
+                                  : task.status === "On Progress"
+                                    ? "#F59E0B"
+                                    : "#10B981",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                              }}
+                            >
+                              {task.status}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                fontWeight: 600,
+                                color: "#6B7280",
+                                background: "#F3F4F6",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                              }}
+                            >
+                              {task.kategoriTask}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              fontSize: "12px",
+                              color: "#6B7280",
+                              fontWeight: 500,
+                            }}
+                          >
+                            {deadline.toLocaleDateString("id-ID", {
+                              weekday: "short",
+                              day: "numeric",
+                              month: "short",
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Content - Status Badge */}
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: "4px",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "11px",
+                            fontWeight: 800,
+                            padding: "6px 10px",
+                            borderRadius: "6px",
+                            background: statusBg,
+                            color: statusColor,
+                            whiteSpace: "nowrap",
+                            textAlign: "center",
+                          }}
+                        >
+                          {priorityLabel}
+                        </div>
+                        {task.estimasiJam && (
+                          <div
+                            style={{
+                              fontSize: "10px",
+                              fontWeight: 600,
+                              color: "#6B7280",
+                              padding: "3px 6px",
+                              background: "#F3F4F6",
+                              borderRadius: "4px",
+                            }}
+                          >
+                            ⏱️ {task.estimasiJam}h
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              {tasks.filter((t) => {
+                if (t.status === "Done") return false;
+                const deadline = new Date(t.deadline);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const sisaHari = Math.ceil(
+                  (deadline - today) / (1000 * 60 * 60 * 24),
+                );
+                return sisaHari <= 7;
+              }).length === 0 && (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "40px 20px",
+                    color: "#9CA3AF",
+                  }}
+                >
+                  <div style={{ fontSize: "40px", marginBottom: "8px" }}>✨</div>
+                  <div style={{ fontSize: "15px", fontWeight: 600, color: "#6B7280", marginBottom: "4px" }}>Tidak ada tugas mendatang</div>
+                  <div style={{ fontSize: "12px", color: "#9CA3AF" }}>Semua tugas Anda sudah terselesaikan</div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div
+              style={{
+                borderTop: "1px solid #E5E7EB",
+                padding: "16px 24px",
+                background: "white",
+                borderRadius: "0 0 16px 16px",
+                display: "flex",
+                gap: "10px",
+              }}
+            >
+              <button
+                onClick={() => navigate("/tasks")}
+                style={{
+                  flex: 1,
+                  padding: "11px 16px",
+                  background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(16,185,129,0.3)";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                <span>Kelola Tugas</span>
+                <span>→</span>
+              </button>
+              <button
+                onClick={() => setShowUpcomingTasks(false)}
+                style={{
+                  flex: 1,
+                  padding: "11px 16px",
+                  background: "#F3F4F6",
+                  color: "#374151",
+                  border: "1px solid #D1D5DB",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "#E5E7EB";
+                  e.currentTarget.style.borderColor = "#9CA3AF";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "#F3F4F6";
+                  e.currentTarget.style.borderColor = "#D1D5DB";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    </>
   );
 };
 
