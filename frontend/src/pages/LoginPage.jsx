@@ -4,7 +4,7 @@ import { C } from "../constants/theme";
 import { authAPI } from "../services/api";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 
-const LoginPage = ({ onLogin }) => {
+const LoginPage = ({ onLogin, allowedRole, userType }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -21,6 +21,14 @@ const LoginPage = ({ onLogin }) => {
     setError("");
     try {
       const res = await authAPI.login(email, password);
+
+      if (allowedRole && res.user.role !== allowedRole) {
+        setError(
+          `Halaman ini hanya untuk ${userType}. Silakan login di halaman yang sesuai.`,
+        );
+        setLoading(false);
+        return;
+      }
 
       const role = res.user.role?.toLowerCase().trim();
       const roleMap = {
@@ -44,6 +52,11 @@ const LoginPage = ({ onLogin }) => {
       setLoading(false);
     }
   };
+
+  const emailPlaceholder =
+    allowedRole === "mahasiswa"
+      ? "xxxxxxxx@mahasiswa.itb.ac.id"
+      : "xxxxxxxx@itb.ac.id";
 
   return (
     <div
@@ -100,7 +113,7 @@ const LoginPage = ({ onLogin }) => {
             val: email,
             set: setEmail,
             type: "text",
-            placeholder: "xxxxxxxx@mahasiswa.itb.ac.id",
+            placeholder: emailPlaceholder,
             icon: <Mail size={20} color="#718EBF" />,
           },
         ].map((f, i) => (

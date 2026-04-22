@@ -6,6 +6,7 @@ import {
   Navigate,
   useNavigate,
   useLocation,
+  useParams,
 } from "react-router-dom";
 
 // Components
@@ -24,9 +25,54 @@ import DashboardKaprodi from "./pages/DashboardKaprodi";
 import DashboardDosenWali from "./pages/DashboardDosenWali";
 import InputDataAkademikPage from "./pages/InputDataAkademikPage";
 
+// Wrapper buat LoginPage untuk validasi userType
+function LoginPageWrapper({ user, onLogin, getUserTypeRole }) {
+  const { userTypeParam } = useParams();
+  const allowedRole = getUserTypeRole(userTypeParam);
+
+  // Kalau userType tidak valid, redirect ke mahasiswa/login
+  if (!allowedRole) return <Navigate to="/mahasiswa/login" />;
+
+  // Kalau sudah login, redirect ke dashboard sesuai role
+  if (user) {
+    if (user.role === "mahasiswa") return <Navigate to="/dashboard" />;
+    if (user.role === "dosen_wali") return <Navigate to="/dashboard-dosen" />;
+    if (user.role === "kaprodi") return <Navigate to="/dashboard-kaprodi" />;
+  }
+
+  // Kirim allowedRole ke LoginPage supaya bisa validasi role saat login
+  return (
+    <LoginPage
+      onLogin={onLogin}
+      allowedRole={allowedRole}
+      userType={userTypeParam}
+    />
+  );
+}
+
+// Wrapper buat RegisterPage untuk validasi userType
+function RegisterPageWrapper({ user, getUserTypeRole }) {
+  const { userTypeParam } = useParams();
+  const allowedRole = getUserTypeRole(userTypeParam);
+
+  if (!allowedRole) return <Navigate to="/mahasiswa/register" />;
+  if (user) return <Navigate to="/dashboard" />;
+
+  return <RegisterPage allowedRole={allowedRole} userType={userTypeParam} />;
+}
+
 function InnerApp({ user, setUser, tasks, setTasks }) {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const getUserTypeRole = (userType) => {
+    const map = {
+      mahasiswa: "mahasiswa",
+      dosen: "dosen_wali",
+      kaprodi: "kaprodi",
+    };
+    return map[userType] || null;
+  };
 
   const handleLogin = (u) => {
     setUser(u);
@@ -34,7 +80,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
     if (u.token) {
       localStorage.setItem("areass_token", u.token);
     }
-    // Simpan data user juga agar saat refresh tidak hilang
+    // buat nyimpen data user juga agar saat refresh tidak hilang
     localStorage.setItem("areass_user", JSON.stringify(u));
     // ──────────────────────────
 
@@ -94,28 +140,27 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           element={<Navigate to="/mahasiswa/register" />}
         />
 
-        {/* User Type Specific Routes */}
+        {/* ─── Route login per userType ─── */}
         <Route
           path="/:userTypeParam/login"
           element={
-            user ? (
-              <Navigate
-                to={
-                  user.role === "mahasiswa"
-                    ? "/dashboard"
-                    : user.role === "dosen_wali"
-                      ? "/dashboard-dosen"
-                      : "/dashboard-kaprodi"
-                }
-              />
-            ) : (
-              <LoginPage onLogin={handleLogin} />
-            )
+            <LoginPageWrapper
+              user={user}
+              onLogin={handleLogin}
+              getUserTypeRole={getUserTypeRole}
+            />
           }
         />
+
+        {/* ─── Route register per userType ─── */}
         <Route
           path="/:userTypeParam/register"
-          element={user ? <Navigate to="/dashboard" /> : <RegisterPage />}
+          element={
+            <RegisterPageWrapper
+              user={user}
+              getUserTypeRole={getUserTypeRole}
+            />
+          }
         />
 
         {/* Original Routes (kept for compatibility) */}
@@ -248,9 +293,6 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           }
         />
 
-        <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="*" element={<Navigate to="/login" />} />
-
         <Route
           path="/analytics/:mahasiswaId"
           element={
@@ -261,6 +303,9 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
             )
           }
         />
+
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </div>
   );

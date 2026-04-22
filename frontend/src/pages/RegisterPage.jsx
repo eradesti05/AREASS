@@ -12,7 +12,7 @@ import {
   BookOpen,
 } from "lucide-react";
 
-const RegisterPage = () => {
+const RegisterPage = ({ allowedRole, userType }) => {
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,20 +35,28 @@ const RegisterPage = () => {
 
     let detectedRole = "";
     let nim = "";
-
-    if (email.endsWith("@mahasiswa.itb.ac.id")) {
-      detectedRole = "mahasiswa";
-      const nim = email.split("@")[0];
-    } else if (email.endsWith("@itb.ac.id")) {
-      detectedRole = role;
-      if (!role) {
-        setError("Pilih role untuk email dosen/kaprodi");
+    if (allowedRole === "mahasiswa") {
+      if (!email.endsWith("@mahasiswa.itb.ac.id")) {
+        setError("Gunakan email mahasiswa (@mahasiswa.itb.ac.id)");
         return;
       }
-    } else {
-      setError(
-        "Gunakan email ITB yang valid (@mahasiswa.itb.ac.id atau @itb.ac.id)",
-      );
+      nim = email.split("@")[0];
+    } else if (allowedRole === "dosen_wali") {
+      if (!email.endsWith("@itb.ac.id")) {
+        setError("Gunakan email dosen (@itb.ac.id)");
+        return;
+      }
+      detectedRole = role;
+    } else if (allowedRole === "kaprodi") {
+      if (!email.endsWith("@itb.ac.id")) {
+        setError("Gunakan email kaprodi (@itb.ac.id)");
+        return;
+      }
+      detectedRole = role;
+    }
+
+    if (!detectedRole) {
+      setError("Role harus dipilih");
       return;
     }
 
@@ -88,6 +96,11 @@ const RegisterPage = () => {
     outline: "none",
   };
   const labelStyle = { fontSize: 11, color: C.textGray };
+
+  const emailPlaceholder =
+    allowedRole === "mahasiswa"
+      ? "xxxxxxxx@mahasiswa.itb.ac.id"
+      : "xxxxxxxx@itb.ac.id";
 
   return (
     <div
@@ -167,7 +180,7 @@ const RegisterPage = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleRegister()}
-              placeholder="xxxxxxxx@mahasiswa.itb.ac.id"
+              placeholder={emailPlaceholder}
               type="email"
               style={inputStyle}
             />
