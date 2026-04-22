@@ -320,7 +320,7 @@ const DashboardKaprodi = () => {
                         console.error("ID tidak ditemukan:", m);
                         return;
                       }
-                      navigate(`/analytics/${m.id}`);
+                      navigate(`/analytics/${m.id}`, { state: m });
                     }}
                     onMouseEnter={() => setHoveredId(m.id)}
                     onMouseLeave={() => setHoveredId(null)}

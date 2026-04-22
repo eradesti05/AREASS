@@ -10,6 +10,8 @@ import {
   RefreshCw,
   ShieldCheck,
   Clock,
+  UserCheck,
+  FileDigit,
 } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
 
@@ -90,6 +92,39 @@ const AnalyticsPage = () => {
 
   return (
     <div style={{ padding: "clamp(16px, 4vw, 32px)" }}>
+      <div
+        style={{
+          fontSize: "clamp(18px, 5vw, 22px)",
+          fontWeight: 700,
+          color: C.textDark,
+          marginBottom: "clamp(16px, 3vw, 24px)",
+        }}
+      >
+        Identitas
+      </div>
+      {/* Data Akademik */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(600px, 1fr))",
+          gap: "clamp(12px, 2vw, 20px)",
+          marginBottom: "clamp(20px, 3vw, 32px)",
+        }}
+      >
+        <StatCard
+          icon={<UserCheck size={24} color="#6366F1" />}
+          label="Nama Lengkap"
+          value={latest.nama || "-"}
+          iconBg="#EEF2FF"
+        />
+        <StatCard
+          icon={<FileDigit size={24} color="#F59E0B" />}
+          label="Nomor Induk Mahasiswa"
+          value={latest.nim || "-"}
+          iconBg="#FFFBEB"
+        />
+      </div>
+
       <div
         style={{
           fontSize: "clamp(18px, 5vw, 22px)",
