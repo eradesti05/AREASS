@@ -134,7 +134,7 @@ def preprocess_for_inference(
     # Feature engineering — sama persis dengan pipeline training,
     # tapi hanya untuk satu mahasiswa
     df = _engineer_features_single(df, strata)
-
+    print(f"Features after engineering for {strata}: \n{df}")
     # Ambil snapshot semester terakhir (baris terakhir setelah sort)
     snapshot = df.iloc[[-1]].copy()
 
@@ -143,7 +143,7 @@ def preprocess_for_inference(
 
     # Pilih kolom fitur sesuai urutan yang diharapkan model
     X = snapshot[FEATURE_COLUMNS].reset_index(drop=True)
-
+    print(f"Features before scaling for {strata}: \n{X}")
     # Scaling — gunakan scaler dari training, jangan fit ulang
     X[FEATURES_TO_SCALE] = scaler.transform(X[FEATURES_TO_SCALE])
 

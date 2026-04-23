@@ -20,19 +20,28 @@ STRATA_CONFIG = {
         "target_sks":        144,
         "max_semester":       14,
         "batas_tepat_waktu":   8,
+        "ipk_lulus_min":       2.0,  # IPK minimum untuk dianggap lulus
     },
     "S2": {
         "target_sks":         36,
         "max_semester":        8,
         "batas_tepat_waktu":   4,
+        "ipk_lulus_min":       3.0,  # IPK minimum untuk dianggap lulus
     },
     "S3": {
         "target_sks":         42,
         "max_semester":       10,
-        "batas_tepat_waktu":   8,  # dapat diubah; diskusikan dengan tim
+        "batas_tepat_waktu":   6,  # dapat diubah; diskusikan dengan tim
+        "ipk_lulus_min":       3.0,  # IPK minimum untuk dianggap lulus
     },
 }
 
+SKS_MILESTONE_S1 = {2: 24, 4: 48, 6: 72, 8: 96, 10: 120}
+ABILITY_RANGE = {
+    "S1": (0.65, 0.75),
+    "S2": (0.85, 0.95),
+    "S3": (0.95, 0.99),
+}
 
 # ----------------------------------------------------------------
 # Fungsi utama
@@ -92,8 +101,9 @@ def generate_data_sintetis(
         cfg          = STRATA_CONFIG[strata]
         target_sks   = cfg["target_sks"]
         max_semester = cfg["max_semester"]
-        
-        ability_score_mean = rng.uniform(0.65, 0.75)  # variasi rata-rata kemampuan antar mahasiswa
+        ipk_lulus_min = cfg["ipk_lulus_min"]
+
+        ability_score_mean = rng.uniform(*ABILITY_RANGE[strata])  # variasi rata-rata kemampuan antar mahasiswa
         ability_score_std = rng.uniform(0.10, 0.15)  # variasi kemampuan antar mahasiswa
         ability_score = rng.normal(loc=ability_score_mean, scale=ability_score_std)  # rata-rata 0.70, std dev 0.12
         ability_score = float(np.clip(ability_score, 0.4, 0.9))
@@ -105,21 +115,38 @@ def generate_data_sintetis(
         ip_history      = []
         sks_history     = []
 
+        # flags
+        early_dropout = False
+        survived_evaluation = False # untuk S2/S3 yang gagal evaluasi awal tapi tetap lanjut dengan penalti
+
         # Step 2 — simulasi per semester
-        while semester <= max_semester and sks_lulus < target_sks:
+        while semester <= max_semester and (sks_lulus < target_sks or ipk_total < ipk_lulus_min):
 
             # 2.1 SKS semester
-            if semester == 1:
-                sks_semester = int(rng.integers(18, 23))   # 18–22 inklusif
-            else:
-                # TODO: perlu diskusi lebih lanjut untuk menentukan distribusi SKS semester berikutnya
-                ip_prev = ip_history[-1]
-                if ip_prev >= 3.0:
-                    sks_semester = int(rng.integers(21, 25))  # 21–24
-                elif ip_prev >= 2.5:
-                    sks_semester = int(rng.integers(18, 22))  # 18–21
-                else:
-                    sks_semester = int(rng.integers(15, 19))  # 15–18
+            match strata:
+                case "S1":
+                    if semester == 1:
+                        sks_semester = int(rng.integers(18, 23))   # 18–22 inklusif
+                    else:
+                        # TODO: perlu diskusi lebih lanjut untuk menentukan distribusi SKS semester berikutnya
+                        ip_prev = ip_history[-1]
+                        if ip_prev >= 3.0:
+                            sks_semester = int(rng.integers(21, 25))  # 21–24
+                        elif ip_prev >= 2.5:
+                            sks_semester = int(rng.integers(18, 22))  # 18–21
+                        else:
+                            sks_semester = int(rng.integers(15, 19))  # 15–18
+
+                case "S2":
+                    sks_semester = int(rng.integers(9, 15))   # 9–12 inklusif
+                case "S3":
+                    sks_semester = int(rng.integers(6, 12))   # 6–11 inklusif
+
+                
+            
+            if survived_evaluation:
+                # penalti untuk mahasiswa yang gagal evaluasi tapi tetap lanjut
+                sks_semester = min(sks_semester, 15)  # maximal 15 SKS
 
             # 2.2 IP semester
             ip_semester = rng.normal(loc=ability_score * 4, scale=0.3)
@@ -166,6 +193,45 @@ def generate_data_sintetis(
                 "label_kelulusan": None,   # diisi di Step 4
             })
 
+            match strata:
+                case "S1":
+                    # milestone SKS tiap 2 semester
+                    if semester in SKS_MILESTONE_S1:
+                        shortfall = SKS_MILESTONE_S1[semester] - sks_lulus
+                        if shortfall > 0:
+                            p_do = 0.3 if shortfall <= 6 else 0.7
+                            if rng.random() < p_do:
+                                early_dropout = True
+                                break
+                            else:
+                                # reduce ability score untuk semester berikutnya sebagai penalti
+                                ability_score *= 0.9
+                case "S2":
+                    # penalti jika IPK total di bawah 2.5 setelah semester 4
+                    if semester == 2 and ipk_total < 1.5:
+                        if rng.random() < 0.8:  # risiko dropout tinggi
+                            early_dropout = True
+                            break
+                        else: # survive evaluasi awal dengan penalti besar untuk semester berikutnya
+                            ability_score *= 0.80
+                            survived_evaluation = True
+                    elif semester == 4 and ipk_total < 2.5:
+                        if rng.random() < 0.7:  # risiko dropout sedang
+                            early_dropout = True
+                            break
+                        else:
+                            ability_score *= 0.90  # penalti sedang untuk semester berikutnya
+                            survived_evaluation = True
+                case "S3":
+                    # Evaluasi kemajuan penelitian tiap semester
+                    # Mahasiswa dengan ability rendah lebih berisiko abandon
+                    p_abandon = (1 - ability_score) * 0.08  # ~0-5% per semester
+                    if rng.random() < p_abandon:
+                        early_dropout = True
+                        break
+
+
+
             # 2.7 Naik semester
             semester += 1
 
@@ -175,12 +241,15 @@ def generate_data_sintetis(
 
         semester_selesai = semester - 1
         batas_tepat_waktu = cfg["batas_tepat_waktu"]
+        
 
-        if sks_lulus >= target_sks and ipk_total >= 2.0:
+        if early_dropout:
+            label = "dropout"
+        elif sks_lulus >= target_sks and ipk_total >= ipk_lulus_min:
             if semester_selesai <= batas_tepat_waktu:
                 label = "lulus_tepat_waktu"
             else:
-                label = "lulus_terlambat"
+                label = "lulus_terlambat"            
         else:
             label = "dropout"
 

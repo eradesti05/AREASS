@@ -351,11 +351,11 @@ def select_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 def split_data(
     df: pd.DataFrame,
-    test_size: float = 0.2,
+    specified_shape: tuple[float, float, float] | None = None,
     random_state: int = 42,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series]:
     """
-    Split dataset menjadi train dan test set.
+    Split dataset menjadi train, validation, dan test set.
 
     Split dilakukan di level mahasiswa (bukan baris) untuk mencegah
     data leakage — tanpa ini, semester awal dan akhir mahasiswa yang
@@ -363,24 +363,30 @@ def split_data(
     informasi masa depan saat training.
 
     Stratifikasi menggunakan label mahasiswa (satu label per mahasiswa)
-    agar proporsi kelas terjaga di train dan test.
+    agar proporsi kelas terjaga di ketiga split.
 
     Parameters
     ----------
     df : pd.DataFrame
         Output dari select_columns, masih mengandung student_id.
-    test_size : float
-        Proporsi test set. Default 0.2 (80/20 split).
+    specified_shape : tuple[float, float, float], optional
+        Proporsi (train, val, test). Harus berjumlah 1.0.
+        Default: (0.6, 0.2, 0.2).
     random_state : int
         Seed untuk reprodusibilitas split.
 
     Returns
     -------
-    X_train, X_test : pd.DataFrame
+    X_train, X_val, X_test : pd.DataFrame
         Feature matrix tanpa student_id dan tanpa label.
-    y_train, y_test : pd.Series
+    y_train, y_val, y_test : pd.Series
         Label target (integer encoded).
     """
+
+    if specified_shape is None:
+        specified_shape = (0.6, 0.2, 0.2)
+
+    train_size, val_size, test_size = specified_shape
 
     # Ambil satu baris per mahasiswa untuk mendapatkan labelnya
     student_labels = (
@@ -388,29 +394,43 @@ def split_data(
         .set_index("student_id")
     )
 
-    # Split di level student_id dengan stratifikasi label
-    train_ids, test_ids = train_test_split(
+    # Split pertama: pisahkan train dari (val + test)
+    train_ids, temp_ids = train_test_split(
         student_labels.index,
-        test_size=test_size,
+        train_size=train_size,
         random_state=random_state,
         stratify=student_labels[TARGET_COLUMN],
     )
 
+    # Split kedua: pisahkan val dari test dengan proporsi relatif terhadap temp
+    val_size_relative = val_size / (val_size + test_size)
+    val_ids, test_ids = train_test_split(
+        temp_ids,
+        train_size=val_size_relative,
+        random_state=random_state,
+        stratify=student_labels.loc[temp_ids, TARGET_COLUMN],
+    )
+
     df_train = df[df["student_id"].isin(train_ids)].copy()
+    df_val   = df[df["student_id"].isin(val_ids)].copy()
     df_test  = df[df["student_id"].isin(test_ids)].copy()
 
     # Drop student_id — tidak digunakan sebagai fitur
     X_train = df_train[FEATURE_COLUMNS].reset_index(drop=True)
+    X_val   = df_val[FEATURE_COLUMNS].reset_index(drop=True)
     X_test  = df_test[FEATURE_COLUMNS].reset_index(drop=True)
     y_train = df_train[TARGET_COLUMN].reset_index(drop=True)
+    y_val   = df_val[TARGET_COLUMN].reset_index(drop=True)
     y_test  = df_test[TARGET_COLUMN].reset_index(drop=True)
 
     print(f"[split] train: {len(X_train)} baris ({df_train['student_id'].nunique()} mahasiswa)")
+    print(f"[split] val:   {len(X_val)} baris ({df_val['student_id'].nunique()} mahasiswa)")
     print(f"[split] test:  {len(X_test)} baris ({df_test['student_id'].nunique()} mahasiswa)")
     _print_label_distribution_from_series(y_train, "Label distribution — train")
+    _print_label_distribution_from_series(y_val,   "Label distribution — val")
     _print_label_distribution_from_series(y_test,  "Label distribution — test")
 
-    return X_train, X_test, y_train, y_test
+    return X_train, X_val, X_test, y_train, y_val, y_test
 
 
 # ----------------------------------------------------------------
@@ -419,13 +439,14 @@ def split_data(
 
 def scale_features(
     X_train: pd.DataFrame,
+    X_val: pd.DataFrame,
     X_test: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame, StandardScaler]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, StandardScaler]:
     """
     Terapkan StandardScaler pada fitur numerik kontinu.
 
-    Scaler di-fit hanya pada X_train dan diterapkan ke X_test untuk
-    mencegah data leakage dari distribusi test set.
+    Scaler di-fit hanya pada X_train dan diterapkan ke X_val dan X_test
+    untuk mencegah data leakage dari distribusi val/test set.
 
     Fitur yang di-scale (FEATURES_TO_SCALE):
         ip_semester, ipk_total, sks_semester, sks_tidak_lulus,
@@ -444,26 +465,28 @@ def scale_features(
 
     Parameters
     ----------
-    X_train, X_test : pd.DataFrame
+    X_train, X_val, X_test : pd.DataFrame
 
     Returns
     -------
-    X_train_scaled, X_test_scaled : pd.DataFrame
+    X_train_scaled, X_val_scaled, X_test_scaled : pd.DataFrame
     scaler : StandardScaler
         Scaler yang sudah di-fit; disimpan untuk inferensi produksi.
     """
 
     X_train_scaled = X_train.copy()
+    X_val_scaled   = X_val.copy()
     X_test_scaled  = X_test.copy()
 
     scaler = StandardScaler()
     X_train_scaled[FEATURES_TO_SCALE] = scaler.fit_transform(X_train[FEATURES_TO_SCALE])
+    X_val_scaled[FEATURES_TO_SCALE]   = scaler.transform(X_val[FEATURES_TO_SCALE])
     X_test_scaled[FEATURES_TO_SCALE]  = scaler.transform(X_test[FEATURES_TO_SCALE])
 
     print(f"[scale] StandardScaler diterapkan pada: {FEATURES_TO_SCALE}")
-    print(f"[scale] Scaler fit pada X_train ({len(X_train)} baris); transform ke X_test")
+    print(f"[scale] Scaler fit pada X_train ({len(X_train)} baris); transform ke X_val dan X_test")
 
-    return X_train_scaled, X_test_scaled, scaler
+    return X_train_scaled, X_val_scaled, X_test_scaled, scaler
 
 
 # ----------------------------------------------------------------
@@ -472,8 +495,10 @@ def scale_features(
 
 def save_artifacts(
     X_train: pd.DataFrame,
+    X_val: pd.DataFrame,
     X_test: pd.DataFrame,
     y_train: pd.Series,
+    y_val: pd.Series,
     y_test: pd.Series,
     scaler: StandardScaler,
     output_dir: str,
@@ -482,8 +507,8 @@ def save_artifacts(
     Simpan semua artefak preprocessing ke direktori output.
 
     File yang disimpan:
-        X_train.csv, X_test.csv  — feature matrix
-        y_train.csv, y_test.csv  — label target
+        X_train.csv, X_val.csv, X_test.csv  — feature matrix
+        y_train.csv, y_val.csv, y_test.csv  — label target
         scaler.pkl               — fitted StandardScaler untuk inferensi
         label_encoding.csv       — mapping label string ke integer
         feature_columns.txt      — urutan kolom fitur
@@ -497,8 +522,10 @@ def save_artifacts(
     os.makedirs(output_dir, exist_ok=True)
 
     X_train.to_csv(os.path.join(output_dir, "X_train.csv"), index=False)
+    X_val.to_csv(os.path.join(output_dir, "X_val.csv"),    index=False)
     X_test.to_csv(os.path.join(output_dir, "X_test.csv"),  index=False)
     y_train.to_csv(os.path.join(output_dir, "y_train.csv"), index=False, header=True)
+    y_val.to_csv(os.path.join(output_dir, "y_val.csv"),     index=False, header=True)
     y_test.to_csv(os.path.join(output_dir, "y_test.csv"),   index=False, header=True)
 
     with open(os.path.join(output_dir, "scaler.pkl"), "wb") as f:
@@ -512,7 +539,8 @@ def save_artifacts(
         f.write("\n".join(FEATURE_COLUMNS))
 
     print(f"[save] Artefak disimpan ke: {output_dir}/")
-    for fname in ["X_train.csv", "X_test.csv", "y_train.csv", "y_test.csv",
+    for fname in ["X_train.csv", "X_val.csv", "X_test.csv",
+                  "y_train.csv", "y_val.csv", "y_test.csv",
                   "scaler.pkl", "label_encoding.csv", "feature_columns.txt"]:
         fpath = os.path.join(output_dir, fname)
         print(f"       {fname} ({os.path.getsize(fpath):,} bytes)")
@@ -547,7 +575,7 @@ def _print_label_distribution_from_series(y: pd.Series, title: str) -> None:
 def run_pipeline(
     input_path: str,
     output_dir: str,
-    test_size: float = 0.2,
+    specified_shape: tuple[float, float, float] | None = None,
     random_state: int = 42,
 ) -> tuple:
     """
@@ -559,14 +587,14 @@ def run_pipeline(
         Path ke CSV hasil datagen.py.
     output_dir : str
         Direktori untuk menyimpan artefak.
-    test_size : float
-        Proporsi test set. Default 0.2.
+    specified_shape : tuple[float, float, float], optional
+        Proporsi (train, val, test). Default (0.6, 0.2, 0.2).
     random_state : int
         Seed untuk reprodusibilitas. Default 42.
 
     Returns
     -------
-    X_train, X_test, y_train, y_test, scaler
+    X_train, X_val, X_test, y_train, y_val, y_test, scaler
     """
 
     print("=" * 55)
@@ -578,19 +606,20 @@ def run_pipeline(
     df = encode(df)
     df = select_columns(df)
 
-    X_train, X_test, y_train, y_test = split_data(
-        df, test_size=test_size, random_state=random_state
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data(
+        df, specified_shape=specified_shape, random_state=random_state
     )
 
-    X_train_scaled, X_test_scaled, scaler = scale_features(X_train, X_test)
+    X_train_scaled, X_val_scaled, X_test_scaled, scaler = scale_features(X_train, X_val, X_test)
 
-    save_artifacts(X_train_scaled, X_test_scaled, y_train, y_test, scaler, output_dir)
+    save_artifacts(X_train_scaled, X_val_scaled, X_test_scaled,
+                   y_train, y_val, y_test, scaler, output_dir)
 
     print("=" * 55)
     print("Pipeline selesai.")
     print("=" * 55)
 
-    return X_train_scaled, X_test_scaled, y_train, y_test, scaler
+    return X_train_scaled, X_val_scaled, X_test_scaled, y_train, y_val, y_test, scaler
 
 
 if __name__ == "__main__":
@@ -598,15 +627,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Preprocessing pipeline AREASS.")
     parser.add_argument("input",      help="Path ke CSV hasil datagen.py.")
     parser.add_argument("output_dir", help="Direktori output artefak preprocessing.")
-    parser.add_argument("--test-size",     type=float, default=0.2,
-                        help="Proporsi test set (default: 0.2).")
-    parser.add_argument("--random-state",  type=int,   default=42,
+    parser.add_argument("-s", "--shape",
+                        type=float,
+                        nargs=3,
+                        default=[0.6, 0.2, 0.2],
+                        metavar=("train", "val", "test"),
+                        help="Proporsi split (default: 0.6 0.2 0.2). Harus berjumlah 1.0.",
+                        )
+    parser.add_argument("--random-state", type=int, default=42,
                         help="Seed reprodusibilitas (default: 42).")
     args = parser.parse_args()
+
+    if not abs(sum(args.shape) - 1.0) < 1e-6:
+        parser.error("Shape values must sum to 1")
 
     run_pipeline(
         input_path=args.input,
         output_dir=args.output_dir,
-        test_size=args.test_size,
+        specified_shape=tuple(args.shape),
         random_state=args.random_state,
     )
+    
