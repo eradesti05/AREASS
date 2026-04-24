@@ -27,6 +27,8 @@ import ProfilePage from "./pages/ProfilePage";
 import DashboardKaprodi from "./pages/DashboardKaprodi";
 import DashboardDosenWali from "./pages/DashboardDosenWali";
 import InputDataAkademikPage from "./pages/InputDataAkademikPage";
+import AnalyticsPageKaprodi from "./pages/AnalyticsPageKaprodi";
+import AnalyticsPageDosen from "./pages/AnalyticsPageDosen";
 
 // Wrapper buat LoginPage untuk validasi userType
 function LoginPageWrapper({ user, onLogin, getUserTypeRole }) {
@@ -345,6 +347,14 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
               <Navigate to="/login" />
             )
           }
+        />
+        <Route
+          path="/kaprodi/analytics/:mahasiswaId"
+          element={<AnalyticsPageKaprodi />}
+        />
+        <Route
+          path="/dosen/analytics/:mahasiswaId"
+          element={<AnalyticsPageDosen />}
         />
 
         <Route path="/" element={<Navigate to="/login" />} />

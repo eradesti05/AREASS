@@ -63,7 +63,8 @@ export const akademikAPI = {
 // ─── PREDIKSI ─────────────────────────────────────────────────────────────────
 export const prediksiAPI = {
   run: () => request("POST", "/prediksi"),
-  getLatest: (strata = "S1") => request("GET", `/prediksi/latest?strata=${strata}`),
+  getLatest: (strata = "S1") =>
+    request("GET", `/prediksi/latest?strata=${strata}`),
   getByMahasiswaId: (mahasiswaId) => request("GET", `/prediksi/${mahasiswaId}`),
 };
 
@@ -72,6 +73,7 @@ export const dosenAPI = {
   getMahasiswa: () => request("GET", "/dosen/mahasiswa"),
   getAkademikMahasiswa: (id) =>
     request("GET", `/dosen/mahasiswa/${id}/akademik`),
+  getAkademikById: (id) => request("GET", `/dosen/mahasiswa/${id}/akademik`),
 };
 
 // ─── KAPRODI ──────────────────────────────────────────────────────────────────

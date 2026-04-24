@@ -93,7 +93,14 @@ const DashboardDosen = () => {
 
       <Card>
         {/* FILTER */}
-        <div style={{ marginBottom: 16, display: "flex", gap: "clamp(6px, 2vw, 8px)", flexWrap: "wrap" }}>
+        <div
+          style={{
+            marginBottom: 16,
+            display: "flex",
+            gap: "clamp(6px, 2vw, 8px)",
+            flexWrap: "wrap",
+          }}
+        >
           {["Semua", "Aman", "Waspada", "Perlu perhatian"].map((status) => (
             <button
               key={status}
@@ -108,7 +115,7 @@ const DashboardDosen = () => {
                 background:
                   filterStatus === status ? C.primary : "rgba(0,0,0,0.05)",
                 color: filterStatus === status ? "#fff" : "#333",
-                whiteSpace: "nowrap"
+                whiteSpace: "nowrap",
               }}
             >
               {status}
@@ -118,7 +125,11 @@ const DashboardDosen = () => {
           <select
             value={selectedStrata}
             onChange={(e) => setSelectedStrata(e.target.value)}
-            style={{ padding: "clamp(4px, 1vw, 6px) clamp(8px, 2vw, 10px)", borderRadius: 8, fontSize: "clamp(11px, 2vw, 12px)" }}
+            style={{
+              padding: "clamp(4px, 1vw, 6px) clamp(8px, 2vw, 10px)",
+              borderRadius: 8,
+              fontSize: "clamp(11px, 2vw, 12px)",
+            }}
           >
             <option value="Semua">Semua</option>
             {uniqueStrata.map((s) => (
@@ -169,7 +180,7 @@ const DashboardDosen = () => {
                         console.error("ID tidak ditemukan:", m);
                         return;
                       }
-                      navigate(`/analytics/${m.id}`);
+                      navigate(`/dosen/analytics/${m.id}`);
                     }}
                     onMouseEnter={() => setHoveredId(m.id)}
                     onMouseLeave={() => setHoveredId(null)}

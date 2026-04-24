@@ -312,13 +312,17 @@ app.get("/api/tasks/summary", auth, role("mahasiswa"), async (req, res) => {
         (new Date(t.deadline) - today) / (1000 * 60 * 60 * 24),
       );
       const pass = sisa <= 7 && t.status !== "Done";
-      console.log(`[Backend] Task: ${t.title}, Deadline: ${t.deadline}, SisaHari: ${sisa}, Status: ${t.status}, Pass: ${pass}`);
+      console.log(
+        `[Backend] Task: ${t.title}, Deadline: ${t.deadline}, SisaHari: ${sisa}, Status: ${t.status}, Pass: ${pass}`,
+      );
       return pass;
     });
     const backlogCount = tasks.filter((t) => t.status === "Backlog").length;
-    const onProgressCount = tasks.filter((t) => t.status === "On Progress").length;
+    const onProgressCount = tasks.filter(
+      (t) => t.status === "On Progress",
+    ).length;
     const doneCount = tasks.filter((t) => t.status === "Done").length;
-    
+
     // Hitung total jam kerja dari tasks yang belum done
     const estimasiBeban = tasks
       .filter((t) => t.status !== "Done")
@@ -326,11 +330,17 @@ app.get("/api/tasks/summary", auth, role("mahasiswa"), async (req, res) => {
         const jam = parseInt(t.estimasiPengerjaan, 10) || 0;
         return total + jam;
       }, 0);
-    
-    console.log(`[Backend] Summary: Total=${tasks.length}, Backlog=${backlogCount}, OnProgress=${onProgressCount}, Done=${doneCount}`);
-    console.log(`[Backend] EstimasiBeban=${estimasiBeban} jam (sum dari tasks yang belum Done)`);
-    console.log(`[Backend] TenggatDekat=${tenggatDekat.length} tasks with deadline <= 7 days`);
-    
+
+    console.log(
+      `[Backend] Summary: Total=${tasks.length}, Backlog=${backlogCount}, OnProgress=${onProgressCount}, Done=${doneCount}`,
+    );
+    console.log(
+      `[Backend] EstimasiBeban=${estimasiBeban} jam (sum dari tasks yang belum Done)`,
+    );
+    console.log(
+      `[Backend] TenggatDekat=${tenggatDekat.length} tasks with deadline <= 7 days`,
+    );
+
     res.json({
       totalTugas: tasks.length,
       tenggatWaktuTugas: tenggatDekat.length,
@@ -422,11 +432,22 @@ app.delete("/api/tasks/:id", auth, role("mahasiswa"), async (req, res) => {
 });
 
 // ─── AKADEMIK ROUTES ──────────────────────────────────────────────────────────
+// app.get("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
+//   try {
+//     const data = await Akademik.find({ mahasiswaId: req.user.id }).sort({
+//       semesterKe: 1,
+//     });
+//     res.json(data);
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// });
+
 app.get("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
   try {
-    const data = await Akademik.find({ mahasiswaId: req.user.id }).sort({
-      semesterKe: 1,
-    });
+    const data = await Akademik.find({ mahasiswaId: req.user.id })
+      .populate("mahasiswaId", "nama nim")
+      .sort({ semesterKe: 1 });
     res.json(data);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -466,11 +487,13 @@ app.post("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
         const predictions = [];
 
         for (const strata of stratas) {
-          const akademikByStrata = allAkademik.filter((a) => a.strata === strata);
-          
+          const akademikByStrata = allAkademik.filter(
+            (a) => a.strata === strata,
+          );
+
           if (akademikByStrata.length > 0) {
             const latest = akademikByStrata[akademikByStrata.length - 1];
-            
+
             predictions.push({
               strata: strata,
               ipk_total: latest.ipkTotal,
@@ -508,7 +531,10 @@ app.post("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
 
         if (mlRes.ok) {
           mlPredictions = await mlRes.json();
-          console.log("✅ ML Predictions received:", JSON.stringify(mlPredictions, null, 2));
+          console.log(
+            "✅ ML Predictions received:",
+            JSON.stringify(mlPredictions, null, 2),
+          );
 
           // ✅ Handle response format: { S1: {...}, S2: {...}, S3: {...} }
           for (const strata of stratas) {
@@ -573,10 +599,10 @@ app.put("/api/akademik/:id", auth, role("mahasiswa"), async (req, res) => {
 // ─── PREDIKSI ROUTES ──────────────────────────────────────────────────────────
 app.post("/api/prediksi", auth, role("mahasiswa"), async (req, res) => {
   try {
-    const allAkademik = await Akademik.find({ 
-      mahasiswaId: req.user.id 
+    const allAkademik = await Akademik.find({
+      mahasiswaId: req.user.id,
     }).sort({ strata: 1, semesterKe: 1 });
-    
+
     if (!allAkademik.length)
       return res.status(400).json({ message: "Data akademik belum ada" });
 
@@ -588,10 +614,10 @@ app.post("/api/prediksi", auth, role("mahasiswa"), async (req, res) => {
 
       for (const strata of stratas) {
         const akademikByStrata = allAkademik.filter((a) => a.strata === strata);
-        
+
         if (akademikByStrata.length > 0) {
           const latest = akademikByStrata[akademikByStrata.length - 1];
-          
+
           predictions.push({
             strata: strata,
             ipk_total: latest.ipkTotal,
@@ -630,7 +656,10 @@ app.post("/api/prediksi", auth, role("mahasiswa"), async (req, res) => {
 
         if (mlRes.ok) {
           mlPredictions = await mlRes.json();
-          console.log("✅ ML Predictions received:", JSON.stringify(mlPredictions, null, 2));
+          console.log(
+            "✅ ML Predictions received:",
+            JSON.stringify(mlPredictions, null, 2),
+          );
 
           // ✅ Handle response format: { S1: {...}, S2: {...}, S3: {...} }
           for (const strata of stratas) {
@@ -687,13 +716,13 @@ app.get("/api/prediksi/latest", auth, role("mahasiswa"), async (req, res) => {
   try {
     // Get strata dari query parameter, default ke S1
     const strata = req.query.strata || "S1";
-    
+
     const latest = await Akademik.findOne({
       mahasiswaId: req.user.id,
       strata: strata,
       hasilPrediksi: { $ne: null },
     }).sort({ semesterKe: -1 });
-    
+
     if (!latest) return res.json({ hasilPrediksi: "Aman", skorConfidence: 0 });
     res.json({
       hasilPrediksi: latest.hasilPrediksi,
@@ -782,7 +811,8 @@ app.get("/api/kaprodi/statistik", auth, role("kaprodi"), async (req, res) => {
   try {
     const kaprodi = await User.findById(req.user.id);
     const list = await User.find({ role: "mahasiswa", prodi: kaprodi.prodi });
-    const ids = list.map((m) => m._id);
+    // const ids = list.map((m) => m._id);
+    const ids = list.map((m) => new mongoose.Types.ObjectId(m._id));
     const stats = await Akademik.aggregate([
       { $match: { mahasiswaId: { $in: ids }, hasilPrediksi: { $ne: null } } },
       { $sort: { semesterKe: -1 } },
@@ -971,13 +1001,14 @@ app.post("/api/notifications/trigger-test", auth, async (req, res) => {
       userId: req.user.id,
       type: "summary",
       title: "🧪 Notifikasi Test",
-      message: "Ini notifikasi test dari Postman. Notifikasi sistem berhasil terhubung!",
+      message:
+        "Ini notifikasi test dari Postman. Notifikasi sistem berhasil terhubung!",
     });
 
     const notifs = await Notification.find({ userId: req.user.id })
       .sort({ sentAt: -1 })
       .limit(10);
-    
+
     res.json({
       message: "✅ Test notification created successfully",
       data: notifs,
@@ -1185,6 +1216,23 @@ app.get(
   },
 );
 
+// app.get(
+//   "/api/akademik/:id",
+//   auth,
+//   role("kaprodi", "dosen_wali"),
+//   async (req, res) => {
+//     try {
+//       const data = await Akademik.find({
+//         mahasiswaId: req.params.id,
+//       }).sort({ semesterKe: 1 });
+
+//       res.json(data);
+//     } catch (err) {
+//       res.status(500).json({ message: err.message });
+//     }
+//   },
+// );
+
 app.get(
   "/api/akademik/:id",
   auth,
@@ -1193,7 +1241,9 @@ app.get(
     try {
       const data = await Akademik.find({
         mahasiswaId: req.params.id,
-      }).sort({ semesterKe: 1 });
+      })
+        .populate("mahasiswaId", "nama nim")
+        .sort({ semesterKe: 1 });
 
       res.json(data);
     } catch (err) {

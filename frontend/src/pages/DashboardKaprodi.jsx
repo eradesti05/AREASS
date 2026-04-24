@@ -40,6 +40,7 @@ const DashboardKaprodi = () => {
             kaprodiAPI.getTrenSemester(),
             kaprodiAPI.getAkademik(),
           ]);
+        console.log("RES STATS:", resStats);
 
         const mahasiswaArray = Array.isArray(resMahasiswa)
           ? resMahasiswa
@@ -67,10 +68,16 @@ const DashboardKaprodi = () => {
         setMahasiswaList(mahasiswaWithStrata);
 
         // buat bikin trend jumlah mhs persemester
+        // const dataPerSemester = resTren.map((item) => ({
+        //   semester: `Sem ${item.semesterKe}`,
+        //   jumlah: item.jumlah,
+        // }));
+
         const dataPerSemester = resTren.map((item) => ({
-          semester: `Sem ${item.semesterKe}`,
+          semester: `Sem ${item.semesterKe ?? item._id}`, // fallback ke _id
           jumlah: item.jumlah,
         }));
+
         setTrendData(dataPerSemester);
 
         const labelMapping = {
@@ -92,6 +99,9 @@ const DashboardKaprodi = () => {
               color: sliceColor,
             };
           });
+
+          console.log("PIE DATA FINAL:", formattedPie);
+          console.log("DISTRIBUSI:", resStats.distribusi);
           setPieData(formattedPie);
         }
       } catch (error) {
@@ -136,60 +146,54 @@ const DashboardKaprodi = () => {
           <div style={{ fontWeight: 700, marginBottom: 16, color: C.textDark }}>
             Prediksi Tren Jumlah Mahasiswa
           </div>
-          <ResponsiveContainer
-            width="100%"
-            height={window.innerWidth < 768 ? 250 : 300}
+          <LineChart
+            width={500}
+            height={280}
+            data={trendData}
+            style={{ maxWidth: "100%" }}
           >
-            <LineChart data={trendData}>
-              {" "}
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
-              <XAxis dataKey="semester" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="jumlah"
-                name="Total Mahasiswa"
-                stroke={C.accent}
-                strokeWidth={3}
-                dot={{ r: 6, fill: C.accent }}
-                activeDot={{ r: 8 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
+            <XAxis dataKey="semester" tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="jumlah"
+              name="Total Mahasiswa"
+              stroke={C.accent}
+              strokeWidth={3}
+              dot={{ r: 6, fill: C.accent }}
+              activeDot={{ r: 8 }}
+            />
+          </LineChart>
         </Card>
 
         <Card>
           <div style={{ fontWeight: 700, marginBottom: 16, color: C.textDark }}>
             Distribusi Prediksi Kelulusan
           </div>
-          <ResponsiveContainer
-            width="100%"
-            height={window.innerWidth < 768 ? 250 : 300}
-          >
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                paddingAngle={5}
-                dataKey="value"
-                nameKey="name"
-                label={({ name, percent }) =>
-                  `${name} ${(percent * 100).toFixed(0)}%`
-                }
-              >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend verticalAlign="bottom" height={36} />
-            </PieChart>
-          </ResponsiveContainer>
+          <PieChart width={500} height={280} style={{ maxWidth: "100%" }}>
+            <Pie
+              data={pieData}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={80}
+              paddingAngle={5}
+              dataKey="value"
+              nameKey="name"
+              label={({ name, percent }) =>
+                `${name} ${(percent * 100).toFixed(0)}%`
+              }
+            >
+              {pieData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend verticalAlign="bottom" height={36} />
+          </PieChart>
         </Card>
       </div>
 
@@ -320,7 +324,9 @@ const DashboardKaprodi = () => {
                         console.error("ID tidak ditemukan:", m);
                         return;
                       }
-                      navigate(`/analytics/${m.id}`, { state: m });
+                      navigate(`/kaprodi/analytics/${m.id}`, {
+                        state: m,
+                      });
                     }}
                     onMouseEnter={() => setHoveredId(m.id)}
                     onMouseLeave={() => setHoveredId(null)}
