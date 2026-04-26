@@ -83,6 +83,15 @@ const DashboardMahasiswa = ({ user }) => {
   const strataIPKRef = useRef(null);
   const strataCardRef = useRef(null);
 
+  // ✅ Helper function untuk menghitung hari tersisa/terlambat secara KONSISTEN
+  const calculateSisaHari = (deadlineStr) => {
+    const deadline = new Date(deadlineStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    deadline.setHours(0, 0, 0, 0);
+    return Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+  };
+
   // Handle click outside for strata dropdowns
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -1409,11 +1418,7 @@ const DashboardMahasiswa = ({ user }) => {
               .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
               .slice(0, 5) // Show only top 5
               .map((task) => {
-                const deadline = new Date(task.deadline);
-                const today = new Date();
-                const sisaHari = Math.ceil(
-                  (deadline - today) / (1000 * 60 * 60 * 24),
-                );
+                const sisaHari = calculateSisaHari(task.deadline);
                 const isOverdue = sisaHari < 0;
 
                 return (
@@ -1946,15 +1951,9 @@ const DashboardMahasiswa = ({ user }) => {
                   // Filter SAMA DENGAN backend: status !== Done dan deadline <= 7 hari ke depan
                   if (t.status === "Done") return false;
                   
-                  const deadline = new Date(t.deadline);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
+                  const sisaHari = calculateSisaHari(t.deadline);
                   
-                  const sisaHari = Math.ceil(
-                    (deadline - today) / (1000 * 60 * 60 * 24),
-                  );
-                  
-                  console.log(`Task: ${t.title}, Deadline: ${t.deadline}, SisaHari: ${sisaHari}, Pass: ${sisaHari <= 7}`);
+                  console.log(`Task: ${t.namaTugas}, Deadline: ${t.deadline}, SisaHari: ${sisaHari}, Pass: ${sisaHari <= 7}`);
                   
                   // Tampilkan task yang ada dalam 7 hari ke depan (upcoming)
                   return sisaHari <= 7;
@@ -1968,11 +1967,7 @@ const DashboardMahasiswa = ({ user }) => {
                 .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
                 .map((task, idx) => {
                   const deadline = new Date(task.deadline);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const sisaHari = Math.ceil(
-                    (deadline - today) / (1000 * 60 * 60 * 24),
-                  );
+                  const sisaHari = calculateSisaHari(task.deadline);
                   const isOverdue = sisaHari < 0;
                   
                   let statusColor = "#10B981"; // Normal - hijau
@@ -1983,7 +1978,7 @@ const DashboardMahasiswa = ({ user }) => {
                   if (isOverdue) {
                     statusColor = "#DC2626"; // Overdue - merah
                     statusBg = "#FEE2E2";
-                    priorityLabel = `${Math.abs(sisaHari)} hari terlewat`;
+                    priorityLabel = `Terlambat ${Math.abs(sisaHari)} hari`;
                     priorityIcon = "🔥";
                   } else if (sisaHari === 0) {
                     statusColor = "#DC2626"; // Hari ini - merah

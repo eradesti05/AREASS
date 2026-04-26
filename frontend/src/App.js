@@ -15,8 +15,13 @@ import Navbar from "./components/Navbar";
 import { akademikAPI } from "./services/api";
 
 // Pages
-import LoginPage from "./pages/LoginPage";
+import LoginPageMahasiswa from "./pages/LoginPageMahasiswa";
+import LoginPageDosen from "./pages/LoginPageDosen";
+import LoginPageKaprodi from "./pages/LoginPageKaprodi";
 import RegisterPage from "./pages/RegisterPage";
+import RegisterPageMahasiswa from "./pages/RegisterPageMahasiswa";
+import RegisterPageDosen from "./pages/RegisterPageDosen";
+import RegisterPageKaprodi from "./pages/RegisterPageKaprodi";
 import DashboardMahasiswa from "./pages/DashboardMahasiswa";
 import TaskManagement from "./pages/TaskManagement";
 import CreateTask from "./pages/CreateTask";
@@ -26,6 +31,14 @@ import ProfilePage from "./pages/ProfilePage";
 import DashboardKaprodi from "./pages/DashboardKaprodi";
 import DashboardDosenWali from "./pages/DashboardDosenWali";
 import InputDataAkademikPage from "./pages/InputDataAkademikPage";
+import AnalyticsPageKaprodi from "./pages/AnalyticsPageKaprodi";
+import AnalyticsPageDosen from "./pages/AnalyticsPageDosen";
+
+// Wrapper buat RegisterPage untuk validasi userType (deprecated - menggunakan komponen spesifik per role)
+// function RegisterPageWrapper({ user, userType }) {
+//   if (user) return <Navigate to="/dashboard" />;
+//   return <RegisterPage allowedRole={userType} userType={userType} />;
+// }
 
 function InnerApp({ user, setUser, tasks, setTasks }) {
   const navigate = useNavigate();
@@ -37,7 +50,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
     if (u.token) {
       localStorage.setItem("areass_token", u.token);
     }
-    // Simpan data user juga agar saat refresh tidak hilang
+    // buat nyimpen data user juga agar saat refresh tidak hilang
     localStorage.setItem("areass_user", JSON.stringify(u));
     // ──────────────────────────
 
@@ -48,7 +61,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
         // Check ke server apakah mahasiswa sudah input data akademik
         const akademikData = await akademikAPI.getAll();
         const hasAkademikData = akademikData && akademikData.length > 0;
-        
+
         // Set localStorage flag berdasarkan data dari server
         if (hasAkademikData) {
           localStorage.setItem(`akademik_completed_${userId}`, "true");
@@ -75,11 +88,26 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
   };
 
   const handleLogout = () => {
-    setUser(null);
-    // Hapus semua data login dari localStorage
+    // Determine logout path based on current user role
+    const userRole = user?.role;
+    const logoutPath = 
+      userRole === "kaprodi" 
+        ? "/kaprodi/login" 
+        : userRole === "dosen_wali"
+        ? "/dosen/login"
+        : "/mahasiswa/login";
+
+    console.log("🔍 Logout - Role:", userRole, "→", logoutPath);
+
+    // Clear localStorage
     localStorage.removeItem("areass_token");
     localStorage.removeItem("areass_user");
-    navigate("/mahasiswa/login");
+    
+    // Clear user state
+    setUser(null);
+    
+    // Use hard redirect to ensure navigation happens
+    window.location.href = logoutPath;
   };
 
   // Check akademik data from server and sync localStorage
@@ -107,7 +135,9 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
 
   if (
     !user &&
-    location.pathname !== "/login" &&
+    location.pathname !== "/mahasiswa/login" &&
+    location.pathname !== "/dosen/login" &&
+    location.pathname !== "/kaprodi/login" &&
     location.pathname !== "/register" &&
     !location.pathname.match(/^\/(mahasiswa|dosen|kaprodi)\/(login|register)$/)
   ) {
@@ -130,6 +160,38 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
         />
       )}
       <Routes>
+        {/* ─── Separate Login Pages per Role (Best Practice) ─── */}
+        <Route
+          path="/mahasiswa/login"
+          element={
+            user?.role === "mahasiswa" ? (
+              <Navigate to="/dashboard" />
+            ) : (
+              <LoginPageMahasiswa onLogin={handleLogin} />
+            )
+          }
+        />
+        <Route
+          path="/dosen/login"
+          element={
+            user?.role === "dosen_wali" ? (
+              <Navigate to="/dashboard-dosen" />
+            ) : (
+              <LoginPageDosen onLogin={handleLogin} />
+            )
+          }
+        />
+        <Route
+          path="/kaprodi/login"
+          element={
+            user?.role === "kaprodi" ? (
+              <Navigate to="/dashboard-kaprodi" />
+            ) : (
+              <LoginPageKaprodi onLogin={handleLogin} />
+            )
+          }
+        />
+
         {/* Generic Routes (redirect to mahasiswa) */}
         <Route path="/login" element={<Navigate to="/mahasiswa/login" />} />
         <Route
@@ -137,28 +199,36 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
           element={<Navigate to="/mahasiswa/register" />}
         />
 
-        {/* User Type Specific Routes */}
+        {/* Separate Register Pages per Role */}
         <Route
-          path="/:userTypeParam/login"
+          path="/mahasiswa/register"
           element={
             user ? (
-              <Navigate
-                to={
-                  user.role === "mahasiswa"
-                    ? "/dashboard"
-                    : user.role === "dosen_wali"
-                      ? "/dashboard-dosen"
-                      : "/dashboard-kaprodi"
-                }
-              />
+              <Navigate to="/dashboard" />
             ) : (
-              <LoginPage onLogin={handleLogin} />
+              <RegisterPageMahasiswa />
             )
           }
         />
         <Route
-          path="/:userTypeParam/register"
-          element={user ? <Navigate to="/dashboard" /> : <RegisterPage />}
+          path="/dosen/register"
+          element={
+            user ? (
+              <Navigate to="/dashboard-dosen" />
+            ) : (
+              <RegisterPageDosen />
+            )
+          }
+        />
+        <Route
+          path="/kaprodi/register"
+          element={
+            user ? (
+              <Navigate to="/dashboard-kaprodi" />
+            ) : (
+              <RegisterPageKaprodi />
+            )
+          }
         />
 
         {/* Original Routes (kept for compatibility) */}
@@ -206,7 +276,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
                 <CreateTask setTasks={setTasks} />
               )
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/mahasiswa/login" />
             )
           }
         />
@@ -222,7 +292,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
                 <EditTask />
               )
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/mahasiswa/login" />
             )
           }
         />
@@ -238,7 +308,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
                 <AnalyticsPage />
               )
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/mahasiswa/login" />
             )
           }
         />
@@ -248,7 +318,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
             user?.role === "dosen_wali" ? (
               <DashboardDosenWali />
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/dosen/login" />
             )
           }
         />
@@ -258,7 +328,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
             user?.role === "kaprodi" ? (
               <DashboardKaprodi />
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/kaprodi/login" />
             )
           }
         />
@@ -276,7 +346,7 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
             ) : user ? (
               <ProfilePage user={user} />
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/mahasiswa/login" />
             )
           }
         />
@@ -286,13 +356,10 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
             user?.role === "mahasiswa" ? (
               <InputDataAkademikPage user={user} />
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/mahasiswa/login" />
             )
           }
         />
-
-        <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="*" element={<Navigate to="/login" />} />
 
         <Route
           path="/analytics/:mahasiswaId"
@@ -300,10 +367,21 @@ function InnerApp({ user, setUser, tasks, setTasks }) {
             user?.role === "kaprodi" || user?.role === "dosen_wali" ? (
               <AnalyticsPage />
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/mahasiswa/login" />
             )
           }
         />
+        <Route
+          path="/kaprodi/analytics/:mahasiswaId"
+          element={<AnalyticsPageKaprodi />}
+        />
+        <Route
+          path="/dosen/analytics/:mahasiswaId"
+          element={<AnalyticsPageDosen />}
+        />
+
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </div>
   );

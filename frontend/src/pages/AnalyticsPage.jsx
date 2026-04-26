@@ -10,6 +10,8 @@ import {
   RefreshCw,
   ShieldCheck,
   Clock,
+  UserCheck,
+  FileDigit,
 } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
 
@@ -17,7 +19,7 @@ const AnalyticsPage = () => {
   const { mahasiswaId } = useParams();
   const [searchParams] = useSearchParams();
   const strataFilter = searchParams.get("strata");
-  
+
   const [akademik, setAkademik] = useState([]);
   const [prediksi, setPrediksi] = useState({
     hasilPrediksi: "Aman",
@@ -43,7 +45,7 @@ const AnalyticsPage = () => {
           ]);
         }
 
-        setAkademik(Array.isArray(akademikData) ? akademikData : []);
+        setAkademik(Array.isArray(akademikData) ? akademikData : akademikData ? [akademikData] : []);
         setPrediksi(prediksiData);
       } catch (err) {
         console.error("Error:", err);
@@ -55,8 +57,8 @@ const AnalyticsPage = () => {
   }, [mahasiswaId, strataFilter]);
 
   // Filter akademik berdasarkan strata parameter jika ada
-  const filteredAkademik = strataFilter 
-    ? akademik.filter((item) => item.strata === strataFilter) 
+  const filteredAkademik = strataFilter
+    ? akademik.filter((item) => item.strata === strataFilter)
     : akademik;
 
   const latest = filteredAkademik[filteredAkademik.length - 1] || {};
@@ -105,7 +107,7 @@ const AnalyticsPage = () => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
           gap: "clamp(12px, 2vw, 20px)",
           marginBottom: "clamp(20px, 3vw, 32px)",
         }}
@@ -231,7 +233,7 @@ const AnalyticsPage = () => {
           {/* Rekomendasi */}
           <div
             style={{
-              backgroundColor: "#F9FAFB",
+              backgroundColor: "#FFFFFF",
               padding: "16px",
               borderRadius: 12,
               borderLeft: `4px solid ${prediksiColor}`,

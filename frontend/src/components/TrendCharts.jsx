@@ -11,24 +11,71 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const TrendCharts = () => {
-  // Sample data for SKS trend
-  const sksTrendData = [
-    { semester: "Sem 1", sks: 18 },
-    { semester: "Sem 2", sks: 16 },
-    { semester: "Sem 3", sks: 17 },
-    { semester: "Sem 4", sks: 15 },
-    { semester: "Sem 5", sks: 19 },
-    { semester: "Sem 6", sks: 17 },
-  ];
+const TrendCharts = ({ akademikData = [] }) => {
+  console.log("📊 TrendCharts received akademikData:", akademikData);
+  
+  // Transform akademik data ke format grafik
+  const transformData = () => {
+    if (!Array.isArray(akademikData) || akademikData.length === 0) {
+      console.log("⚠️ TrendCharts: No data or not array");
+      return { sks: [], ipk: [] };
+    }
 
-  // Sample data for IPK trend
-  const ipkTrendData = [
-    { semester: "Sem 1", ipk: 3.25 },
-    { semester: "Sem 2", ipk: 3.1 },
-    { semester: "Sem 3", ipk: 3.35 },
-    { semester: "Sem 4", ipk: 3.2 },
-  ];
+    const sorted = [...akademikData].sort((a, b) => a.semesterKe - b.semesterKe);
+    console.log("📊 TrendCharts sorted data:", sorted);
+    
+    // Debug - lihat field names dari item pertama
+    if (sorted.length > 0) {
+      console.log("📊 First item keys:", Object.keys(sorted[0]));
+      console.log("📊 sksPerSemester value:", sorted[0].sksPerSemester);
+      console.log("📊 ipSemester value:", sorted[0].ipSemester);
+    }
+
+    const sksTrendData = sorted.map((item) => ({
+      semester: `Sem ${item.semesterKe}`,
+      sks: item.sksPerSemester || 0,
+    }));
+
+    const ipkTrendData = sorted.map((item) => ({
+      semester: `Sem ${item.semesterKe}`,
+      ipk: item.ipSemester || 0,
+    }));
+
+    return { sks: sksTrendData, ipk: ipkTrendData };
+  };
+
+  const { sks: sksTrendData, ipk: ipkTrendData } = transformData();
+  
+  console.log("📊 sksTrendData after transform:", sksTrendData);
+  console.log("📊 ipkTrendData after transform:", ipkTrendData);
+  console.table(sksTrendData);
+  console.table(ipkTrendData);
+
+  // Show message if no data
+  if (!sksTrendData || sksTrendData.length === 0) {
+    return (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+          gap: "clamp(12px, 2vw, 20px)",
+          marginBottom: "clamp(20px, 3vw, 32px)",
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "12px",
+            padding: "20px",
+            textAlign: "center",
+            color: "#8b8377",
+          }}
+        >
+          Belum ada data akademik
+        </div>
+      </div>
+    );
+  }
 
   // Custom tooltip styling
   const customTooltip = {
@@ -45,42 +92,35 @@ const TrendCharts = () => {
   return (
     <div
       style={{
-        backgroundColor: "#f0ede6",
-        padding: "28px 20px",
-        minHeight: "100vh",
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+        gap: "clamp(12px, 2vw, 20px)",
+        marginBottom: "clamp(20px, 3vw, 32px)",
       }}
     >
+      {/* Left Card - Bar Chart */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "24px",
-          maxWidth: "1200px",
-          margin: "0 auto",
+          backgroundColor: "#ffffff",
+          borderRadius: "12px",
+          padding: "20px",
+          border: "none",
+          boxShadow: "none",
         }}
       >
-        {/* Left Card - Bar Chart */}
-        <div
+        <h2
           style={{
-            backgroundColor: "#ffffff",
-            borderRadius: "12px",
-            padding: "20px",
-            border: "none",
-            boxShadow: "none",
+            fontSize: "14px",
+            fontWeight: "600",
+            color: "#8b8377",
+            marginBottom: "16px",
+            letterSpacing: "0.5px",
+            margin: "0 0 16px 0",
           }}
         >
-          <h2
-            style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "#8b8377",
-              marginBottom: "16px",
-              letterSpacing: "0.5px",
-              margin: "0 0 16px 0",
-            }}
-          >
-            TREND BEBAN SKS
-          </h2>
+          TREND BEBAN SKS
+        </h2>
+        {sksTrendData && sksTrendData.length > 0 ? (
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={sksTrendData} margin={{ top: 10, right: 20, left: -20, bottom: 40 }}>
               <CartesianGrid strokeDasharray="0" stroke="transparent" vertical={false} />
@@ -103,50 +143,56 @@ const TrendCharts = () => {
               />
             </BarChart>
           </ResponsiveContainer>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginTop: "12px",
-              fontSize: "12px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#8b8377" }}>
-              <div
-                style={{
-                  width: "12px",
-                  height: "12px",
-                  backgroundColor: "#7bbf9e",
-                  borderRadius: "2px",
-                }}
-              />
-              <span>Beban SKS</span>
-            </div>
+        ) : (
+          <div style={{ color: "#a39c94", textAlign: "center", padding: "40px 20px" }}>
+            Belum ada data SKS
           </div>
-        </div>
-
-        {/* Right Card - Line Chart */}
+        )}
         <div
           style={{
-            backgroundColor: "#ffffff",
-            borderRadius: "12px",
-            padding: "20px",
-            border: "none",
-            boxShadow: "none",
+            display: "flex",
+            justifyContent: "center",
+            marginTop: "12px",
+            fontSize: "12px",
           }}
         >
-          <h2
-            style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "#8b8377",
-              marginBottom: "16px",
-              letterSpacing: "0.5px",
-              margin: "0 0 16px 0",
-            }}
-          >
-            TREND IPK
-          </h2>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#8b8377" }}>
+            <div
+              style={{
+                width: "12px",
+                height: "12px",
+                backgroundColor: "#7bbf9e",
+                borderRadius: "2px",
+              }}
+            />
+            <span>Beban SKS</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Card - Line Chart */}
+      <div
+        style={{
+          backgroundColor: "#ffffff",
+          borderRadius: "12px",
+          padding: "20px",
+          border: "none",
+          boxShadow: "none",
+        }}
+      >
+        <h2
+          style={{
+            fontSize: "14px",
+            fontWeight: "600",
+            color: "#8b8377",
+            marginBottom: "16px",
+            letterSpacing: "0.5px",
+            margin: "0 0 16px 0",
+          }}
+        >
+          TREND IPK
+        </h2>
+        {ipkTrendData && ipkTrendData.length > 0 ? (
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={ipkTrendData} margin={{ top: 10, right: 20, left: -20, bottom: 40 }}>
               <CartesianGrid
@@ -187,25 +233,29 @@ const TrendCharts = () => {
               />
             </LineChart>
           </ResponsiveContainer>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginTop: "12px",
-              fontSize: "12px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#8b8377" }}>
-              <div
-                style={{
-                  width: "12px",
-                  height: "2.5px",
-                  backgroundColor: "#e9a84c",
-                  backgroundImage: "linear-gradient(to right, #e9a84c 0%, #e9a84c 60%, transparent 60%)",
-                }}
-              />
-              <span>IP Semester</span>
-            </div>
+        ) : (
+          <div style={{ color: "#a39c94", textAlign: "center", padding: "40px 20px" }}>
+            Belum ada data IPK
+          </div>
+        )}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginTop: "12px",
+            fontSize: "12px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#8b8377" }}>
+            <div
+              style={{
+                width: "12px",
+                height: "2.5px",
+                backgroundColor: "#e9a84c",
+                backgroundImage: "linear-gradient(to right, #e9a84c 0%, #e9a84c 60%, transparent 60%)",
+              }}
+            />
+            <span>IP Semester</span>
           </div>
         </div>
       </div>

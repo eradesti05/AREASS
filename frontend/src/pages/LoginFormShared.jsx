@@ -4,7 +4,12 @@ import { C } from "../constants/theme";
 import { authAPI } from "../services/api";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 
-const LoginPage = ({ onLogin, allowedRole, userType }) => {
+/**
+ * Shared login form component untuk semua role
+ * Pros: DRY, maintainable
+ * Cons: None - extracted properly
+ */
+const LoginFormShared = ({ requiredRole, userType, registerPath, onLoginSuccess }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -22,7 +27,8 @@ const LoginPage = ({ onLogin, allowedRole, userType }) => {
     try {
       const res = await authAPI.login(email, password);
 
-      if (allowedRole && res.user.role !== allowedRole) {
+      // Validate role match
+      if (res.user.role !== requiredRole) {
         setError(
           `Halaman ini hanya untuk ${userType}. Silakan login di halaman yang sesuai.`,
         );
@@ -39,13 +45,12 @@ const LoginPage = ({ onLogin, allowedRole, userType }) => {
       };
 
       const normalizedRole = roleMap[role];
-
       const cleanUser = { ...res.user, role: normalizedRole };
 
       localStorage.setItem("areass_token", res.token);
       localStorage.setItem("areass_user", JSON.stringify(cleanUser));
 
-      onLogin(cleanUser);
+      onLoginSuccess(cleanUser);
     } catch (err) {
       setError(err.message || "Login gagal");
     } finally {
@@ -54,15 +59,9 @@ const LoginPage = ({ onLogin, allowedRole, userType }) => {
   };
 
   const emailPlaceholder =
-    allowedRole === "mahasiswa"
+    userType === "mahasiswa"
       ? "xxxxxxxx@mahasiswa.itb.ac.id"
       : "xxxxxxxx@itb.ac.id";
-
-  const registerRouteMap = {
-    mahasiswa: "/register/mahasiswa",
-    dosen_wali: "/register/dosen",
-    kaprodi: "/register/kaprodi",
-  };
 
   return (
     <div
@@ -83,22 +82,21 @@ const LoginPage = ({ onLogin, allowedRole, userType }) => {
           boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
         }}
       >
+        {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <div style={{ fontSize: 25, color: C.textDark, marginBottom: 4 }}>
             Selamat Datang di
           </div>
           <div>
-            <div>
-              <img
-                src="/LogoAREASS.png"
-                alt="AREASS Logo"
-                style={{
-                  width: 180,
-                  height: 180,
-                  objectFit: "contain",
-                }}
-              />
-            </div>
+            <img
+              src="/LogoAREASS.png"
+              alt="AREASS Logo"
+              style={{
+                width: 180,
+                height: 180,
+                objectFit: "contain",
+              }}
+            />
             <div
               style={{
                 fontSize: 12,
@@ -113,49 +111,41 @@ const LoginPage = ({ onLogin, allowedRole, userType }) => {
           </div>
         </div>
 
-        {[
-          {
-            label: "Email",
-            val: email,
-            set: setEmail,
-            type: "text",
-            placeholder: emailPlaceholder,
-            icon: <Mail size={20} color="#718EBF" />,
-          },
-        ].map((f, i) => (
-          <div
-            key={i}
-            style={{
-              background: C.bg,
-              borderRadius: 10,
-              padding: "12px 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              marginBottom: 12,
-            }}
-          >
-            <span>{f.icon}</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: C.textGray }}>{f.label}</div>
-              <input
-                value={f.val}
-                onChange={(e) => f.set(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                placeholder={f.placeholder}
-                type={f.type}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  width: "100%",
-                  fontSize: 14,
-                  outline: "none",
-                }}
-              />
-            </div>
+        {/* Email Input */}
+        <div
+          style={{
+            background: C.bg,
+            borderRadius: 10,
+            padding: "12px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 12,
+          }}
+        >
+          <span>
+            <Mail size={20} color="#718EBF" />
+          </span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: C.textGray }}>Email</div>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              placeholder={emailPlaceholder}
+              type="text"
+              style={{
+                border: "none",
+                background: "transparent",
+                width: "100%",
+                fontSize: 14,
+                outline: "none",
+              }}
+            />
           </div>
-        ))}
+        </div>
 
+        {/* Password Input */}
         <div
           style={{
             background: C.bg,
@@ -199,19 +189,7 @@ const LoginPage = ({ onLogin, allowedRole, userType }) => {
           </span>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 20,
-          }}
-        >
-          {/* <span style={{ fontSize: 13, color: C.textGray }}>Ingat saya</span>
-          <span style={{ color: C.primary, fontSize: 13, cursor: "pointer" }}>
-            Lupa Password?
-          </span> */}
-        </div>
-
+        {/* Error Message */}
         {error && (
           <div
             style={{
@@ -228,6 +206,7 @@ const LoginPage = ({ onLogin, allowedRole, userType }) => {
           </div>
         )}
 
+        {/* Login Button */}
         <button
           onClick={handleLogin}
           disabled={loading}
@@ -247,34 +226,19 @@ const LoginPage = ({ onLogin, allowedRole, userType }) => {
           {loading ? "Memproses..." : "Login"}
         </button>
 
+        {/* Register Link */}
         <div style={{ textAlign: "center", fontSize: 13, color: C.textGray }}>
           Kamu tidak memiliki akun?{" "}
           <span
-            onClick={() => navigate(`/${userType}/register`)}
+            onClick={() => navigate(registerPath)}
             style={{ color: C.primary, cursor: "pointer", fontWeight: 600 }}
           >
             Register
           </span>
         </div>
-
-        {/* <div
-          style={{
-            marginTop: 20,
-            padding: 12,
-            background: C.primaryLight,
-            borderRadius: 8,
-            fontSize: 12,
-            color: C.primary,
-          }}
-        >
-          <strong>Demo:</strong> 23525789@mahasiswa.itb.ac.id / password
-          <br />
-          Dosen: dosenwali@itb.ac.id / password &nbsp;|&nbsp; Kaprodi:
-          kaprodi@itb.ac.id / password
-        </div> */}
       </div>
     </div>
   );
 };
 
-export default LoginPage;
+export default LoginFormShared;

@@ -363,7 +363,6 @@ const Navbar = ({ user, onLogout, currentPath }) => {
                   onClick={() => {
                     setShowConfirmModal(false);
                     onLogout();
-                    navigate("/mahasiswa/login");
                   }}
                   style={{
                     flex: 1,

@@ -8,16 +8,14 @@ import {
   Lock,
   Eye,
   EyeOff,
-  GraduationCap,
   BookOpen,
 } from "lucide-react";
 
-const RegisterPage = ({ allowedRole, userType }) => {
+const RegisterPageMahasiswa = () => {
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [role, setRole] = useState("");
   const [prodi, setProdi] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,33 +30,12 @@ const RegisterPage = ({ allowedRole, userType }) => {
       setError("Password minimal 8 karakter");
       return;
     }
-
-    let detectedRole = allowedRole;
-    let nim = "";
-    if (allowedRole === "mahasiswa") {
-      if (!email.endsWith("@mahasiswa.itb.ac.id")) {
-        setError("Gunakan email mahasiswa (@mahasiswa.itb.ac.id)");
-        return;
-      }
-      nim = email.split("@")[0];
-    } else if (allowedRole === "dosen_wali") {
-      if (!email.endsWith("@itb.ac.id")) {
-        setError("Gunakan email dosen (@itb.ac.id)");
-        return;
-      }
-      detectedRole = role;
-    } else if (allowedRole === "kaprodi") {
-      if (!email.endsWith("@itb.ac.id")) {
-        setError("Gunakan email kaprodi (@itb.ac.id)");
-        return;
-      }
-      detectedRole = role;
-    }
-
-    if (!detectedRole) {
-      setError("Role harus dipilih");
+    if (!email.endsWith("@mahasiswa.itb.ac.id")) {
+      setError("Gunakan email mahasiswa (@mahasiswa.itb.ac.id)");
       return;
     }
+
+    const nim = email.split("@")[0];
 
     setLoading(true);
     setError("");
@@ -67,11 +44,11 @@ const RegisterPage = ({ allowedRole, userType }) => {
         nama: nama,
         email,
         password,
-        role: detectedRole,
+        role: "mahasiswa",
         prodi,
         nim,
       });
-      navigate(`/${userType}/login`);
+      navigate("/mahasiswa/login");
     } catch (err) {
       setError(err.message || "Registrasi gagal");
     } finally {
@@ -97,17 +74,6 @@ const RegisterPage = ({ allowedRole, userType }) => {
   };
   const labelStyle = { fontSize: 11, color: C.textGray };
 
-  const emailPlaceholder =
-    allowedRole === "mahasiswa"
-      ? "xxxxxxxx@mahasiswa.itb.ac.id"
-      : "xxxxxxxx@itb.ac.id";
-
-  const loginRouteMap = {
-    mahasiswa: "/login/mahasiswa",
-    dosen_wali: "/login/dosen",
-    kaprodi: "/login/kaprodi",
-  };
-
   return (
     <div
       style={{
@@ -131,7 +97,7 @@ const RegisterPage = ({ allowedRole, userType }) => {
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <div style={{ fontSize: 25, color: C.textDark, marginBottom: 4 }}>
-            Register
+            Register Mahasiswa
           </div>
           <div>
             <img
@@ -186,7 +152,7 @@ const RegisterPage = ({ allowedRole, userType }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleRegister()}
-              placeholder={emailPlaceholder}
+              placeholder="xxxxxxxx@mahasiswa.itb.ac.id"
               type="email"
               style={inputStyle}
             />
@@ -221,29 +187,6 @@ const RegisterPage = ({ allowedRole, userType }) => {
           </span>
         </div>
 
-        {/* Role - Select Box */}
-        {email.endsWith("@itb.ac.id") &&
-          !email.endsWith("@mahasiswa.itb.ac.id") && (
-            <div style={fieldStyle}>
-              <span>
-                <GraduationCap size={20} color="#718EBF" />
-              </span>
-              <div style={{ flex: 1 }}>
-                <div style={labelStyle}>Role</div>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  style={{ ...inputStyle, cursor: "pointer" }}
-                >
-                  <option value="" disabled>
-                    Pilih role
-                  </option>
-                  <option value="dosen_wali">Dosen Wali</option>
-                  <option value="kaprodi">Kaprodi</option>
-                </select>
-              </div>
-            </div>
-          )}
         {/* Prodi */}
         <div style={fieldStyle}>
           <span>
@@ -303,7 +246,7 @@ const RegisterPage = ({ allowedRole, userType }) => {
         <div style={{ textAlign: "center", fontSize: 13, color: C.textGray }}>
           Sudah punya akun?{" "}
           <span
-            onClick={() => navigate(`/${userType}/login`)}
+            onClick={() => navigate("/mahasiswa/login")}
             style={{ color: C.primary, cursor: "pointer", fontWeight: 600 }}
           >
             Login
@@ -314,4 +257,4 @@ const RegisterPage = ({ allowedRole, userType }) => {
   );
 };
 
-export default RegisterPage;
+export default RegisterPageMahasiswa;
