@@ -7,7 +7,7 @@ export const C = {
   textDark: "#1A1A2E",
   textGray: "#8A94A6",
   green: "#1B7C6B",
-  yellow: "#F5A623",
+  yellow: "#FDB813",
   red: " #C0392B",
   navy: "#1A2050",
 };

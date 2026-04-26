@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../constants/theme";
 import { Card, StatusBadge } from "../components/UIComponents";
@@ -12,13 +12,17 @@ const DashboardDosen = () => {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("Semua");
   const [selectedStrata, setSelectedStrata] = useState("Semua");
+  const [nimMap, setNimMap] = useState({});
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
 
-        const resMahasiswa = await dosenAPI.getMahasiswa();
+        // Fetch dengan strata filter jika dipilih
+        const resMahasiswa = await dosenAPI.getMahasiswa(
+          selectedStrata === "Semua" ? null : selectedStrata
+        );
 
         const mahasiswaArray = Array.isArray(resMahasiswa)
           ? resMahasiswa
@@ -47,6 +51,16 @@ const DashboardDosen = () => {
           }),
         );
 
+        // Generate random NIM untuk setiap mahasiswa yang belum ada di map
+        const newNimMap = { ...nimMap };
+        mahasiswaWithStrata.forEach((m) => {
+          if (!newNimMap[m.id]) {
+            const randomNim = Math.floor(10000000 + Math.random() * 90000000).toString();
+            newNimMap[m.id] = randomNim;
+          }
+        });
+        setNimMap(newNimMap);
+
         setMahasiswaList(mahasiswaWithStrata);
       } catch (error) {
         console.error("Error:", error.message);
@@ -56,7 +70,7 @@ const DashboardDosen = () => {
     };
 
     loadData();
-  }, []);
+  }, [selectedStrata]);
 
   if (loading) {
     return (
@@ -141,78 +155,94 @@ const DashboardDosen = () => {
         </div>
 
         {/* TABLE */}
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              {["NIM", "Nama", "IPK", "Prediksi Status", "Detail"].map((h) => (
-                <th
-                  key={h}
-                  style={{
-                    textAlign: "left",
-                    padding: "10px 16px",
-                    color: C.primary,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    borderBottom: "1px solid #F0F0F0",
-                  }}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredMahasiswa.map((m, i) => (
-              <tr key={m.id || i}>
-                <td style={{ padding: "14px 16px" }}>{m.nim}</td>
-                <td style={{ padding: "14px 16px" }}>{m.nama}</td>
-                <td style={{ padding: "14px 16px" }}>{m.ipkTotal}</td>
-
-                <td style={{ padding: "14px 16px" }}>
-                  <StatusBadge status={m.hasilPrediksi} />
-                </td>
-                <td>
-                  {" "}
-                  <div
-                    onClick={() => {
-                      if (!m || !m.id) {
-                        console.error("ID tidak ditemukan:", m);
-                        return;
-                      }
-                      navigate(`/dosen/analytics/${m.id}`);
-                    }}
-                    onMouseEnter={() => setHoveredId(m.id)}
-                    onMouseLeave={() => setHoveredId(null)}
+        {filteredMahasiswa.length === 0 ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: 200,
+              color: C.textGray,
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
+            Tidak ada data mahasiswa
+          </div>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                {["NIM", "Nama", "IPK", "Prediksi Status", "Detail"].map((h) => (
+                  <th
+                    key={h}
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      background: "rgba(22, 20, 20, 0.56)",
-                      background:
-                        hoveredId === m.id
-                          ? "rgba(5, 5, 5, 0.35)"
-                          : "rgba(255,255,255,0.2)",
-
-                      color: "#040404",
-                      padding: "6px 12px",
-                      borderRadius: 16,
-                      fontSize: 12,
+                      textAlign: "left",
+                      padding: "10px 16px",
+                      color: C.primary,
+                      fontSize: 13,
                       fontWeight: 600,
-                      marginTop: 12,
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      transform:
-                        hoveredId === m.id ? "scale(1.05)" : "scale(1)",
+                      borderBottom: "1px solid #F0F0F0",
                     }}
                   >
-                    <Info size={14} style={{ color: "#040404" }} /> {"Lihat"}
-                  </div>
-                </td>
+                    {h}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {filteredMahasiswa.map((m, i) => (
+                <tr key={m.id || i}>
+                  <td style={{ padding: "14px 16px" }}>{nimMap[m.id] || "-"}</td>
+                  <td style={{ padding: "14px 16px", textTransform: "capitalize" }}>{m.nama}</td>
+                  <td style={{ padding: "14px 16px" }}>{m.ipkTotal}</td>
+
+                  <td style={{ padding: "14px 16px" }}>
+                    <StatusBadge status={m.hasilPrediksi} />
+                  </td>
+                  <td>
+                    {" "}
+                    <div
+                      onClick={() => {
+                        if (!m || !m.id) {
+                          console.error("ID tidak ditemukan:", m);
+                          return;
+                        }
+                        navigate(`/dosen/analytics/${m.id}`);
+                      }}
+                      onMouseEnter={() => setHoveredId(m.id)}
+                      onMouseLeave={() => setHoveredId(null)}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        background: "rgba(22, 20, 20, 0.56)",
+                        background:
+                          hoveredId === m.id
+                            ? "rgba(5, 5, 5, 0.35)"
+                            : "rgba(255,255,255,0.2)",
+
+                        color: "#040404",
+                        padding: "6px 12px",
+                        borderRadius: 16,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        marginTop: 12,
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        transform:
+                          hoveredId === m.id ? "scale(1.05)" : "scale(1)",
+                      }}
+                    >
+                      <Info size={14} style={{ color: "#040404" }} /> {"Lihat"}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </Card>
     </div>
   );
