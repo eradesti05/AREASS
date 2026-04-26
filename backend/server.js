@@ -468,10 +468,16 @@ app.post("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
         message: `Data semester ${req.body.semesterKe} untuk ${req.body.strata} sudah ada`,
       });
 
+    // ✅ Calculate jumlahMkDiulang (SKS Mengulang) = sksPerSemester - jumlahSksLulus
+    const sksPerSemester = req.body.sksPerSemester || 0;
+    const jumlahSksLulus = req.body.jumlahSksLulus || 0;
+    const jumlahMkDiulang = Math.max(0, sksPerSemester - jumlahSksLulus);
+
     const data = await Akademik.create({
       mahasiswaId: req.user.id,
       nim: req.user.nim,
       ...req.body,
+      jumlahMkDiulang: jumlahMkDiulang,
     });
 
     // After saving, try to get prediction from ML API
@@ -586,9 +592,14 @@ app.post("/api/akademik", auth, role("mahasiswa"), async (req, res) => {
 
 app.put("/api/akademik/:id", auth, role("mahasiswa"), async (req, res) => {
   try {
+    // ✅ Calculate jumlahMkDiulang (SKS Mengulang) = sksPerSemester - jumlahSksLulus
+    const sksPerSemester = req.body.sksPerSemester || 0;
+    const jumlahSksLulus = req.body.jumlahSksLulus || 0;
+    const jumlahMkDiulang = Math.max(0, sksPerSemester - jumlahSksLulus);
+
     const data = await Akademik.findOneAndUpdate(
       { _id: req.params.id, mahasiswaId: req.user.id },
-      { ...req.body, updatedAt: new Date() },
+      { ...req.body, jumlahMkDiulang: jumlahMkDiulang, updatedAt: new Date() },
       { new: true },
     );
     if (!data) return res.status(404).json({ message: "Data tidak ditemukan" });
