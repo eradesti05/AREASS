@@ -70,7 +70,12 @@ export const prediksiAPI = {
 
 // ─── DOSEN WALI ───────────────────────────────────────────────────────────────
 export const dosenAPI = {
-  getMahasiswa: () => request("GET", "/dosen/mahasiswa"),
+  getMahasiswa: (strata = null) => {
+    const endpoint = strata 
+      ? `/dosen/mahasiswa?strata=${strata}`
+      : `/dosen/mahasiswa`;
+    return request("GET", endpoint);
+  },
   getAkademikMahasiswa: (id) =>
     request("GET", `/dosen/mahasiswa/${id}/akademik`),
   getAkademikById: (id) => request("GET", `/dosen/mahasiswa/${id}/akademik`),
@@ -78,7 +83,12 @@ export const dosenAPI = {
 
 // ─── KAPRODI ──────────────────────────────────────────────────────────────────
 export const kaprodiAPI = {
-  getMahasiswa: () => request("GET", "/kaprodi/mahasiswa"),
+  getMahasiswa: (strata = null) => {
+    const endpoint = strata 
+      ? `/kaprodi/mahasiswa?strata=${strata}`
+      : `/kaprodi/mahasiswa`;
+    return request("GET", endpoint);
+  },
   getStatistik: () => request("GET", "/kaprodi/statistik"),
   getTrenSemester: () => request("GET", "/kaprodi/tren-semester"),
   getAkademik: () => request("GET", "/kaprodi/akademik"),

@@ -45,7 +45,7 @@ const AnalyticsPage = () => {
           ]);
         }
 
-        setAkademik(Array.isArray(akademikData) ? akademikData : []);
+        setAkademik(Array.isArray(akademikData) ? akademikData : akademikData ? [akademikData] : []);
         setPrediksi(prediksiData);
       } catch (err) {
         console.error("Error:", err);
@@ -233,7 +233,7 @@ const AnalyticsPage = () => {
           {/* Rekomendasi */}
           <div
             style={{
-              backgroundColor: "#F9FAFB",
+              backgroundColor: "#FFFFFF",
               padding: "16px",
               borderRadius: 12,
               borderLeft: `4px solid ${prediksiColor}`,
