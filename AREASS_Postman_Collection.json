@@ -1,0 +1,782 @@
+{
+  "info": {
+    "_postman_id": "areass-collection-2026",
+    "name": "AREASS API Collection",
+    "description": "API Collection untuk AREASS - Academic Alert System with Prediction Service\nAplikasi untuk monitoring akademik mahasiswa dengan prediksi performa\n\nTanggal: April 29, 2026",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Register Mahasiswa",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "    pm.environment.set('token', pm.response.json().token);",
+                  "    pm.environment.set('userId', pm.response.json().user._id);",
+                  "    console.log('✅ Token berhasil disimpan');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Budi Santoso\",\n  \"email\": \"12345@student.example.com\",\n  \"password\": \"Password123!\",\n  \"userType\": \"mahasiswa\",\n  \"prodi\": \"Teknik Informatika\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register akun baru untuk mahasiswa. NIM auto-extract dari email (angka di depan @)"
+          },
+          "response": []
+        },
+        {
+          "name": "Register Dosen Wali",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Dr. Ahmad Suryana\",\n  \"email\": \"ahmad.suryana@lecturer.example.com\",\n  \"password\": \"Password123!\",\n  \"userType\": \"dosen_wali\",\n  \"prodi\": \"Teknik Informatika\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register akun dosen wali untuk monitoring mahasiswa"
+          },
+          "response": []
+        },
+        {
+          "name": "Register Kaprodi",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Prof. Dr. Eka Putra\",\n  \"email\": \"eka.putra@faculty.example.com\",\n  \"password\": \"Password123!\",\n  \"userType\": \"kaprodi\",\n  \"prodi\": \"Teknik Informatika\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register akun Kepala Program Studi (Kaprodi) untuk analisis departemen"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.environment.set('token', data.token);",
+                  "    pm.environment.set('userId', data.user._id);",
+                  "    pm.environment.set('userRole', data.user.role);",
+                  "    pm.environment.set('userName', data.user.nama);",
+                  "    console.log('✅ Login berhasil - Token: ' + data.token.substring(0, 20) + '...');",
+                  "    console.log('Role: ' + data.user.role);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"12345@student.example.com\",\n  \"password\": \"Password123!\",\n  \"userType\": \"mahasiswa\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login dan dapatkan JWT token. Token berlaku 7 hari"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Dapatkan profil user yang sedang login (memerlukan token)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Budi Santoso Updated\",\n  \"email\": \"12345@student.example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Update profil user (nama, email, dll)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📋 Task Management (Mahasiswa)",
+      "item": [
+        {
+          "name": "Get All Tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks"]
+            },
+            "description": "Dapatkan semua task dengan sorting prioritas dan deadline. Hanya untuk mahasiswa"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Task Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "summary"]
+            },
+            "description": "Dapatkan ringkasan task: total, deadline < 7 hari, estimasi beban, breakdown status"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"namaTugas\": \"Buat proposal skripsi\",\n  \"kategoriTask\": \"Academic\",\n  \"deadline\": \"2026-05-10\",\n  \"tingkatKesulitan\": \"Tinggi\",\n  \"estimasiPengerjaan\": \"15 jam\",\n  \"status\": \"Backlog\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks"]
+            },
+            "description": "Buat task baru. Priority Score otomatis dihitung berdasarkan deadline, kesulitan, dan status"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"namaTugas\": \"Buat proposal skripsi - UPDATED\",\n  \"status\": \"On Progress\",\n  \"tingkatKesulitan\": \"Tinggi\",\n  \"estimasiPengerjaan\": \"15 jam\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}"]
+            },
+            "description": "Update task yang sudah ada. Ganti {{taskId}} dengan ID task yang ingin diupdate"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}"]
+            },
+            "description": "Hapus task. Hanya bisa menghapus task milik sendiri"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📊 Akademik Data",
+      "item": [
+        {
+          "name": "Get All Akademik Records",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/akademik",
+              "host": ["{{baseUrl}}"],
+              "path": ["akademik"]
+            },
+            "description": "Dapatkan semua record akademik (sorted by semester terbaru)"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Akademik Record",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nim\": \"12345\",\n  \"strata\": \"S1\",\n  \"tahunAkademik\": \"2025/2026\",\n  \"semesterType\": \"Ganjil\",\n  \"semesterKe\": 5,\n  \"ipSemester\": 3.45,\n  \"ipkTotal\": 3.50,\n  \"sksPerSemester\": 20,\n  \"totalSks\": 90,\n  \"jumlahSksLulus\": 85,\n  \"jumlahMkDiulang\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/akademik",
+              "host": ["{{baseUrl}}"],
+              "path": ["akademik"]
+            },
+            "description": "Buat/simpan record akademik baru"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Akademik Record",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ipSemester\": 3.55,\n  \"ipkTotal\": 3.55,\n  \"sksPerSemester\": 20,\n  \"totalSks\": 95,\n  \"jumlahSksLulus\": 90\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/akademik/{{akademikId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["akademik", "{{akademikId}}"]
+            },
+            "description": "Update record akademik. Ganti {{akademikId}} dengan ID record"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔮 Prediksi (ML)",
+      "item": [
+        {
+          "name": "Run Prediction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{baseUrl}}/prediksi",
+              "host": ["{{baseUrl}}"],
+              "path": ["prediksi"]
+            },
+            "description": "Jalankan prediksi ML untuk user saat ini. Akan memanggil ML API service"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Latest Prediction",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/prediksi/latest?strata=S1",
+              "host": ["{{baseUrl}}"],
+              "path": ["prediksi", "latest"],
+              "query": [
+                {
+                  "key": "strata",
+                  "value": "S1",
+                  "description": "S1, S2, atau S3"
+                }
+              ]
+            },
+            "description": "Dapatkan prediksi terbaru untuk strata tertentu. Response: {hasilPrediksi, skorConfidence}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Prediction by Mahasiswa ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/prediksi/{{mahasiswaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["prediksi", "{{mahasiswaId}}"]
+            },
+            "description": "Dapatkan prediksi untuk mahasiswa tertentu (gunakan oleh dosen/kaprodi)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🧑‍🎓 Dosen Wali Dashboard",
+      "item": [
+        {
+          "name": "Get All Mahasiswa in Prodi",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dosen/mahasiswa",
+              "host": ["{{baseUrl}}"],
+              "path": ["dosen", "mahasiswa"],
+              "query": [
+                {
+                  "key": "strata",
+                  "value": "S1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Dapatkan semua mahasiswa dalam prodi yang sama dengan dosen wali. Optional filter strata (S1/S2/S3)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Akademik History Mahasiswa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dosen/mahasiswa/{{mahasiswaId}}/akademik",
+              "host": ["{{baseUrl}}"],
+              "path": ["dosen", "mahasiswa", "{{mahasiswaId}}", "akademik"]
+            },
+            "description": "Dapatkan history akademik lengkap mahasiswa tertentu. Ganti {{mahasiswaId}} dengan ID mahasiswa"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👨‍💼 Kaprodi Dashboard",
+      "item": [
+        {
+          "name": "Get All Mahasiswa in Department",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/kaprodi/mahasiswa",
+              "host": ["{{baseUrl}}"],
+              "path": ["kaprodi", "mahasiswa"],
+              "query": [
+                {
+                  "key": "strata",
+                  "value": "S1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Dapatkan semua mahasiswa dalam departemen. Optional filter strata (S1/S2/S3)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Statistics Distribution",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/kaprodi/statistik",
+              "host": ["{{baseUrl}}"],
+              "path": ["kaprodi", "statistik"]
+            },
+            "description": "Dapatkan distribusi status prediksi (Aman, Waspada, Perlu Perhatian) untuk semua mahasiswa"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Trend Analysis by Semester",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/kaprodi/tren-semester",
+              "host": ["{{baseUrl}}"],
+              "path": ["kaprodi", "tren-semester"]
+            },
+            "description": "Dapatkan trend data per semester per strata untuk analisis performa departemen"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Akademik Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/kaprodi/akademik",
+              "host": ["{{baseUrl}}"],
+              "path": ["kaprodi", "akademik"]
+            },
+            "description": "Dapatkan semua data akademik untuk semua mahasiswa dalam departemen"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔔 Notifications",
+      "item": [
+        {
+          "name": "Get All Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications"]
+            },
+            "description": "Dapatkan semua notifikasi user (urgent, warning, summary)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "{{notificationId}}", "read"]
+            },
+            "description": "Tandai notifikasi sebagai sudah dibaca"
+          },
+          "response": []
+        },
+        {
+          "name": "Trigger Test Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/trigger-test",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "trigger-test"]
+            },
+            "description": "Kirim test notification untuk user saat ini (testing)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📂 Categories",
+      "item": [
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"]
+            },
+            "description": "Dapatkan semua kategori task"
+          },
+          "response": []
+        },
+        {
+          "name": "Create New Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Research\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"]
+            },
+            "description": "Buat kategori task baru"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🌱 Seed Database",
+      "item": [
+        {
+          "name": "Seed Sample Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{baseUrl}}/seed",
+              "host": ["{{baseUrl}}"],
+              "path": ["seed"]
+            },
+            "description": "Populate database dengan sample data untuk testing (jalankan sekali saja)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userRole",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userName",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "taskId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "akademikId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mahasiswaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
